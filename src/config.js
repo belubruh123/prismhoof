@@ -81,15 +81,20 @@ export const PAINT_HEAD_SPEED = 560;
  * heavier arc looks more dramatic but spends its second half too steep to stand
  * on, which makes most of the rainbow useless.
  */
-export const PAINT_HEAD_LIFT = -180;
+export const PAINT_HEAD_LIFT = -120;
 export const PAINT_HEAD_GRAVITY = 520;
 /**
- * How much of the unicorn's own motion the stream carries with it. Vertical
- * inheritance is much weaker on purpose: at full jump speed, matching the
- * horizontal figure would fire the rainbow almost straight up and out of reach.
+ * How much of the unicorn's own motion the stream carries with it.
+ *
+ * Vertical inheritance is what gives the one verb its three uses. Fired from
+ * flat ground the stream barely rises, sweeping down through anything standing
+ * there and splashing on the floor - that is the attack. Fired at the lip of a
+ * chasm the same shot arcs over the gap, because the ground fell away - that is
+ * the bridge. Fired on the way up out of a jump it inherits enough lift to climb
+ * - that is the ramp.
  */
 export const PAINT_HEAD_INHERITANCE_X = 0.35;
-export const PAINT_HEAD_INHERITANCE_Y = 0.16;
+export const PAINT_HEAD_INHERITANCE_Y = 0.32;
 
 /**
  * Paint energy is normalised to 0..1 so the HUD meter is a direct read.

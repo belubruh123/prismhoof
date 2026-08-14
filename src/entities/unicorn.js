@@ -37,7 +37,7 @@ import {
 } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { DIVE_KEYS, JUMP_KEYS, MOVE_LEFT_KEYS, MOVE_RIGHT_KEYS, PAINT_KEYS, isKeyDown, wasKeyPressed } from '../core/input.js';
-import { abs, clamp, damp, max, min, PI, randomBetween, sign } from '../core/math.js';
+import { abs, clamp, cos, damp, max, min, PI, randomBetween, sign, sin, TAU } from '../core/math.js';
 import { Entity } from '../engine/entity.js';
 import { PARTICLE_CIRCLE, PARTICLE_STAR } from '../engine/particles.js';
 import { HairStrand } from '../graphics/hair.js';
@@ -147,6 +147,15 @@ export class Unicorn extends Entity {
     update(elapsedSeconds) {
         super.update(elapsedSeconds);
 
+        // Decided before anything else, because the aiming pose has to be in
+        // place on the very first frame of a stroke: the stream's whole
+        // trajectory is fixed when it spawns, from wherever the horn tip is.
+        // A stroke already running may drain to nothing; starting a fresh one
+        // needs a real amount of paint in the horn.
+        this.isAiming = !this.isDead
+            && isKeyDown(PAINT_KEYS)
+            && this.paintEnergy > (this.activeRibbon ? 0 : PAINT_MINIMUM_TO_START);
+
         if (!this.isDead) {
             this.applyInput(elapsedSeconds);
             this.applyMovement(elapsedSeconds);
@@ -155,6 +164,10 @@ export class Unicorn extends Entity {
             this.x += this.velocityX * elapsedSeconds;
             this.y += this.velocityY * elapsedSeconds;
         }
+
+        // Falling out of the bottom of the level is fatal. Checked here rather
+        // than in the gameplay screen so nothing can fall forever.
+        if (!this.isDead && this.y > this.world.boundsBottom + 90) this.die();
 
         this.updateAnimation(elapsedSeconds);
         this.updatePainting(elapsedSeconds);
@@ -348,7 +361,9 @@ export class Unicorn extends Entity {
         }
         this.earTwitch = damp(this.earTwitch, 0, 9, elapsedSeconds);
 
-        this.hornGlow = damp(this.hornGlow, this.isPainting ? 1 : 0, 12, elapsedSeconds);
+        // Snaps on and eases off: the horn should light the instant the key is
+        // pressed, because the pose it produces is what aims the shot.
+        this.hornGlow = this.isAiming ? 1 : damp(this.hornGlow, 0, 13, elapsedSeconds);
     }
 
     /**
@@ -370,12 +385,7 @@ export class Unicorn extends Entity {
     // --- painting -----------------------------------------------------------
 
     updatePainting(elapsedSeconds) {
-        // A stroke already running may drain to nothing; starting a fresh one
-        // needs a real amount of paint in the horn.
-        const energyNeeded = this.activeRibbon ? 0 : PAINT_MINIMUM_TO_START;
-        const wantsToPaint = !this.isDead && this.paintEnergy > energyNeeded && isKeyDown(PAINT_KEYS);
-
-        if (wantsToPaint) {
+        if (this.isAiming) {
             this.paintEnergy = max(0, this.paintEnergy - PAINT_DRAIN_PER_SECOND * elapsedSeconds);
             this.secondsSincePainting = 0;
 
@@ -448,6 +458,45 @@ export class Unicorn extends Entity {
             shape: PARTICLE_STAR,
             spin: randomBetween(-7, 7),
         });
+    }
+
+    // --- dying --------------------------------------------------------------
+
+    /**
+     * One hit is fatal. The body keeps falling under gravity so the death reads
+     * as a real event rather than a freeze; the gameplay screen restarts once
+     * the burst has had a moment to play.
+     */
+    die() {
+        if (this.isDead) return;
+        this.isDead = true;
+
+        this.velocityX = -this.facing * 150;
+        this.velocityY = -420;
+
+        if (this.activeRibbon) this.endRibbon();
+        this.world.camera.shake(14, 0.5);
+
+        const particles = this.world.firstOfCategory('particles');
+        for (let index = 0; particles && index < 26; index++) {
+            const angle = randomBetween(0, TAU);
+            const speed = randomBetween(80, 420);
+            particles.spawn({
+                x: this.x,
+                y: this.y,
+                velocityX: cos(angle) * speed,
+                velocityY: sin(angle) * speed,
+                gravity: 500,
+                size: randomBetween(3, 8),
+                endSize: 0,
+                lifetime: randomBetween(0.5, 1.2),
+                color: RAINBOW_COLORS[index % RAINBOW_COLORS.length],
+                shape: PARTICLE_STAR,
+                spin: randomBetween(-10, 10),
+            });
+        }
+
+        this.onDeath?.();
     }
 
     /** A puff of rainbow sparkles off the mane, used on jumps and purifies. */

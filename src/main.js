@@ -7,76 +7,73 @@
 import { canvasContext, initialiseCanvas } from './core/canvas.js';
 import { clearFrameInput, initialiseInput } from './core/input.js';
 import { startGameLoop } from './core/loop.js';
-import { Terrain } from './entities/terrain.js';
-import { Unicorn } from './entities/unicorn.js';
-import { ParticleField } from './engine/particles.js';
-import { World } from './engine/world.js';
+import { clamp, damp } from './core/math.js';
 import { refreshPalette, setColorRestoration } from './graphics/palette.js';
 import { renderSky } from './graphics/sky.js';
-import { parseLevel } from './levels/level-format.js';
-import { TILE_SIZE } from './config.js';
+import { buildLevelWorld } from './levels/build-level.js';
 
 initialiseCanvas();
 initialiseInput();
 
 // --- temporary gameplay sandbox (replaced by the screen stack in phase 7) ---
 
-const sandboxLevel = parseLevel({
+const level = buildLevelWorld({
     name: 'SANDBOX',
     rows: [
         '..........................................',
         '..........................................',
         '..........................................',
         '..........................................',
+        '...............S..........................',
+        '..........................................',
+        '...................................W......',
+        '..P.............M............T..........G.',
         '..........................................',
         '..........................................',
         '..........................................',
-        '..P.......................................',
-        '..........................................',
-        '..........................................',
-        '..........................................',
-        '############..........####################',
-        '############..........####################',
+        '##########################################',
+        '##########################################',
     ],
 });
 
-const world = new World();
-const terrain = world.addEntity(new Terrain(sandboxLevel.tileGrid));
-world.addEntity(new ParticleField());
+const { world, unicorn } = level;
+let colorRestoration = 0;
 
-const playerSpawn = sandboxLevel.spawns.find((spawn) => spawn.type === 'player');
-const unicorn = world.addEntity(new Unicorn(playerSpawn.x, playerSpawn.y));
-
-world.boundsLeft = 0;
-world.boundsTop = 0;
-world.boundsRight = terrain.widthInPixels;
-world.boundsBottom = terrain.heightInPixels;
-
-world.camera.target = unicorn;
-world.camera.snapTo(unicorn.x, unicorn.y);
-world.camera.zoom = parseFloat(new URLSearchParams(location.hash.slice(1)).get('zoom')) || 1;
-
-// Debug hooks, so a headless screenshot can capture an exact pose:
-//   #r=0.9&zoom=3&hold=ArrowRight&warm=120&jumpAt=100
-// `warm` steps the simulation at a fixed timestep before the first frame is
-// drawn, which is deterministic and does not depend on how the browser chooses
-// to schedule animation frames.
 const debugOptions = new URLSearchParams(location.hash.slice(1));
 const pinnedRestoration = parseFloat(debugOptions.get('r'));
 
 let elapsedTotal = 0;
-/** Counts frames spent standing on a ribbon, so one screenshot proves it works. */
 let framesOnRibbon = 0;
 
+world.camera.zoom = parseFloat(debugOptions.get('zoom')) || 1;
+
+/** Advances the world one step and keeps the derived state in sync. */
+function stepWorld(elapsedSeconds) {
+    elapsedTotal += elapsedSeconds;
+
+    // Colour comes back as the Gloom is purified. Damped rather than snapped,
+    // so clearing one enemy is a visible bloom instead of a jump cut.
+    const remainingGloom = world.entitiesOfCategory('gloom').length;
+    const targetRestoration = level.gloomTotal ? 1 - remainingGloom / level.gloomTotal : 1;
+    colorRestoration = damp(colorRestoration, targetRestoration, 3, elapsedSeconds);
+
+    setColorRestoration(isNaN(pinnedRestoration) ? clamp(colorRestoration, 0.06, 1) : pinnedRestoration);
+    refreshPalette();
+
+    world.update(elapsedSeconds);
+    if (unicorn.ribbonUnderfoot) framesOnRibbon++;
+}
+
+// Debug hooks, so a headless screenshot can capture an exact moment:
+//   #r=0.9&zoom=3&hold=ArrowRight&warm=120&seq=Space:60,-ShiftLeft:90
+// `warm` steps the simulation at a fixed timestep before the first frame is
+// drawn, which is deterministic and does not depend on how the browser chooses
+// to schedule animation frames.
 if (DEBUG) {
     for (const code of (debugOptions.get('hold') || '').split(',').filter(Boolean)) {
         dispatchEvent(new KeyboardEvent('keydown', { code }));
     }
 
-    const warmUpSteps = parseInt(debugOptions.get('warm')) || 0;
-
-    // `seq=Space:60,ShiftLeft:62,-ShiftLeft:90` presses and releases keys at
-    // given warm-up steps. A leading minus is a release.
     const scriptedKeys = (debugOptions.get('seq') || '').split(',').filter(Boolean).map((entry) => {
         const [rawCode, atStep] = entry.split(':');
         return {
@@ -86,25 +83,18 @@ if (DEBUG) {
         };
     });
 
+    const warmUpSteps = parseInt(debugOptions.get('warm')) || 0;
     for (let step = 0; step < warmUpSteps; step++) {
         for (const key of scriptedKeys) {
             if (key.step === step) dispatchEvent(new KeyboardEvent(key.type, { code: key.code }));
         }
-
-        elapsedTotal += 1 / 60;
-        world.update(1 / 60);
-        if (unicorn.ribbonUnderfoot) framesOnRibbon++;
+        stepWorld(1 / 60);
         clearFrameInput();
     }
 }
 
 startGameLoop((elapsedSeconds) => {
-    elapsedTotal += elapsedSeconds;
-
-    setColorRestoration(isNaN(pinnedRestoration) ? 0.35 : pinnedRestoration);
-    refreshPalette();
-
-    world.update(elapsedSeconds);
+    stepWorld(elapsedSeconds);
 
     renderSky(world.camera, elapsedTotal);
     world.render();
@@ -113,10 +103,10 @@ startGameLoop((elapsedSeconds) => {
     canvasContext.font = '15px monospace';
     canvasContext.fillText(
         `t:${elapsedTotal.toFixed(1)}  ground:${unicorn.isOnGround ? 1 : 0}`
-        + `  vx:${unicorn.velocityX.toFixed(0)}  vy:${unicorn.velocityY.toFixed(0)}`
         + `  paint:${unicorn.paintEnergy.toFixed(2)}`
-        + `  ribbons:${world.entitiesOfCategory('ribbon').length}`
-        + `  onRibbon:${unicorn.ribbonUnderfoot ? 1 : 0}  framesOnRibbon:${framesOnRibbon}`,
+        + `  gloom:${world.entitiesOfCategory('gloom').length}/${level.gloomTotal}`
+        + `  dead:${unicorn.isDead ? 1 : 0}`
+        + `  onRibbon:${framesOnRibbon}`,
         16, 26,
     );
 });

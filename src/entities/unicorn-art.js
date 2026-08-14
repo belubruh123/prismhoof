@@ -43,6 +43,20 @@ const MUZZLE_HEIGHT = 8.5;
 
 const HORN_LENGTH = 18;
 const HORN_BASE_WIDTH = 6;
+/** Radians the horn tilts forward from vertical, relative to the head. */
+const HORN_TILT = 0.45;
+
+/**
+ * How far the neck and head drop when the horn is charged.
+ *
+ * This is not only a flourish. The rainbow is emitted from the horn tip, and
+ * with the head held high that tip sits about 57 units above the hooves - over
+ * the heads of the ground-dwelling Gloom, so the stream would sail past them
+ * and the "one verb, two uses" promise would break. Lowering the horn to aim
+ * brings the tip down to chest height, where it can actually hit something.
+ */
+const AIM_NECK_DIP = 0.55;
+const AIM_HEAD_DIP = 1;
 
 /**
  * The four legs. Indices 0 and 2 are the near side, 1 and 3 the far side.
@@ -261,7 +275,7 @@ function drawHorn(context, unicorn, pose) {
 
     wrap(() => {
         context.translate(4, -CRANIUM_RADIUS + 1.5);
-        context.rotate(-0.75);
+        context.rotate(HORN_TILT);
 
         if (glow > 0.01) {
             drawRadialGlow(context, 0, -HORN_LENGTH * 0.6, 26 * glow, RAINBOW_COLORS[pose.hornColorIndex], glow * 0.75);
@@ -357,7 +371,7 @@ export function hornTipPosition(unicorn, pose) {
     // horn's own offset and tilt.
     const hornBaseX = 4;
     const hornBaseY = -CRANIUM_RADIUS + 1.5;
-    const hornAngle = pose.headAngle - 0.75 - PI / 2;
+    const hornAngle = pose.headAngle + HORN_TILT - PI / 2;
 
     const localX = headX
         + hornBaseX * cos(pose.headAngle) - hornBaseY * sin(pose.headAngle)
@@ -398,14 +412,20 @@ export function buildUnicornPose(unicorn) {
         + (velocityX / 900) * 0.28 * unicorn.facing
         + (isOnGround ? 0 : clamp(velocityY / 1400, -0.35, 0.4));
 
+    // Charging the horn lowers it to aim, which is what puts the stream at a
+    // height where it can hit something standing on the ground.
+    const aim = unicorn.hornGlow;
+
     const neckAngle = -PI / 2.35
         + sin(age * 1.7) * 0.05 * idleAmount
-        - clamp(velocityY / 1600, -0.25, 0.3);
+        - clamp(velocityY / 1600, -0.25, 0.3)
+        + AIM_NECK_DIP * aim;
 
     const headAngle = 0.35
         + sin(age * 1.9 + 0.7) * 0.07 * idleAmount
         + runSpeed * sin(unicorn.runPhase * TAU) * 0.06
-        - clamp(velocityY / 2200, -0.2, 0.2);
+        - clamp(velocityY / 2200, -0.2, 0.2)
+        + AIM_HEAD_DIP * aim;
 
     return {
         squash: unicorn.squash,
