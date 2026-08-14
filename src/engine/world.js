@@ -70,7 +70,6 @@ export class World {
         wrap(() => {
             this.camera.applyTransform(canvasContext);
 
-            for (const entity of this.entities) wrap(() => entity.renderBackground());
             for (const entity of this.entities) wrap(() => entity.render());
 
             if (DEBUG) {

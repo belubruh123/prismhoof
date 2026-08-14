@@ -37,8 +37,3 @@ export function persistSaveData() {
         // Storage is unavailable. The session still works, it just will not be remembered.
     }
 }
-
-export function resetSaveData() {
-    Object.assign(saveData, DEFAULT_SAVE_DATA);
-    persistSaveData();
-}

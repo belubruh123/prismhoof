@@ -96,10 +96,4 @@ export class Camera {
     get viewRight() { return this.x + CANVAS_WIDTH / 2 / this.zoom; }
     get viewTop() { return this.y - CANVAS_HEIGHT / 2 / this.zoom; }
     get viewBottom() { return this.y + CANVAS_HEIGHT / 2 / this.zoom; }
-
-    /** True when a box of this size at this position could be visible. */
-    isVisible(x, y, margin = 0) {
-        return x > this.viewLeft - margin && x < this.viewRight + margin
-            && y > this.viewTop - margin && y < this.viewBottom + margin;
-    }
 }

@@ -523,8 +523,3 @@ function solveKnee(hipX, hipY, ankleX, ankleY, upperLength, lowerLength, bendSig
         y: hipY + sin(hipAngle) * upperLength,
     };
 }
-
-/** Shared by the sparkle emitters so they agree on where the mane tips are. */
-export function maneStrandRoot(unicorn, pose, index) {
-    return maneRoot(unicorn, pose, maneStrandPosition(index, unicorn.maneStrands.length));
-}

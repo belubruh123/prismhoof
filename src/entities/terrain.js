@@ -52,7 +52,11 @@ export class Terrain extends Entity {
     rowAt(worldY) { return floor(worldY / TILE_SIZE); }
 
     tileAt(column, row) {
-        if (row < 0 || row >= this.rowCount || column < 0 || column >= this.columnCount) return TILE_EMPTY;
+        // The left and right edges of a level are walls, so nothing can walk out
+        // of the world sideways. Above and below stay open: the sky is where the
+        // rainbows go, and falling out of the bottom is meant to be fatal.
+        if (column < 0 || column >= this.columnCount) return TILE_SOLID;
+        if (row < 0 || row >= this.rowCount) return TILE_EMPTY;
         return this.tileGrid[row][column];
     }
 
@@ -69,11 +73,10 @@ export class Terrain extends Entity {
 
     /**
      * Moves an entity by the given delta, resolving against the grid on each axis.
-     * Sets `isOnGround`, `touchedCeiling` and `wallDirection` on the entity.
+     * Sets `isOnGround` and `wallDirection` on the entity.
      */
     moveWithCollision(entity, deltaX, deltaY) {
         entity.isOnGround = false;
-        entity.touchedCeiling = false;
         entity.wallDirection = 0;
 
         entity.x += deltaX;
@@ -141,7 +144,6 @@ export class Terrain extends Entity {
                 if (this.tileAt(column, row) !== TILE_SOLID) continue;
                 entity.y = (row + 1) * TILE_SIZE + entity.halfHeight;
                 entity.velocityY = 0;
-                entity.touchedCeiling = true;
                 return;
             }
         }
@@ -159,49 +161,43 @@ export class Terrain extends Entity {
         this.platformRuns = [];
 
         for (let row = 0; row < this.rowCount; row++) {
-            let solidRunStart = -1;
-            let surfaceRunStart = -1;
-            let platformRunStart = -1;
+            const top = row * TILE_SIZE;
 
-            for (let column = 0; column <= this.columnCount; column++) {
-                const tile = this.tileAt(column, row);
+            this.collectRuns(
+                row,
+                (column) => this.tileAt(column, row) === TILE_SOLID,
+                (x, width) => this.solidPath.rect(x, top, width, TILE_SIZE),
+            );
 
-                const isSolid = tile === TILE_SOLID;
-                if (isSolid && solidRunStart < 0) solidRunStart = column;
-                if (!isSolid && solidRunStart >= 0) {
-                    this.solidPath.rect(
-                        solidRunStart * TILE_SIZE, row * TILE_SIZE,
-                        (column - solidRunStart) * TILE_SIZE, TILE_SIZE,
-                    );
-                    solidRunStart = -1;
-                }
+            // A surface is a solid tile with open sky directly above it.
+            this.collectRuns(
+                row,
+                (column) => this.tileAt(column, row) === TILE_SOLID && !this.tileAt(column, row - 1),
+                (x, width) => this.surfaceRuns.push({ x, y: top, width }),
+            );
 
-                // A surface is a solid tile with open sky directly above it.
-                const isSurface = isSolid && this.tileAt(column, row - 1) === TILE_EMPTY;
-                if (isSurface && surfaceRunStart < 0) surfaceRunStart = column;
-                if (!isSurface && surfaceRunStart >= 0) {
-                    this.surfaceRuns.push({
-                        x: surfaceRunStart * TILE_SIZE,
-                        y: row * TILE_SIZE,
-                        width: (column - surfaceRunStart) * TILE_SIZE,
-                    });
-                    surfaceRunStart = -1;
-                }
-
-                const isPlatform = tile === TILE_PLATFORM;
-                if (isPlatform && platformRunStart < 0) platformRunStart = column;
-                if (!isPlatform && platformRunStart >= 0) {
-                    this.platformRuns.push({
-                        x: platformRunStart * TILE_SIZE,
-                        y: row * TILE_SIZE,
-                        width: (column - platformRunStart) * TILE_SIZE,
-                    });
-                    platformRunStart = -1;
-                }
-            }
+            this.collectRuns(
+                row,
+                (column) => this.tileAt(column, row) === TILE_PLATFORM,
+                (x, width) => this.platformRuns.push({ x, y: top, width }),
+            );
         }
 
         this.buildGrassBlades();
+    }
+
+    /** Scans one row and reports every maximal run of matching tiles, in pixels. */
+    collectRuns(row, matches, emit) {
+        let runStart = -1;
+
+        for (let column = 0; column <= this.columnCount; column++) {
+            if (column < this.columnCount && matches(column)) {
+                if (runStart < 0) runStart = column;
+            } else if (runStart >= 0) {
+                emit(runStart * TILE_SIZE, (column - runStart) * TILE_SIZE);
+                runStart = -1;
+            }
+        }
     }
 
     /**

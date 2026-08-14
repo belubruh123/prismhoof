@@ -7,7 +7,7 @@
 
 import { TILE_SIZE } from '../config.js';
 import { GloomMurk, GloomWisp } from '../entities/gloom.js';
-import { PrismShard, RainbowGate, Thorn } from '../entities/objectives.js';
+import { RainbowGate } from '../entities/objectives.js';
 import { Terrain } from '../entities/terrain.js';
 import { Unicorn } from '../entities/unicorn.js';
 import { ParticleField } from '../engine/particles.js';
@@ -17,8 +17,6 @@ import { parseLevel } from './level-format.js';
 const SPAWN_BUILDERS = new Map([
     ['murk', (world, spawn) => world.addEntity(new GloomMurk(spawn.x, spawn.y))],
     ['wisp', (world, spawn) => world.addEntity(new GloomWisp(spawn.x, spawn.y))],
-    ['thorn', (world, spawn) => world.addEntity(new Thorn(spawn.x, spawn.y))],
-    ['shard', (world, spawn) => world.addEntity(new PrismShard(spawn.x, spawn.y))],
     ['gate', (world, spawn) => world.addEntity(new RainbowGate(spawn.x, spawn.y))],
 ]);
 

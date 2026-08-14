@@ -14,8 +14,7 @@ import { RAINBOW_COLORS } from '../graphics/palette.js';
 import { Entity } from './entity.js';
 
 export const PARTICLE_CIRCLE = 0;
-export const PARTICLE_SPARK = 1;
-export const PARTICLE_STAR = 2;
+export const PARTICLE_STAR = 1;
 
 const POOL_CAPACITY = 280;
 
@@ -72,21 +71,6 @@ export class ParticleField extends Entity {
         return particle;
     }
 
-    /** Spawns `count` particles flung outwards from a point. */
-    burst(x, y, count, { speed = 200, spread = 1, ...options }) {
-        for (let index = 0; index < count; index++) {
-            const angle = randomBetween(0, TAU);
-            const magnitude = randomBetween(speed * (1 - spread * 0.6), speed);
-            this.spawn({
-                ...options,
-                x,
-                y,
-                velocityX: cos(angle) * magnitude,
-                velocityY: sin(angle) * magnitude,
-            });
-        }
-    }
-
     update(elapsedSeconds) {
         super.update(elapsedSeconds);
 
@@ -123,12 +107,6 @@ export class ParticleField extends Entity {
                 context.beginPath();
                 context.arc(particle.x, particle.y, size, 0, TAU);
                 context.fill();
-            } else if (particle.shape === PARTICLE_SPARK) {
-                context.save();
-                context.translate(particle.x, particle.y);
-                context.rotate(Math.atan2(particle.velocityY, particle.velocityX));
-                context.fillRect(-size * 2, -size / 2, size * 4, size);
-                context.restore();
             } else {
                 drawFourPointStar(context, particle.x, particle.y, size, particle.rotation);
             }
@@ -141,9 +119,9 @@ export class ParticleField extends Entity {
 /**
  * A radial burst of rainbow sparkles.
  *
- * Purifying a Gloom, collecting a shard and dying are all the same gesture -
- * something bursts into the colour it was holding - so they share one emitter
- * rather than three copies of the same twenty lines.
+ * Purifying a Gloom, jumping and dying are all the same gesture - something
+ * bursts into the colour it was holding - so they share one emitter rather than
+ * three copies of the same twenty lines.
  */
 export function burstRainbow(particles, x, y, count, {
     speed = 240,

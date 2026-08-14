@@ -38,9 +38,6 @@ export class Entity {
         this.previousY = this.y;
     }
 
-    /** Drawn before every entity's `render`, for things that must sit behind the cast. */
-    renderBackground() {}
-
     render() {}
 
     /** Only ever called in debug builds. */

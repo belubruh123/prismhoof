@@ -192,18 +192,6 @@ export class GloomWisp extends Gloom {
         const context = canvasContext;
         context.translate(this.x, this.y);
 
-        // A short tail of fading afterimages sells the drifting.
-        for (let trail = 3; trail > 0; trail--) {
-            context.globalAlpha = 0.14 * trail;
-            context.fillStyle = palette.gloomRim;
-            context.save();
-            context.translate(-this.velocityX * 0.02 * trail, -this.velocityY * 0.02 * trail);
-            this.traceBlob(context, this.halfWidth * 0.9, this.halfHeight * 0.9, 0.12, 4);
-            context.fill();
-            context.restore();
-        }
-
-        context.globalAlpha = 1;
         context.fillStyle = palette.gloomRim;
         this.traceBlob(context, this.halfWidth + 2.5, this.halfHeight + 2.5, 0.12, 4);
         context.fill();

@@ -9,7 +9,7 @@
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { clamp } from '../core/math.js';
-import { persistSaveData, resetSaveData, saveData } from '../core/storage.js';
+import { persistSaveData, saveData } from '../core/storage.js';
 import { drawRainbowText, drawText } from '../graphics/typography.js';
 import { TEXT_DIM, drawMenu, drawPanel, drawScreenDim } from '../graphics/ui.js';
 import { applyVolumeSettings } from '../audio/audio.js';
@@ -65,7 +65,6 @@ export class SettingsScreen extends MenuScreen {
                 onSelect: () => this.toggleScreenShake(),
                 onAdjust: () => this.toggleScreenShake(),
             },
-            { label: 'ERASE BEST TIME', onSelect: () => resetSaveData() },
             { label: 'BACK', onSelect: () => popScreen() },
         ];
     }
@@ -118,7 +117,7 @@ export class SettingsScreen extends MenuScreen {
             lineHeight: 46,
         });
 
-        drawText('LEFT and RIGHT to change  -  ESC to go back', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 88, {
+        drawText('LEFT / RIGHT to change - ESC to go back', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 88, {
             size: 15,
             weight: 600,
             spacing: 2,

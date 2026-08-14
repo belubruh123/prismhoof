@@ -11,8 +11,6 @@
  *   'G'  the rainbow gate
  *   'M'  a Murk   (ground patroller)
  *   'W'  a Wisp   (drifting chaser)
- *   'T'  a Thorn  (static hazard)
- *   'S'  a prism shard (optional pickup)
  *
  * Writing levels as pictures keeps them readable in the source, and a wall of
  * repeated characters is close to free once the build compresses it.
@@ -36,8 +34,6 @@ const SPAWN_CHARACTERS = new Map([
     ['G', 'gate'],
     ['M', 'murk'],
     ['W', 'wisp'],
-    ['T', 'thorn'],
-    ['S', 'shard'],
 ]);
 
 /**
@@ -91,20 +87,4 @@ export function parseLevel(definition) {
         tileGrid,
         spawns,
     };
-}
-
-/** Serialises a grid back into row strings. Used by the debug level editor. */
-export function formatLevelRows(tileGrid, spawns) {
-    const characterForTile = ['.', '#', '='];
-    const rows = tileGrid.map((tileRow) => tileRow.map((tile) => characterForTile[tile]).join(''));
-
-    for (const spawn of spawns) {
-        const column = Math.floor(spawn.x / TILE_SIZE);
-        const row = Math.floor(spawn.y / TILE_SIZE);
-        const entry = [...SPAWN_CHARACTERS].find(([, type]) => type === spawn.type);
-        if (!entry || !rows[row]) continue;
-        rows[row] = rows[row].slice(0, column) + entry[0] + rows[row].slice(column + 1);
-    }
-
-    return rows;
 }

@@ -89,17 +89,6 @@ export class HairStrand {
             y = nextY;
         }
     }
-
-    /** World-space position of the tip, for spawning sparkles off the mane. */
-    tipPosition(rootX, rootY) {
-        let x = rootX;
-        let y = rootY;
-        for (const angle of this.segmentAngles) {
-            x += cos(angle) * this.segmentLength;
-            y += sin(angle) * this.segmentLength;
-        }
-        return { x, y };
-    }
 }
 
 /** Signed difference between two angles, always taking the short way round. */

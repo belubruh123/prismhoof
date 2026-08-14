@@ -6,7 +6,7 @@
  * from the title, since that is where a confused player actually is.
  */
 
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
+import { CANVAS_WIDTH } from '../config.js';
 import { drawRainbowText, drawText } from '../graphics/typography.js';
 import { TEXT_DIM, drawMenu, drawPanel, drawScreenDim, formatTime } from '../graphics/ui.js';
 import { HowToPlayScreen } from './how-to-play-screen.js';
@@ -56,13 +56,6 @@ export class PauseScreen extends MenuScreen {
             width: 430,
             size: 24,
             lineHeight: 48,
-        });
-
-        drawText('ESC to resume', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 118, {
-            size: 15,
-            weight: 600,
-            spacing: 2,
-            color: TEXT_DIM,
         });
     }
 }

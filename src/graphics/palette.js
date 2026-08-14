@@ -53,9 +53,6 @@ export const GLOOM_BODY = [258, 0.32, 0.11];
 export const GLOOM_RIM = [274, 0.55, 0.34, 0.4];
 export const GLOOM_EYE = [6, 0.9, 0.62, 0.8];
 
-export const THORN = [280, 0.36, 0.24, 0.3];
-export const THORN_TIP = [322, 0.66, 0.6, 0.7];
-
 /** The seven ribbon colours. Never desaturated - this is the theme itself. */
 export const RAINBOW_COLORS = [
     '#ff3b6b',
@@ -130,9 +127,6 @@ export function refreshPalette() {
     palette.gloomBody = restoredColor(GLOOM_BODY);
     palette.gloomRim = restoredColor(GLOOM_RIM);
     palette.gloomEye = restoredColor(GLOOM_EYE);
-
-    palette.thorn = restoredColor(THORN);
-    palette.thornTip = restoredColor(THORN_TIP);
 }
 
 refreshPalette();

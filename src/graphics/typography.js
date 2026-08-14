@@ -78,32 +78,3 @@ export function drawRainbowText(text, x, y, options = {}) {
 
     return drawText(text, x, y, { ...options, color: gradient });
 }
-
-/**
- * Wraps `text` to `maxWidth` and draws it as a paragraph.
- * Returns the y just past the last line, so callers can stack blocks.
- */
-export function drawParagraph(text, x, y, maxWidth, options = {}) {
-    const { size = 18, lineHeight = size * 1.5, align = 'center' } = options;
-
-    const words = text.split(' ');
-    const lines = [];
-    let line = '';
-
-    for (const word of words) {
-        const candidate = line ? `${line} ${word}` : word;
-        if (line && measureText(candidate, size, options.weight || 500, options.spacing || 0) > maxWidth) {
-            lines.push(line);
-            line = word;
-        } else {
-            line = candidate;
-        }
-    }
-    if (line) lines.push(line);
-
-    lines.forEach((lineText, index) => {
-        drawText(lineText, x, y + index * lineHeight, { ...options, size, align });
-    });
-
-    return y + lines.length * lineHeight;
-}

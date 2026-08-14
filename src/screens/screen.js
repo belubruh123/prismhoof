@@ -15,7 +15,7 @@ import {
     MENU_UP_KEYS,
     wasKeyPressed,
 } from '../core/input.js';
-import { playMenuBackSound, playMenuMoveSound, playMenuSelectSound } from '../audio/sfx.js';
+import { playMenuMoveSound, playMenuSelectSound } from '../audio/sfx.js';
 
 export class Screen {
     age = 0;
@@ -96,7 +96,7 @@ export class MenuScreen extends Screen {
         }
 
         if (wasKeyPressed(BACK_KEYS) && this.onBack) {
-            playMenuBackSound();
+            playMenuMoveSound();
             this.onBack();
         }
     }

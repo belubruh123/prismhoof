@@ -6,11 +6,11 @@
  * smaller than storing four more patterns and much easier to keep in tune.
  *
  * Two arrangements share the same loop: the menu plays pad and melody only,
- * and gameplay adds bass, arpeggio and percussion on top. Moving between them
- * is a single number, so the music never has to stop and restart.
+ * and gameplay adds bass and arpeggio on top. Moving between them is a single
+ * number, so the music never has to stop and restart.
  */
 
-import { audioTime, getAudioContext, getMusicBus, getNoiseBuffer, isAudioReady, noteToFrequency } from './audio.js';
+import { audioTime, getAudioContext, getMusicBus, isAudioReady, noteToFrequency } from './audio.js';
 
 const BEATS_PER_MINUTE = 106;
 const STEPS_PER_BEAT = 4;
@@ -30,12 +30,13 @@ const CHORDS = [
 /**
  * The tune, one entry per sixteenth. A note number starts a note, and zero
  * holds whatever came before, so note lengths fall out of the spacing.
+ *
+ * Two bars long against a four-bar chord loop, so the same phrase lands over
+ * two different harmonies and the loop takes twice as long to feel repetitive.
  */
 const MELODY = [
     69, 0, 0, 0, 66, 0, 69, 0, 71, 0, 0, 0, 74, 0, 0, 0,
     73, 0, 0, 0, 71, 0, 0, 0, 69, 0, 71, 0, 73, 0, 0, 0,
-    71, 0, 0, 0, 74, 0, 0, 0, 73, 0, 71, 0, 69, 0, 0, 0,
-    67, 0, 0, 0, 69, 0, 71, 0, 74, 0, 0, 0, 0, 0, 0, 0,
 ];
 
 /** Which sixteenths the bass plays on, within a bar. */
@@ -82,31 +83,10 @@ function playVoice(midiNote, startTime, duration, waveType, volume, attack, filt
     oscillator.stop(startTime + duration + 0.05);
 }
 
-/** A soft noise tick, used for both the kick and the hat. */
-function playPercussion(startTime, isAccent) {
-    const context = getAudioContext();
-
-    const source = context.createBufferSource();
-    source.buffer = getNoiseBuffer();
-
-    const filter = context.createBiquadFilter();
-    filter.type = isAccent ? 'lowpass' : 'highpass';
-    filter.frequency.value = isAccent ? 260 : 6000;
-
-    const envelope = context.createGain();
-    const duration = isAccent ? 0.16 : 0.05;
-    envelope.gain.setValueAtTime(isAccent ? 0.4 : 0.09, startTime);
-    envelope.gain.exponentialRampToValueAtTime(0.0005, startTime + duration);
-
-    source.connect(filter).connect(envelope).connect(getMusicBus());
-    source.start(startTime);
-    source.stop(startTime + duration + 0.02);
-}
-
 /** How long the melody note starting at `step` should ring for. */
 function melodyNoteLength(step) {
     let length = 1;
-    while (length < 8 && !MELODY[(step + length) % LOOP_STEPS]) length++;
+    while (length < 8 && !MELODY[(step + length) % MELODY.length]) length++;
     return length;
 }
 
@@ -122,7 +102,7 @@ function scheduleStep(step, startTime) {
         }
     }
 
-    const melodyNote = MELODY[step];
+    const melodyNote = MELODY[step % MELODY.length];
     if (melodyNote) {
         playVoice(melodyNote, startTime, SECONDS_PER_STEP * melodyNoteLength(step) * 0.95, 'triangle', 0.13, 0.02, 2600);
     }
@@ -140,9 +120,6 @@ function scheduleStep(step, startTime) {
         const interval = chord.intervals[toneIndex % chord.intervals.length];
         playVoice(chord.root + 24 + octave + interval, startTime, SECONDS_PER_STEP * 1.6, 'square', 0.032, 0.005, 3200);
     }
-
-    if (stepInBar % 8 === 0) playPercussion(startTime, true);
-    else if (stepInBar % 4 === 2) playPercussion(startTime, false);
 }
 
 function tick() {

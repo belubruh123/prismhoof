@@ -5,25 +5,37 @@
  * understand and enjoy PRISMHOOF is here: the premise, the goal, the one verb
  * and its three uses, the controls, and the two tips that are hardest to
  * discover by accident. Reachable from the title screen and from the pause menu.
+ *
+ * The left column is a list of (text, style, gap) rows rather than twenty
+ * separate draw calls, which keeps the copy easy to edit and the layout in one
+ * place.
  */
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { BACK_KEYS, CONFIRM_KEYS, wasKeyPressed } from '../core/input.js';
 import { drawRainbowText, drawText } from '../graphics/typography.js';
-import {
-    TEXT_BRIGHT,
-    TEXT_DIM,
-    drawKeyRow,
-    drawPanel,
-    drawScreenDim,
-} from '../graphics/ui.js';
+import { TEXT_BRIGHT, TEXT_DIM, drawKeyRow, drawPanel, drawScreenDim } from '../graphics/ui.js';
 import { Screen, popScreen } from './screen.js';
 
-/** Left column: what the game is. Right column: which keys do it. */
-const USES = [
-    ['ON FLAT GROUND', 'the stream sweeps down and purifies the Gloom'],
-    ['AT THE EDGE OF A DROP', 'it arcs across and becomes a bridge'],
-    ['ON THE WAY UP FROM A JUMP', 'it climbs, and becomes a ramp'],
+const HEADING = { size: 19, weight: 900, spacing: 1.5, align: 'left', color: TEXT_BRIGHT };
+const STRONG = { size: 17, weight: 700, align: 'left', color: TEXT_BRIGHT };
+const BODY = { size: 15, weight: 500, align: 'left', color: TEXT_DIM };
+const TERM = { size: 15, weight: 800, spacing: 1.5, align: 'left', color: TEXT_BRIGHT };
+
+/** [text, style, pixels of space before this line] */
+const STORY = [
+    ['The Gloom drained the colour from the Skyward Meadows.', STRONG, 0],
+    ['You are the last unicorn. Your horn still holds the seven colours.', STRONG, 25],
+    ['HOLD SHIFT AND YOUR HORN POURS A RAINBOW.', HEADING, 44],
+    ['It flies out ahead of you, falls, and hardens where it lands.', BODY, 26],
+    ['ON FLAT GROUND', TERM, 34],
+    ['the stream sweeps down and purifies the Gloom', BODY, 21],
+    ['AT THE EDGE OF A DROP', TERM, 26],
+    ['it arcs across and becomes a bridge', BODY, 21],
+    ['ON THE WAY UP FROM A JUMP', TERM, 26],
+    ['it climbs, and becomes a ramp', BODY, 21],
+    ['Purify every Gloom to open the Rainbow Gate, then run through it.', STRONG, 44],
+    ['The colour returns to the meadow as you clear it.', BODY, 24],
 ];
 
 const CONTROLS = [
@@ -35,6 +47,12 @@ const CONTROLS = [
     [['ESC'], 'PAUSE'],
 ];
 
+const TIPS = [
+    ['PAINT REFILLS ONLY ON SOLID FOOTING.', TEXT_BRIGHT, 800],
+    ['One hit is fatal. Retries are instant,', TEXT_DIM, 500],
+    ['and the run clock never stops.', TEXT_DIM, 500],
+];
+
 export class HowToPlayScreen extends Screen {
     update(elapsedSeconds) {
         super.update(elapsedSeconds);
@@ -44,53 +62,18 @@ export class HowToPlayScreen extends Screen {
     render() {
         drawScreenDim(0.72);
         drawPanel(70, 44, CANVAS_WIDTH - 140, CANVAS_HEIGHT - 118);
-
         drawRainbowText('HOW TO PLAY', CANVAS_WIDTH / 2, 96, { size: 40, weight: 900, spacing: 6 });
 
-        this.renderStory();
-        this.renderControls();
-
-        drawText('ESC  or  ENTER  to go back', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 42, {
-            size: 15,
-            weight: 600,
-            spacing: 2,
-            color: TEXT_DIM,
-        });
-    }
-
-    renderStory() {
-        const left = 122;
         let y = 152;
-
-        drawText('The Gloom drained the colour from the Skyward Meadows.', left, y, {
-            size: 17, weight: 600, align: 'left', color: TEXT_BRIGHT,
-        });
-        drawText('You are the last unicorn, and your horn still holds the seven colours.', left, y += 25, {
-            size: 17, weight: 600, align: 'left', color: TEXT_BRIGHT,
-        });
-
-        y += 42;
-        drawText('HOLD SHIFT AND YOUR HORN POURS A RAINBOW.', left, y, {
-            size: 19, weight: 900, spacing: 1.5, align: 'left', color: TEXT_BRIGHT,
-        });
-        drawText('It flies out ahead of you, falls, and hardens where it lands.', left, y += 26, {
-            size: 16, weight: 500, align: 'left', color: TEXT_DIM,
-        });
-
-        y += 30;
-        for (const [when, what] of USES) {
-            y += 30;
-            drawText(when, left, y, { size: 15, weight: 800, spacing: 1.5, align: 'left', color: TEXT_BRIGHT });
-            drawText(what, left + 12, y + 20, { size: 15, weight: 500, align: 'left', color: TEXT_DIM });
-            y += 20;
+        for (const [text, style, gap] of STORY) {
+            y += gap;
+            drawText(text, style === BODY ? 134 : 122, y, style);
         }
 
-        y += 46;
-        drawText('Purify every Gloom to open the Rainbow Gate, then run through it.', left, y, {
-            size: 16, weight: 700, align: 'left', color: TEXT_BRIGHT,
-        });
-        drawText('The colour returns to the meadow as you clear it.', left, y + 24, {
-            size: 16, weight: 500, align: 'left', color: TEXT_DIM,
+        this.renderControls();
+
+        drawText('ESC or ENTER to go back', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 42, {
+            size: 15, weight: 600, spacing: 2, color: TEXT_DIM,
         });
     }
 
@@ -100,23 +83,16 @@ export class HowToPlayScreen extends Screen {
 
         drawText('CONTROLS', columnX, y, { size: 19, weight: 900, spacing: 3, color: TEXT_BRIGHT });
 
-        y += 16;
         for (const [keys, label] of CONTROLS) {
-            y += 42;
+            y += 58;
             drawKeyRow(keys, columnX, y, 15);
             drawText(label, columnX, y + 26, { size: 14, weight: 600, spacing: 1, color: TEXT_DIM });
-            y += 18;
         }
 
-        y += 38;
-        drawText('PAINT REFILLS ONLY ON SOLID FOOTING.', columnX, y, {
-            size: 14, weight: 800, spacing: 1, color: TEXT_BRIGHT,
-        });
-        drawText('One hit is fatal. Retries are instant,', columnX, y + 26, {
-            size: 14, weight: 500, color: TEXT_DIM,
-        });
-        drawText('and the run clock never stops.', columnX, y + 46, {
-            size: 14, weight: 500, color: TEXT_DIM,
-        });
+        y += 62;
+        for (const [text, color, weight] of TIPS) {
+            drawText(text, columnX, y, { size: 14, weight, spacing: weight > 700 ? 1 : 0, color });
+            y += 24;
+        }
     }
 }

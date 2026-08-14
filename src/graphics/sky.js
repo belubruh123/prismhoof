@@ -11,7 +11,7 @@ import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { createSeededRandom, sin, TAU } from '../core/math.js';
 import { HILL_FAR, HILL_MIDDLE, HILL_NEAR, SUN_GLOW, getColorRestoration, palette, restoredColor } from './palette.js';
-import { fluffTexture, starTexture } from './textures.js';
+import { starTexture } from './textures.js';
 
 /** Horizontal resolution of the hill silhouettes, in screen pixels per step. */
 const HILL_STEP = 22;
@@ -138,16 +138,16 @@ function renderClouds(context, camera, timeSeconds) {
 function drawCloud(context, x, y, scale, seed) {
     const puffCount = 5;
 
-    /** The same silhouette is needed three times, so build it as a path. */
-    const buildPuffPath = (offsetY) => {
-        const path = new Path2D();
+    /** The silhouette is drawn twice, offset, to give the cloud a shaded underside. */
+    const tracePuffs = (offsetY) => {
+        context.beginPath();
         for (let index = 0; index < puffCount; index++) {
             const puffX = (index - (puffCount - 1) / 2) * 44;
             const radius = 30 + sin(seed + index * 2.3) * 12;
-            path.moveTo(puffX + radius, offsetY);
-            path.arc(puffX, offsetY, radius, 0, TAU);
+            context.moveTo(puffX + radius, offsetY);
+            context.arc(puffX, offsetY, radius, 0, TAU);
         }
-        return path;
+        context.fill();
     };
 
     context.save();
@@ -155,17 +155,10 @@ function drawCloud(context, x, y, scale, seed) {
     context.scale(scale, scale);
 
     context.fillStyle = palette.cloudShade;
-    context.fill(buildPuffPath(8));
+    tracePuffs(8);
 
-    const bodyPath = buildPuffPath(0);
     context.fillStyle = palette.cloud;
-    context.fill(bodyPath);
-
-    // Texture, clipped to the cloud, otherwise the pattern tile shows as a box.
-    context.clip(bodyPath);
-    context.globalAlpha = 0.18;
-    context.fillStyle = fluffTexture;
-    context.fillRect(-160, -60, 320, 120);
+    tracePuffs(0);
 
     context.restore();
 }

@@ -37,14 +37,14 @@ import {
 } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { DIVE_KEYS, JUMP_KEYS, MOVE_LEFT_KEYS, MOVE_RIGHT_KEYS, PAINT_KEYS, isKeyDown, wasKeyPressed } from '../core/input.js';
-import { abs, clamp, cos, damp, max, min, PI, randomBetween, sign, sin, TAU } from '../core/math.js';
+import { abs, approach, clamp, damp, max, min, PI, randomBetween, sign } from '../core/math.js';
 import { Entity } from '../engine/entity.js';
 import { burstRainbow, PARTICLE_CIRCLE, PARTICLE_STAR } from '../engine/particles.js';
 import { HairStrand } from '../graphics/hair.js';
 import { RAINBOW_COLORS, UNICORN_COAT } from '../graphics/palette.js';
 import { playDeathSound, playJumpSound, playLandSound, playPaintSound } from '../audio/sfx.js';
 import { RainbowRibbon } from './rainbow-ribbon.js';
-import { buildUnicornPose, drawUnicorn, hornTipPosition, maneStrandRoot } from './unicorn-art.js';
+import { buildUnicornPose, drawUnicorn, hornTipPosition } from './unicorn-art.js';
 
 /** Speed below which the unicorn counts as standing still and starts idling. */
 const IDLE_SPEED_THRESHOLD = 24;
@@ -79,7 +79,6 @@ export class Unicorn extends Entity {
     facing = 1;
 
     isOnGround = false;
-    touchedCeiling = false;
     wallDirection = 0;
     wantsToDropThrough = false;
 
@@ -193,7 +192,7 @@ export class Unicorn extends Entity {
                 : (this.isOnGround ? RUN_ACCELERATION_GROUND : RUN_ACCELERATION_AIR);
 
         const targetVelocityX = moveInput * RUN_MAX_SPEED;
-        this.velocityX = approachValue(this.velocityX, targetVelocityX, acceleration * elapsedSeconds);
+        this.velocityX = approach(this.velocityX, targetVelocityX, acceleration * elapsedSeconds);
 
         this.velocityY = min(this.velocityY + GRAVITY * elapsedSeconds, MAX_FALL_SPEED);
         if (isDiving && !this.isOnGround) {
@@ -490,31 +489,14 @@ export class Unicorn extends Entity {
         this.onDeath?.();
     }
 
-    /** A puff of rainbow sparkles off the mane, used on jumps and purifies. */
+    /** A puff of rainbow sparkles off the unicorn's back, for jumps and wins. */
     emitManeSparkles(count) {
-        const particles = this.world.firstOfCategory('particles');
-        if (!particles) return;
-
-        const pose = this.pose;
-        for (let index = 0; index < count; index++) {
-            const strandIndex = index % this.maneStrands.length;
-            const root = maneStrandRoot(this, pose, strandIndex);
-            const tip = this.maneStrands[strandIndex].tipPosition(root.x, root.y);
-
-            particles.spawn({
-                x: tip.x,
-                y: tip.y,
-                velocityX: randomBetween(-70, 70) - this.velocityX * 0.2,
-                velocityY: randomBetween(-90, 10),
-                gravity: 180,
-                size: randomBetween(3, 6),
-                endSize: 0,
-                lifetime: randomBetween(0.4, 0.9),
-                color: RAINBOW_COLORS[(strandIndex + index) % RAINBOW_COLORS.length],
-                shape: PARTICLE_STAR,
-                spin: randomBetween(-6, 6),
-            });
-        }
+        burstRainbow(this.world.firstOfCategory('particles'), this.x, this.y - 14, count, {
+            speed: 110,
+            gravity: 180,
+            maxSize: 6,
+            lifetime: 0.9,
+        });
     }
 
     render() {
@@ -531,9 +513,3 @@ export class Unicorn extends Entity {
     }
 }
 
-/** Moves `value` towards `target` by at most `maximumStep`, without overshooting. */
-function approachValue(value, target, maximumStep) {
-    const difference = target - value;
-    if (abs(difference) <= maximumStep) return target;
-    return value + sign(difference) * maximumStep;
-}

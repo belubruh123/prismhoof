@@ -1,9 +1,14 @@
 /**
- * The title screen.
+ * The title screen, which doubles as the end-of-run screen.
  *
- * The backdrop is a real level - a flat strip of meadow with a real Unicorn
- * standing on it - rather than a painted mock-up, so the first thing a player
- * sees is the actual character breathing, blinking and flicking its ears.
+ * The backdrop is a real level - a strip of meadow with a real Unicorn standing
+ * in it - rather than a painted mock-up, so the first thing a player sees is
+ * the actual character breathing, blinking and flicking its ears.
+ *
+ * Finishing a run returns here with a `completedRun`, and the tagline is
+ * replaced by the result. Landing back on the title with the meadow in full
+ * colour behind the numbers is a better ending than a separate screen, and it
+ * puts the player one key away from running it again.
  */
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
@@ -12,8 +17,9 @@ import { saveData } from '../core/storage.js';
 import { refreshPalette, setColorRestoration } from '../graphics/palette.js';
 import { renderSky } from '../graphics/sky.js';
 import { drawRainbowText, drawText } from '../graphics/typography.js';
-import { TEXT_BRIGHT, TEXT_DIM, drawDriftingSparkles, drawMenu, formatTime } from '../graphics/ui.js';
+import { TEXT_BRIGHT, TEXT_DIM, drawMenu, formatTime } from '../graphics/ui.js';
 import { buildLevelWorld } from '../levels/build-level.js';
+import { LEVELS } from '../levels/levels.js';
 import { startMusic } from '../audio/music.js';
 import { GameplayScreen } from './gameplay-screen.js';
 import { HowToPlayScreen } from './how-to-play-screen.js';
@@ -30,20 +36,6 @@ import { MenuScreen, pushScreen, resetScreens } from './screen.js';
 const TITLE_SCENE = {
     name: 'TITLE',
     rows: [
-        '............................................',
-        '............................................',
-        '............................................',
-        '............................................',
-        '............................................',
-        '............................................',
-        '............................................',
-        '............................................',
-        '............................................',
-        '............................................',
-        '............................................',
-        '............................................',
-        '............................................',
-        '............................................',
         '..............................P.............',
         '############################################',
         '############################################',
@@ -55,17 +47,18 @@ const TITLE_SCENE = {
 const TITLE_CAMERA_OFFSET = 330;
 
 export class TitleScreen extends MenuScreen {
-    constructor() {
+    /** `completedRun` is `{ seconds, deaths, isBest }` after a finished run. */
+    constructor(completedRun = null) {
         super();
+        this.completedRun = completedRun;
 
         this.scene = buildLevelWorld(TITLE_SCENE);
-        // The title meadow is already saved, so it shows in full colour.
         this.scene.world.camera.target = null;
         this.scene.world.camera.snapTo(this.scene.unicorn.x - TITLE_CAMERA_OFFSET, this.scene.unicorn.y - 60);
 
         this.items = [
             {
-                label: saveData.furthestLevelIndex > 0 ? 'CONTINUE' : 'PLAY',
+                label: completedRun ? 'RUN IT AGAIN' : saveData.furthestLevelIndex ? 'CONTINUE' : 'PLAY',
                 onSelect: () => resetScreens(new GameplayScreen(0)),
             },
             { label: 'HOW TO PLAY', onSelect: () => pushScreen(new HowToPlayScreen()) },
@@ -79,9 +72,14 @@ export class TitleScreen extends MenuScreen {
 
     update(elapsedSeconds) {
         super.update(elapsedSeconds);
+
+        // The title meadow is already saved, so it shows in full colour.
         setColorRestoration(1);
         refreshPalette();
         this.scene.world.update(elapsedSeconds);
+
+        // A steady drizzle of celebration off the mane, but only after a win.
+        if (this.completedRun && this.age % 0.4 < elapsedSeconds) this.scene.unicorn.emitManeSparkles(3);
     }
 
     render() {
@@ -91,22 +89,26 @@ export class TitleScreen extends MenuScreen {
         renderSky(this.scene.world.camera, this.age);
         this.scene.world.render();
 
-        drawDriftingSparkles(this.age, 16, CANVAS_WIDTH, CANVAS_HEIGHT * 0.55);
+        const titleY = 150 + sin(this.age * 1.2) * 4;
+        drawRainbowText('PRISMHOOF', CANVAS_WIDTH / 2, titleY, { size: 92, weight: 900, spacing: 12 });
 
-        const titleY = 168 + sin(this.age * 1.2) * 4;
-        drawRainbowText('PRISMHOOF', CANVAS_WIDTH / 2, titleY, { size: 96, weight: 900, spacing: 12 });
+        if (this.completedRun) this.renderResult(titleY + 70);
+        else {
+            drawText('THE GLOOM TOOK THE COLOUR. TAKE IT BACK.', CANVAS_WIDTH / 2, titleY + 62, {
+                size: 19,
+                weight: 600,
+                spacing: 4,
+                color: TEXT_BRIGHT,
+                shadowOffset: 2,
+            });
+        }
 
-        drawText('THE GLOOM TOOK THE COLOUR. TAKE IT BACK.', CANVAS_WIDTH / 2, titleY + 62, {
-            size: 19,
-            weight: 600,
-            spacing: 4,
-            color: TEXT_BRIGHT,
-            shadowOffset: 2,
+        drawMenu(this.items, this.selectedIndex, CANVAS_WIDTH / 2, this.completedRun ? 468 : 372, {
+            time: this.age,
+            width: 420,
         });
 
-        drawMenu(this.items, this.selectedIndex, CANVAS_WIDTH / 2, 372, { time: this.age, width: 420 });
-
-        if (saveData.bestRunSeconds) {
+        if (saveData.bestRunSeconds && !this.completedRun) {
             drawText(`BEST RUN  ${formatTime(saveData.bestRunSeconds)}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 96, {
                 size: 17,
                 weight: 700,
@@ -116,11 +118,38 @@ export class TitleScreen extends MenuScreen {
             });
         }
 
-        drawText('js13kGames 2026  -  UNICORNS AND RAINBOWS', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30, {
+        drawText('js13kGames 2026 - UNICORNS AND RAINBOWS', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30, {
             size: 14,
             weight: 600,
             spacing: 2,
             color: TEXT_DIM,
         });
+    }
+
+    renderResult(y) {
+        const { seconds, deaths, isBest } = this.completedRun;
+
+        drawText(`THE MEADOW IS BRIGHT AGAIN - ALL ${LEVELS.length} LEVELS CLEARED`, CANVAS_WIDTH / 2, y, {
+            size: 18,
+            weight: 700,
+            spacing: 3,
+            color: TEXT_BRIGHT,
+            shadowOffset: 2,
+        });
+
+        drawText(formatTime(seconds), CANVAS_WIDTH / 2, y + 74, {
+            size: 68,
+            weight: 900,
+            spacing: 3,
+            color: TEXT_BRIGHT,
+            shadowOffset: 3,
+        });
+
+        drawText(
+            `${isBest ? 'NEW BEST RUN' : `BEST ${formatTime(saveData.bestRunSeconds)}`}`
+            + `   -   ${deaths} ${deaths === 1 ? 'fall' : 'falls'}`,
+            CANVAS_WIDTH / 2, y + 126,
+            { size: 16, weight: 800, spacing: 2.5, color: isBest ? TEXT_BRIGHT : TEXT_DIM, shadowOffset: 2 },
+        );
     }
 }

@@ -13,10 +13,6 @@ export function boxesOverlap(first, second) {
         && abs(first.y - second.y) < first.halfHeight + second.halfHeight;
 }
 
-export function boxContainsPoint(box, pointX, pointY) {
-    return abs(box.x - pointX) < box.halfWidth && abs(box.y - pointY) < box.halfHeight;
-}
-
 /**
  * Where segment A->B crosses segment C->D, as a fraction along A->B.
  * Returns -1 when they do not cross.

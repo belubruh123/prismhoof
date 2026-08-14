@@ -24,8 +24,8 @@ import {
 import { buildLevelWorld } from '../levels/build-level.js';
 import { LEVELS } from '../levels/levels.js';
 import { startMusic } from '../audio/music.js';
-import { GameCompleteScreen } from './game-complete-screen.js';
 import { PauseScreen } from './pause-screen.js';
+import { TitleScreen } from './title-screen.js';
 import { Screen, pushScreen, resetScreens } from './screen.js';
 
 /** How long the death burst plays before the level snaps back. */
@@ -132,7 +132,7 @@ export class GameplayScreen extends Screen {
                 saveData.bestRunSeconds = this.runSeconds;
                 persistSaveData();
             }
-            resetScreens(new GameCompleteScreen(this.runSeconds, this.deaths, isBest));
+            resetScreens(new TitleScreen({ seconds: this.runSeconds, deaths: this.deaths, isBest }));
             return;
         }
 
