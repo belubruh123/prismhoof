@@ -44,7 +44,7 @@ const buildContext = await context({
     entryPoints: [resolve(projectRoot, 'src/main.js')],
     bundle: true,
     format: 'iife',
-    target: 'es2020',
+    target: 'es2022',
     define: { DEBUG: 'true' },
     sourcemap: 'inline',
     write: false,

@@ -21,19 +21,24 @@
 import { TILE_SIZE } from '../config.js';
 import { TILE_EMPTY, TILE_PLATFORM, TILE_SOLID } from '../entities/terrain.js';
 
-const TILE_CHARACTERS = {
-    '#': TILE_SOLID,
-    '=': TILE_PLATFORM,
-};
+/**
+ * Maps rather than objects, deliberately: Map keys are values, so the release
+ * build's property mangling cannot rename them out from under a lookup that
+ * comes from level text at runtime.
+ */
+const TILE_CHARACTERS = new Map([
+    ['#', TILE_SOLID],
+    ['=', TILE_PLATFORM],
+]);
 
-const SPAWN_CHARACTERS = {
-    P: 'player',
-    G: 'gate',
-    M: 'murk',
-    W: 'wisp',
-    T: 'thorn',
-    S: 'shard',
-};
+const SPAWN_CHARACTERS = new Map([
+    ['P', 'player'],
+    ['G', 'gate'],
+    ['M', 'murk'],
+    ['W', 'wisp'],
+    ['T', 'thorn'],
+    ['S', 'shard'],
+]);
 
 /**
  * Turns a level definition into a tile grid plus a list of spawn points.
@@ -52,12 +57,12 @@ export function parseLevel(definition) {
         for (let column = 0; column < rowText.length; column++) {
             const character = rowText[column];
 
-            if (TILE_CHARACTERS[character] !== undefined) {
-                tileRow[column] = TILE_CHARACTERS[character];
+            if (TILE_CHARACTERS.has(character)) {
+                tileRow[column] = TILE_CHARACTERS.get(character);
                 continue;
             }
 
-            const spawnType = SPAWN_CHARACTERS[character];
+            const spawnType = SPAWN_CHARACTERS.get(character);
             if (spawnType) {
                 spawns.push({
                     type: spawnType,
@@ -86,9 +91,9 @@ export function formatLevelRows(tileGrid, spawns) {
     for (const spawn of spawns) {
         const column = Math.floor(spawn.x / TILE_SIZE);
         const row = Math.floor(spawn.y / TILE_SIZE);
-        const character = Object.keys(SPAWN_CHARACTERS).find((key) => SPAWN_CHARACTERS[key] === spawn.type);
-        if (!character || !rows[row]) continue;
-        rows[row] = rows[row].slice(0, column) + character + rows[row].slice(column + 1);
+        const entry = [...SPAWN_CHARACTERS].find(([, type]) => type === spawn.type);
+        if (!entry || !rows[row]) continue;
+        rows[row] = rows[row].slice(0, column) + entry[0] + rows[row].slice(column + 1);
     }
 
     return rows;

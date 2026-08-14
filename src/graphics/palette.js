@@ -8,6 +8,10 @@
  *
  * The unicorn's mane and the rainbow ribbon are deliberately excluded from this
  * and stay vivid at all times: you are the only colour left in the world.
+ *
+ * Colours are read as `palette.skyTop` and written by name in `refreshPalette`,
+ * rather than looked up through a string key, so that the release build is free
+ * to mangle these property names.
  */
 
 import { clamp, lerp } from '../core/math.js';
@@ -21,38 +25,36 @@ const GLOOM_FLATTENING = 0.55;
 const GLOOM_DARKENING = 0.72;
 
 /**
- * [hue, saturation, lightness, gloomResistance] at full restoration.
+ * Colour definitions: [hue, saturation, lightness, gloomResistance].
  *
  * `gloomResistance` (default 0) is how much a colour ignores the Gloom. Lit
  * edges resist, because a level begins fully drained and the player still has to
  * be able to read where the platforms are. Everything the player does not need
  * to stand on is free to disappear into the dusk.
  */
-const COLOR_DEFINITIONS = {
-    skyTop: [248, 0.62, 0.4],
-    skyMiddle: [306, 0.66, 0.6],
-    skyBottom: [38, 0.94, 0.7],
-    sunGlow: [45, 1, 0.72],
+export const SKY_TOP = [248, 0.62, 0.4];
+export const SKY_MIDDLE = [306, 0.66, 0.6];
+export const SKY_BOTTOM = [38, 0.94, 0.7];
+export const SUN_GLOW = [45, 1, 0.72];
 
-    hillFar: [286, 0.46, 0.52],
-    hillMiddle: [270, 0.44, 0.38],
-    hillNear: [258, 0.46, 0.25],
+export const HILL_FAR = [286, 0.46, 0.52];
+export const HILL_MIDDLE = [270, 0.44, 0.38];
+export const HILL_NEAR = [258, 0.46, 0.25];
 
-    cloud: [322, 0.85, 0.88, 0.2],
-    cloudShade: [312, 0.56, 0.74, 0.15],
+export const CLOUD = [322, 0.85, 0.88, 0.2];
+export const CLOUD_SHADE = [312, 0.56, 0.74, 0.15];
 
-    terrainBody: [266, 0.36, 0.21],
-    terrainShade: [268, 0.46, 0.11],
-    terrainGrass: [148, 0.56, 0.4, 0.3],
-    terrainGrassLight: [126, 0.68, 0.57, 0.5],
+export const TERRAIN_BODY = [266, 0.36, 0.21];
+export const TERRAIN_SHADE = [268, 0.46, 0.11];
+export const TERRAIN_GRASS = [148, 0.56, 0.4, 0.3];
+export const TERRAIN_GRASS_LIGHT = [126, 0.68, 0.57, 0.5];
 
-    gloomBody: [258, 0.32, 0.11],
-    gloomRim: [274, 0.55, 0.34, 0.4],
-    gloomEye: [6, 0.9, 0.62, 0.8],
+export const GLOOM_BODY = [258, 0.32, 0.11];
+export const GLOOM_RIM = [274, 0.55, 0.34, 0.4];
+export const GLOOM_EYE = [6, 0.9, 0.62, 0.8];
 
-    thorn: [280, 0.36, 0.24, 0.3],
-    thornTip: [322, 0.66, 0.6, 0.7],
-};
+export const THORN = [280, 0.36, 0.24, 0.3];
+export const THORN_TIP = [322, 0.66, 0.6, 0.7];
 
 /** The seven ribbon colours. Never desaturated - this is the theme itself. */
 export const RAINBOW_COLORS = [
@@ -87,15 +89,21 @@ export function setColorRestoration(value) {
 
 /** Shortest-arc hue interpolation, so violet-to-green does not sweep through red. */
 function mixHue(from, to, amount) {
-    let difference = ((to - from + 540) % 360) - 180;
+    const difference = ((to - from + 540) % 360) - 180;
     return from + difference * amount;
 }
 
+export function hsl(hue, saturation, lightness, alpha = 1) {
+    return `hsl(${hue} ${saturation * 100}% ${lightness * 100}%${alpha < 1 ? ` / ${alpha}` : ''})`;
+}
+
 /** Applies the current restoration level to one colour definition. */
-function restore([hue, saturation, lightness, gloomResistance = 0], alpha) {
+export function restoredColor([hue, saturation, lightness, gloomResistance = 0], alpha) {
     const amount = lerp(colorRestoration, 1, gloomResistance);
+
     const mixedHue = mixHue(GLOOM_HUE, hue, amount);
     const mixedSaturation = lerp(saturation * GLOOM_SATURATION_FACTOR, saturation, amount);
+
     // Gloomy colours also flatten towards a single mid tone and then darken.
     // Desaturation on its own still looks contrasty, and contrast reads as healthy.
     const gloomLightness = lerp(lightness, GLOOM_LIGHTNESS, GLOOM_FLATTENING) * GLOOM_DARKENING;
@@ -104,20 +112,27 @@ function restore([hue, saturation, lightness, gloomResistance = 0], alpha) {
     return hsl(mixedHue, mixedSaturation, mixedLightness, alpha);
 }
 
-export function hsl(hue, saturation, lightness, alpha = 1) {
-    return `hsl(${hue} ${saturation * 100}% ${lightness * 100}%${alpha < 1 ? ` / ${alpha}` : ''})`;
-}
-
 /** Rebuilds every palette string. Called once per frame, never per draw call. */
 export function refreshPalette() {
-    for (const name in COLOR_DEFINITIONS) {
-        palette[name] = restore(COLOR_DEFINITIONS[name]);
-    }
-}
+    palette.skyTop = restoredColor(SKY_TOP);
+    palette.skyMiddle = restoredColor(SKY_MIDDLE);
+    palette.skyBottom = restoredColor(SKY_BOTTOM);
+    palette.sunGlow = restoredColor(SUN_GLOW);
 
-/** A palette colour at a given opacity. */
-export function paletteWithAlpha(name, alpha) {
-    return restore(COLOR_DEFINITIONS[name], alpha);
+    palette.cloud = restoredColor(CLOUD);
+    palette.cloudShade = restoredColor(CLOUD_SHADE);
+
+    palette.terrainBody = restoredColor(TERRAIN_BODY);
+    palette.terrainShade = restoredColor(TERRAIN_SHADE);
+    palette.terrainGrass = restoredColor(TERRAIN_GRASS);
+    palette.terrainGrassLight = restoredColor(TERRAIN_GRASS_LIGHT);
+
+    palette.gloomBody = restoredColor(GLOOM_BODY);
+    palette.gloomRim = restoredColor(GLOOM_RIM);
+    palette.gloomEye = restoredColor(GLOOM_EYE);
+
+    palette.thorn = restoredColor(THORN);
+    palette.thornTip = restoredColor(THORN_TIP);
 }
 
 refreshPalette();

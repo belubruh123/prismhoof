@@ -40,6 +40,7 @@ Requires Node 20+.
 ```sh
 make install     # npm install (4 dev dependencies)
 make dev         # watch + serve the debug build on http://localhost:8013
+make verify      # fully squeezed but with DEBUG on -> build/verify.html
 make build       # minified, Roadroller-packed build/index.html
 make zip         # build/game.zip, checked against the 13312 byte limit
 make all         # build + zip
@@ -59,12 +60,19 @@ size — full descriptive identifiers, one concept per file, no abbreviations.
 
 1. **esbuild** bundles the ES modules into one IIFE, with `DEBUG` as a compile-time
    constant so every debug branch is eliminated rather than shipped.
-2. **terser** compresses and mangles.
+2. **terser** compresses and mangles, including our own property names.
 3. **Roadroller** packs the result into a self-extracting payload.
 4. The packed script and the minified CSS are inlined into `src/index.html`.
 
 It also prints a per-module byte table on every build, so the size budget stays visible
 while the game is being written rather than becoming a crisis at the end.
+
+Property mangling is worth about 8% of the final zip, and it only stays safe because the
+source never reaches a property through a string built at runtime — the palette assigns
+its colours by name and the level character table is a `Map`. `make verify` exists for
+exactly this: it applies the full release squeeze with `DEBUG` still on, so a mangled
+build can be driven by the debug hooks. A debug build cannot catch a mangling bug and a
+release build cannot be driven, so neither one alone is enough.
 
 ## Layout
 

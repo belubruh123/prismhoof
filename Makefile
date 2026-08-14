@@ -1,4 +1,4 @@
-.PHONY: all install dev debug build zip clean
+.PHONY: all install dev debug verify build zip clean
 
 all: build zip
 
@@ -12,6 +12,11 @@ dev:
 # One-off unminified build with DEBUG on -> build/debug.html
 debug:
 	npm run build:debug
+
+# Fully minified and mangled, but with DEBUG on -> build/verify.html.
+# The only build that can catch a property-mangling bug.
+verify:
+	npm run build:verify
 
 # Minified, packed release build -> build/index.html
 build:

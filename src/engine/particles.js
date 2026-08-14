@@ -19,6 +19,7 @@ export const PARTICLE_STAR = 2;
 const POOL_CAPACITY = 280;
 
 export class ParticleField extends Entity {
+    categories = ['particles'];
     layer = LAYER_PARTICLE;
 
     particles = [];

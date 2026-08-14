@@ -12,7 +12,13 @@
  * Usage:
  *   node tools/build.mjs             release  -> build/index.html
  *   node tools/build.mjs --debug     readable -> build/debug.html (DEBUG = true)
+ *   node tools/build.mjs --verify    both     -> build/verify.html
  *   node tools/build.mjs --opt=2     slower, thorough Roadroller search
+ *
+ * `--verify` is the safety net for property mangling: it applies the full
+ * release squeeze but leaves DEBUG on, so the debug hooks can drive a mangled
+ * build and prove that nothing broke. A plain debug build cannot catch mangling
+ * bugs, and a plain release build cannot be driven.
  */
 
 import { build } from 'esbuild';
@@ -26,8 +32,16 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SIZE_LIMIT = 13312;
 
+/**
+ * Property names the mangler must leave alone, beyond the JS and DOM builtins
+ * it already protects. Add a name here the moment anything reaches a property
+ * through a string that terser cannot see.
+ */
+const MANGLE_RESERVED = [];
+
 const commandLineArguments = process.argv.slice(2);
 const isDebugBuild = commandLineArguments.includes('--debug');
+const isVerifyBuild = commandLineArguments.includes('--verify');
 const optimizeLevelArgument = commandLineArguments.find((argument) => argument.startsWith('--opt='));
 const roadrollerOptimizeLevel = optimizeLevelArgument ? Number(optimizeLevelArgument.split('=')[1]) : 1;
 
@@ -37,7 +51,7 @@ export async function bundleGameScript({ debug }) {
         entryPoints: [resolve(projectRoot, 'src/main.js')],
         bundle: true,
         format: 'iife',
-        target: 'es2020',
+        target: 'es2022',
         // `DEBUG` is a compile-time constant, so `if (DEBUG)` blocks are removed
         // entirely from the release bundle rather than shipped and skipped.
         define: { DEBUG: String(Boolean(debug)) },
@@ -62,7 +76,7 @@ async function printModuleSizeTable() {
         entryPoints: [resolve(projectRoot, 'src/main.js')],
         bundle: true,
         format: 'iife',
-        target: 'es2020',
+        target: 'es2022',
         define: { DEBUG: 'false' },
         minify: true,
         write: false,
@@ -89,7 +103,7 @@ async function printModuleSizeTable() {
 /** Runs terser with the aggressive settings that are safe for this codebase. */
 async function compressGameScript(code) {
     const result = await minify(code, {
-        ecma: 2020,
+        ecma: 2022,
         module: false,
         toplevel: true,
         compress: {
@@ -103,9 +117,19 @@ async function compressGameScript(code) {
             pure_getters: true,
             hoist_funs: true,
         },
-        // Property mangling stays off: it is the classic source of silent breakage.
-        // If the budget ever demands it, add `properties` here with a reserved list.
-        mangle: { toplevel: true },
+        mangle: {
+            toplevel: true,
+            // Renaming our own property names is worth around 8% of the final
+            // zip. `builtins: false` is what makes it safe: terser then refuses
+            // to touch any name it knows belongs to a JS or DOM API, so
+            // `fillStyle`, `lineWidth`, `code` and friends survive.
+            //
+            // The source has to hold up its end of the bargain: nothing may look
+            // a property up through a string built at runtime. The two places
+            // that used to - the palette and the level character table - were
+            // rewritten to use static access and Maps respectively.
+            properties: { builtins: false, reserved: MANGLE_RESERVED },
+        },
         format: { comments: false },
     });
 
@@ -134,7 +158,7 @@ async function packGameScript(code) {
 async function main() {
     const startedAt = Date.now();
 
-    const { code: bundledCode } = await bundleGameScript({ debug: isDebugBuild });
+    const { code: bundledCode } = await bundleGameScript({ debug: isDebugBuild || isVerifyBuild });
     if (!isDebugBuild) await printModuleSizeTable();
 
     const rawCss = await readFile(resolve(projectRoot, 'src/style.css'), 'utf8');
@@ -164,12 +188,16 @@ async function main() {
         html = html.replace(/\n\s*/g, '\n').trim();
     }
 
-    const outputPath = resolve(projectRoot, isDebugBuild ? 'build/debug.html' : 'build/index.html');
+    const outputPath = resolve(
+        projectRoot,
+        isDebugBuild ? 'build/debug.html' : isVerifyBuild ? 'build/verify.html' : 'build/index.html',
+    );
     await mkdir(dirname(outputPath), { recursive: true });
     await writeFile(outputPath, html);
 
     const htmlBytes = Buffer.byteLength(html);
-    console.log(`\n  ${isDebugBuild ? 'debug' : 'release'} html: ${htmlBytes} bytes` +
+    const buildName = isDebugBuild ? 'debug' : isVerifyBuild ? 'verify' : 'release';
+    console.log(`\n  ${buildName} html: ${htmlBytes} bytes` +
         (isDebugBuild ? '' : `  (${(htmlBytes / SIZE_LIMIT * 100).toFixed(1)}% of the ${SIZE_LIMIT} byte limit, before zip)`));
     console.log(`  written to ${outputPath.replace(projectRoot + '/', '')} in ${Date.now() - startedAt}ms\n`);
 }

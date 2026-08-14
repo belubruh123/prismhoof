@@ -3,7 +3,7 @@
  * calls thousands of times per frame.
  */
 
-export const { abs, min, max, sin, cos, atan2, hypot, floor, ceil, round, sqrt, sign, pow, random, PI } = Math;
+export const { abs, min, max, sin, cos, acos, atan2, hypot, floor, ceil, round, sqrt, sign, pow, random, PI } = Math;
 
 export const TAU = PI * 2;
 

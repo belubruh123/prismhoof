@@ -33,8 +33,8 @@ export const MAX_FALL_SPEED = 1150;
 // The unicorn
 // ---------------------------------------------------------------------------
 
-export const UNICORN_HALF_WIDTH = 15;
-export const UNICORN_HALF_HEIGHT = 21;
+export const UNICORN_HALF_WIDTH = 14;
+export const UNICORN_HALF_HEIGHT = 22;
 
 export const RUN_MAX_SPEED = 345;
 export const RUN_ACCELERATION_GROUND = 2700;

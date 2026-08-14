@@ -10,16 +10,16 @@
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { createSeededRandom, sin, TAU } from '../core/math.js';
-import { getColorRestoration, palette, paletteWithAlpha } from './palette.js';
+import { HILL_FAR, HILL_MIDDLE, HILL_NEAR, SUN_GLOW, getColorRestoration, palette, restoredColor } from './palette.js';
 import { fluffTexture, starTexture } from './textures.js';
 
 /** Horizontal resolution of the hill silhouettes, in screen pixels per step. */
 const HILL_STEP = 22;
 
 const HILL_LAYERS = [
-    { colorName: 'hillFar', parallax: 0.06, baseRatio: 0.62, amplitude: 34, frequency: 0.0016, phase: 0 },
-    { colorName: 'hillMiddle', parallax: 0.14, baseRatio: 0.74, amplitude: 48, frequency: 0.0023, phase: 2.1 },
-    { colorName: 'hillNear', parallax: 0.28, baseRatio: 0.88, amplitude: 62, frequency: 0.0031, phase: 4.7 },
+    { color: HILL_FAR, parallax: 0.06, baseRatio: 0.62, amplitude: 34, frequency: 0.0016, phase: 0 },
+    { color: HILL_MIDDLE, parallax: 0.14, baseRatio: 0.74, amplitude: 48, frequency: 0.0023, phase: 2.1 },
+    { color: HILL_NEAR, parallax: 0.28, baseRatio: 0.88, amplitude: 62, frequency: 0.0031, phase: 4.7 },
 ];
 
 /** Fixed cloud layout, generated once so the sky is stable across frames. */
@@ -87,7 +87,7 @@ function renderSun(context, camera, timeSeconds) {
     const radius = 54 + sin(timeSeconds * 0.8) * 2;
 
     const glow = context.createRadialGradient(x, y, radius * 0.4, x, y, radius * 5);
-    glow.addColorStop(0, paletteWithAlpha('sunGlow', 0.5));
+    glow.addColorStop(0, restoredColor(SUN_GLOW, 0.5));
     glow.addColorStop(1, 'transparent');
     context.fillStyle = glow;
     context.fillRect(x - radius * 5, y - radius * 5, radius * 10, radius * 10);
@@ -98,12 +98,12 @@ function renderSun(context, camera, timeSeconds) {
     context.fill();
 }
 
-function renderHillLayer(context, camera, { colorName, parallax, baseRatio, amplitude, frequency, phase }) {
+function renderHillLayer(context, camera, { color, parallax, baseRatio, amplitude, frequency, phase }) {
     const offsetX = camera.x * parallax;
     const offsetY = camera.y * parallax * 0.4;
     const baseY = CANVAS_HEIGHT * baseRatio - offsetY;
 
-    context.fillStyle = palette[colorName];
+    context.fillStyle = restoredColor(color);
     context.beginPath();
     context.moveTo(-HILL_STEP, CANVAS_HEIGHT);
 

@@ -15,7 +15,7 @@ import { LAYER_TERRAIN, TILE_SIZE } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { createSeededRandom, floor, max, min } from '../core/math.js';
 import { Entity } from '../engine/entity.js';
-import { palette, paletteWithAlpha } from '../graphics/palette.js';
+import { TERRAIN_GRASS, palette, restoredColor } from '../graphics/palette.js';
 import { grainTexture } from '../graphics/textures.js';
 
 export const TILE_EMPTY = 0;
@@ -31,6 +31,7 @@ const DEPTH_SHADE_HEIGHT = 96;
 const GRASS_CAP_HEIGHT = 9;
 
 export class Terrain extends Entity {
+    categories = ['terrain'];
     layer = LAYER_TERRAIN;
 
     constructor(tileGrid) {
@@ -254,7 +255,7 @@ export class Terrain extends Entity {
     /** A lit band just under each surface fading into the dark interior. */
     renderDepthShading(context, camera) {
         const gradient = context.createLinearGradient(0, 0, 0, DEPTH_SHADE_HEIGHT);
-        gradient.addColorStop(0, paletteWithAlpha('terrainGrass', 0.28));
+        gradient.addColorStop(0, restoredColor(TERRAIN_GRASS, 0.28));
         gradient.addColorStop(0.25, 'transparent');
         gradient.addColorStop(1, palette.terrainShade);
 

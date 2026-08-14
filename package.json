@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node tools/dev.mjs",
     "build:debug": "node tools/build.mjs --debug",
+    "build:verify": "node tools/build.mjs --verify",
     "build": "node tools/build.mjs",
     "zip": "node tools/zip.mjs",
     "release": "node tools/build.mjs && node tools/zip.mjs"
