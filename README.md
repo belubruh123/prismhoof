@@ -12,14 +12,21 @@ single canvas with no image, audio or font assets.
 
 ## The mechanic
 
-**One verb, two uses.** Hold the paint key and your horn trails a **solid rainbow ribbon**
-along your flight path. Land on your own arcs to climb — you are drawing the level under
-yourself mid-jump. That same freshly painted ribbon **purifies any Gloom it touches**, so
+**One verb, two uses.** Hold the paint key and your horn hoses out a rainbow. The bright
+head of the stream flies forward, falls under its own gravity, and lays a **solid rainbow
+bridge** behind it until it splashes against the scenery. Jump onto what you just made and
+run across. That same flowing stream **purifies any Gloom it passes through**, so
 traversal and combat are the same action.
 
 Paint is a limited meter that refills when your hooves are on something solid, so every
 level is a question of *where* to spend your arcs. Purify all the Gloom and the Rainbow
 Gate opens. As the Gloom clears, the color bleeds back into the world.
+
+> The stream fires *ahead* of the unicorn rather than trailing behind it, and that is a
+> mechanical necessity rather than a flourish. A ribbon emitted at the horn sits
+> permanently above the hooves, so a unicorn could never land on an arc it painted during
+> the same jump and the core loop would never close. A head that outruns the unicorn and
+> falls lays the ramp ahead and below, where it can actually be used.
 
 ## Controls
 

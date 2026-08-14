@@ -18,6 +18,16 @@ import {
     JUMP_VELOCITY,
     LAYER_UNICORN,
     MAX_FALL_SPEED,
+    MAX_LIVE_RIBBONS,
+    PAINT_DRAIN_PER_SECOND,
+    PAINT_HEAD_INHERITANCE_X,
+    PAINT_HEAD_INHERITANCE_Y,
+    PAINT_HEAD_LIFT,
+    PAINT_HEAD_SPEED,
+    PAINT_MINIMUM_TO_START,
+    PAINT_REFILL_DELAY_SECONDS,
+    PAINT_REFILL_PER_SECOND,
+    RIBBON_SNAP_DISTANCE,
     RUN_ACCELERATION_AIR,
     RUN_ACCELERATION_GROUND,
     RUN_MAX_SPEED,
@@ -26,13 +36,14 @@ import {
     UNICORN_HALF_WIDTH,
 } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
-import { DIVE_KEYS, JUMP_KEYS, MOVE_LEFT_KEYS, MOVE_RIGHT_KEYS, isKeyDown, wasKeyPressed } from '../core/input.js';
-import { abs, clamp, damp, min, PI, randomBetween, sign } from '../core/math.js';
+import { DIVE_KEYS, JUMP_KEYS, MOVE_LEFT_KEYS, MOVE_RIGHT_KEYS, PAINT_KEYS, isKeyDown, wasKeyPressed } from '../core/input.js';
+import { abs, clamp, damp, max, min, PI, randomBetween, sign } from '../core/math.js';
 import { Entity } from '../engine/entity.js';
 import { PARTICLE_CIRCLE, PARTICLE_STAR } from '../engine/particles.js';
 import { HairStrand } from '../graphics/hair.js';
 import { RAINBOW_COLORS, UNICORN_COAT } from '../graphics/palette.js';
-import { buildUnicornPose, drawUnicorn, maneStrandRoot } from './unicorn-art.js';
+import { RainbowRibbon } from './rainbow-ribbon.js';
+import { buildUnicornPose, drawUnicorn, hornTipPosition, maneStrandRoot } from './unicorn-art.js';
 
 /** Speed below which the unicorn counts as standing still and starts idling. */
 const IDLE_SPEED_THRESHOLD = 24;
@@ -98,6 +109,14 @@ export class Unicorn extends Entity {
     isPainting = false;
     isDead = false;
 
+    /** Paint left in the horn, 0..1. Also what the HUD meter reads. */
+    paintEnergy = 1;
+    /** The ribbon currently being drawn, or null. */
+    activeRibbon = null;
+    secondsSincePainting = 9;
+    /** The ribbon being stood on, which earns a downward snap next frame. */
+    ribbonUnderfoot = null;
+
     /** Downward speed captured just before a collision zeroed it, for landing impact. */
     impactSpeed = 0;
 
@@ -138,6 +157,7 @@ export class Unicorn extends Entity {
         }
 
         this.updateAnimation(elapsedSeconds);
+        this.updatePainting(elapsedSeconds);
     }
 
     // --- physics ------------------------------------------------------------
@@ -217,8 +237,46 @@ export class Unicorn extends Entity {
         }
     }
 
-    /** Overridden once ribbons exist; kept here so the physics reads in one place. */
-    landOnRibbons() {}
+    /**
+     * Ribbons are one-way floors. Only a downward-moving foot can catch one, so
+     * the unicorn always passes up through its own paint and lands on it coming
+     * back down.
+     */
+    landOnRibbons() {
+        if (this.isOnGround || this.velocityY < 0) {
+            this.ribbonUnderfoot = null;
+            return;
+        }
+
+        // Reach further down when already standing on a ribbon, otherwise
+        // running down a curving arc steps off it and re-lands every few frames.
+        const probeDepth = this.ribbonUnderfoot ? RIBBON_SNAP_DISTANCE : 0;
+
+        const fromX = this.previousX;
+        const fromY = this.previousY + this.halfHeight;
+        const toX = this.x;
+        const toY = this.y + this.halfHeight + probeDepth;
+
+        let highestLandingY = null;
+        let landedOn = null;
+
+        for (const ribbon of this.world.entitiesOfCategory('ribbon')) {
+            const landingY = ribbon.findLandingY(fromX, fromY, toX, toY);
+            if (landingY === null) continue;
+            if (highestLandingY === null || landingY < highestLandingY) {
+                highestLandingY = landingY;
+                landedOn = ribbon;
+            }
+        }
+
+        this.ribbonUnderfoot = landedOn;
+
+        if (landedOn) {
+            this.y = highestLandingY - this.halfHeight;
+            this.velocityY = 0;
+            this.isOnGround = true;
+        }
+    }
 
     land() {
         const impact = clamp(this.impactSpeed / HARD_LANDING_SPEED, 0, 1);
@@ -267,6 +325,10 @@ export class Unicorn extends Entity {
 
         this.updateFace(elapsedSeconds);
         this.updateHair(elapsedSeconds);
+
+        // Built once here rather than again in render, because the paint code
+        // needs the horn tip and the horn tip comes out of the pose.
+        this.pose = buildUnicornPose(this);
     }
 
     updateFace(elapsedSeconds) {
@@ -305,12 +367,95 @@ export class Unicorn extends Entity {
         }
     }
 
+    // --- painting -----------------------------------------------------------
+
+    updatePainting(elapsedSeconds) {
+        // A stroke already running may drain to nothing; starting a fresh one
+        // needs a real amount of paint in the horn.
+        const energyNeeded = this.activeRibbon ? 0 : PAINT_MINIMUM_TO_START;
+        const wantsToPaint = !this.isDead && this.paintEnergy > energyNeeded && isKeyDown(PAINT_KEYS);
+
+        if (wantsToPaint) {
+            this.paintEnergy = max(0, this.paintEnergy - PAINT_DRAIN_PER_SECOND * elapsedSeconds);
+            this.secondsSincePainting = 0;
+
+            if (!this.activeRibbon) this.beginRibbon();
+
+            const terrain = this.world.firstOfCategory('terrain');
+            const stillFlowing = this.activeRibbon.advanceHead(elapsedSeconds, terrain);
+
+            this.emitPaintSparkle(this.activeRibbon.headX, this.activeRibbon.headY);
+
+            // The stream ends itself when it lands or runs out of length, so a
+            // held key does not keep burning paint into a finished ribbon.
+            if (!stillFlowing) this.endRibbon();
+        } else if (this.activeRibbon) {
+            this.endRibbon();
+        }
+
+        this.isPainting = Boolean(this.activeRibbon);
+
+        if (!this.isPainting) {
+            this.secondsSincePainting += elapsedSeconds;
+
+            // Refilling only on solid footing is what forces a choice about
+            // where in a level the paint is worth spending.
+            if (this.isOnGround && this.secondsSincePainting > PAINT_REFILL_DELAY_SECONDS) {
+                this.paintEnergy = min(1, this.paintEnergy + PAINT_REFILL_PER_SECOND * elapsedSeconds);
+            }
+        }
+    }
+
+    beginRibbon() {
+        const liveRibbons = this.world.entitiesOfCategory('ribbon').filter((ribbon) => !ribbon.isDissolving);
+
+        // Bounding the number of live ribbons bounds the collision work, and
+        // keeps a level from turning into an unreadable tangle of rainbows.
+        if (liveRibbons.length >= MAX_LIVE_RIBBONS) liveRibbons[0].dissolveNow();
+
+        const hornTip = hornTipPosition(this, this.pose);
+
+        this.activeRibbon = this.world.addEntity(new RainbowRibbon(
+            hornTip.x,
+            hornTip.y,
+            this.facing * PAINT_HEAD_SPEED + this.velocityX * PAINT_HEAD_INHERITANCE_X,
+            PAINT_HEAD_LIFT + this.velocityY * PAINT_HEAD_INHERITANCE_Y,
+        ));
+
+        this.hornColorIndex = (this.hornColorIndex + 1) % RAINBOW_COLORS.length;
+        this.onPaintStart?.();
+    }
+
+    endRibbon() {
+        this.activeRibbon.finishPainting();
+        this.activeRibbon = null;
+    }
+
+    emitPaintSparkle(x, y) {
+        const particles = this.world.firstOfCategory('particles');
+        if (!particles) return;
+
+        particles.spawn({
+            x,
+            y,
+            velocityX: randomBetween(-45, 45),
+            velocityY: randomBetween(-55, 15),
+            gravity: 90,
+            size: randomBetween(2.5, 5),
+            endSize: 0,
+            lifetime: randomBetween(0.3, 0.7),
+            color: RAINBOW_COLORS[this.hornColorIndex],
+            shape: PARTICLE_STAR,
+            spin: randomBetween(-7, 7),
+        });
+    }
+
     /** A puff of rainbow sparkles off the mane, used on jumps and purifies. */
     emitManeSparkles(count) {
         const particles = this.world.firstOfCategory('particles');
         if (!particles) return;
 
-        const pose = buildUnicornPose(this);
+        const pose = this.pose;
         for (let index = 0; index < count; index++) {
             const strandIndex = index % this.maneStrands.length;
             const root = maneStrandRoot(this, pose, strandIndex);
@@ -333,7 +478,7 @@ export class Unicorn extends Entity {
     }
 
     render() {
-        drawUnicorn(this, buildUnicornPose(this));
+        drawUnicorn(this, this.pose || buildUnicornPose(this));
     }
 
     renderDebug() {

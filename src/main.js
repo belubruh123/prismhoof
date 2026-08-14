@@ -27,16 +27,16 @@ const sandboxLevel = parseLevel({
         '..........................................',
         '..........................................',
         '..........................................',
-        '..................====....................',
         '..........................................',
-        '...........===............................',
+        '..........................................',
+        '..........................................',
         '..........................................',
         '..P.......................................',
         '..........................................',
-        '............................###...........',
-        '............................###...........',
-        '##########################################',
-        '##########################################',
+        '..........................................',
+        '..........................................',
+        '############..........####################',
+        '############..........####################',
     ],
 });
 
@@ -65,6 +65,8 @@ const debugOptions = new URLSearchParams(location.hash.slice(1));
 const pinnedRestoration = parseFloat(debugOptions.get('r'));
 
 let elapsedTotal = 0;
+/** Counts frames spent standing on a ribbon, so one screenshot proves it works. */
+let framesOnRibbon = 0;
 
 if (DEBUG) {
     for (const code of (debugOptions.get('hold') || '').split(',').filter(Boolean)) {
@@ -72,14 +74,26 @@ if (DEBUG) {
     }
 
     const warmUpSteps = parseInt(debugOptions.get('warm')) || 0;
-    const jumpAtStep = parseInt(debugOptions.get('jumpAt'));
+
+    // `seq=Space:60,ShiftLeft:62,-ShiftLeft:90` presses and releases keys at
+    // given warm-up steps. A leading minus is a release.
+    const scriptedKeys = (debugOptions.get('seq') || '').split(',').filter(Boolean).map((entry) => {
+        const [rawCode, atStep] = entry.split(':');
+        return {
+            code: rawCode.replace(/^-/, ''),
+            type: rawCode.startsWith('-') ? 'keyup' : 'keydown',
+            step: parseInt(atStep),
+        };
+    });
 
     for (let step = 0; step < warmUpSteps; step++) {
-        // Pressed at `jumpAt` and never released, so the rise is not cut short.
-        if (step === jumpAtStep) dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+        for (const key of scriptedKeys) {
+            if (key.step === step) dispatchEvent(new KeyboardEvent(key.type, { code: key.code }));
+        }
 
         elapsedTotal += 1 / 60;
         world.update(1 / 60);
+        if (unicorn.ribbonUnderfoot) framesOnRibbon++;
         clearFrameInput();
     }
 }
@@ -99,7 +113,10 @@ startGameLoop((elapsedSeconds) => {
     canvasContext.font = '15px monospace';
     canvasContext.fillText(
         `t:${elapsedTotal.toFixed(1)}  ground:${unicorn.isOnGround ? 1 : 0}`
-        + `  vx:${unicorn.velocityX.toFixed(0)}  vy:${unicorn.velocityY.toFixed(0)}`,
+        + `  vx:${unicorn.velocityX.toFixed(0)}  vy:${unicorn.velocityY.toFixed(0)}`
+        + `  paint:${unicorn.paintEnergy.toFixed(2)}`
+        + `  ribbons:${world.entitiesOfCategory('ribbon').length}`
+        + `  onRibbon:${unicorn.ribbonUnderfoot ? 1 : 0}  framesOnRibbon:${framesOnRibbon}`,
         16, 26,
     );
 });
