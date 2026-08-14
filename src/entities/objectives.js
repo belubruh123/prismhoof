@@ -12,7 +12,7 @@ import { canvasContext } from '../core/canvas.js';
 import { clamp, cos, max, min, randomBetween, sin, TAU } from '../core/math.js';
 import { boxesOverlap } from '../core/rect.js';
 import { Entity } from '../engine/entity.js';
-import { PARTICLE_STAR, drawFourPointStar } from '../engine/particles.js';
+import { burstRainbow, drawFourPointStar } from '../engine/particles.js';
 import { palette, RAINBOW_COLORS } from '../graphics/palette.js';
 import { drawRadialGlow } from '../graphics/textures.js';
 
@@ -105,26 +105,11 @@ export class PrismShard extends Entity {
     }
 
     burst() {
-        const particles = this.world.firstOfCategory('particles');
-        if (!particles) return;
-
-        for (let index = 0; index < 12; index++) {
-            const angle = randomBetween(0, TAU);
-            const speed = randomBetween(70, 230);
-            particles.spawn({
-                x: this.x,
-                y: this.y,
-                velocityX: cos(angle) * speed,
-                velocityY: sin(angle) * speed,
-                gravity: 140,
-                size: randomBetween(3, 6),
-                endSize: 0,
-                lifetime: randomBetween(0.35, 0.8),
-                color: RAINBOW_COLORS[index % RAINBOW_COLORS.length],
-                shape: PARTICLE_STAR,
-                spin: randomBetween(-9, 9),
-            });
-        }
+        burstRainbow(this.world.firstOfCategory('particles'), this.x, this.y, 12, {
+            speed: 230,
+            gravity: 140,
+            maxSize: 6,
+        });
     }
 
     render() {

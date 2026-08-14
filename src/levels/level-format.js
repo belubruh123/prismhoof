@@ -41,11 +41,21 @@ const SPAWN_CHARACTERS = new Map([
 ]);
 
 /**
+ * Every level is this tall. Levels are authored from their topmost interesting
+ * row downwards and the empty sky above is padded in here, so the source holds
+ * no walls of dots and the build has none to compress.
+ */
+export const LEVEL_ROW_COUNT = 18;
+
+/**
  * Turns a level definition into a tile grid plus a list of spawn points.
  * Rows shorter than the widest one are padded with empty tiles.
  */
 export function parseLevel(definition) {
-    const rows = definition.rows;
+    const authoredRows = definition.rows;
+    const skyRowCount = Math.max(0, LEVEL_ROW_COUNT - authoredRows.length);
+    const rows = [...new Array(skyRowCount).fill(''), ...authoredRows];
+
     const columnCount = Math.max(...rows.map((row) => row.length));
 
     const tileGrid = [];

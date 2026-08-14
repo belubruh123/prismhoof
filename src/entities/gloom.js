@@ -15,7 +15,7 @@ import { canvasContext } from '../core/canvas.js';
 import { cos, damp, hypot, max, min, randomBetween, sin, TAU } from '../core/math.js';
 import { boxesOverlap } from '../core/rect.js';
 import { Entity } from '../engine/entity.js';
-import { PARTICLE_STAR } from '../engine/particles.js';
+import { burstRainbow } from '../engine/particles.js';
 import { palette, RAINBOW_COLORS } from '../graphics/palette.js';
 
 const MURK_SPEED = 78;
@@ -28,7 +28,7 @@ const WISP_SPEED = 105;
  * overlap the hitbox made clean-looking shots miss by a couple of units, which
  * reads as the game being broken rather than the player being imprecise.
  */
-const PURIFY_AURA = 15;
+const PURIFY_AURA = 20;
 
 /** Segments in a blob outline. Enough to read as organic, few enough to be cheap. */
 const BLOB_STEPS = 18;
@@ -75,27 +75,8 @@ class Gloom extends Entity {
         playPurifySound();
         this.world.camera.shake(6, 0.22);
 
-        const particles = this.world.firstOfCategory('particles');
-        if (!particles) return;
-
         // The Gloom bursts into the colour it was holding onto.
-        for (let index = 0; index < 18; index++) {
-            const angle = randomBetween(0, TAU);
-            const speed = randomBetween(60, 320);
-            particles.spawn({
-                x: this.x,
-                y: this.y,
-                velocityX: cos(angle) * speed,
-                velocityY: sin(angle) * speed,
-                gravity: 260,
-                size: randomBetween(3, 7),
-                endSize: 0,
-                lifetime: randomBetween(0.5, 1.1),
-                color: RAINBOW_COLORS[index % RAINBOW_COLORS.length],
-                shape: PARTICLE_STAR,
-                spin: randomBetween(-8, 8),
-            });
-        }
+        burstRainbow(this.world.firstOfCategory('particles'), this.x, this.y, 18, { speed: 320 });
     }
 
     checkUnicorn() {
@@ -138,7 +119,7 @@ class Gloom extends Entity {
  */
 export class GloomMurk extends Gloom {
     halfWidth = 16;
-    halfHeight = 15;
+    halfHeight = 19;
 
     direction = -1;
 

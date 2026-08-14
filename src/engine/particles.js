@@ -10,6 +10,7 @@
 import { LAYER_PARTICLE } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { cos, randomBetween, sin, TAU } from '../core/math.js';
+import { RAINBOW_COLORS } from '../graphics/palette.js';
 import { Entity } from './entity.js';
 
 export const PARTICLE_CIRCLE = 0;
@@ -134,6 +135,43 @@ export class ParticleField extends Entity {
         }
 
         context.globalAlpha = 1;
+    }
+}
+
+/**
+ * A radial burst of rainbow sparkles.
+ *
+ * Purifying a Gloom, collecting a shard and dying are all the same gesture -
+ * something bursts into the colour it was holding - so they share one emitter
+ * rather than three copies of the same twenty lines.
+ */
+export function burstRainbow(particles, x, y, count, {
+    speed = 240,
+    spread = 0.7,
+    gravity = 260,
+    minSize = 3,
+    maxSize = 7,
+    lifetime = 0.8,
+} = {}) {
+    if (!particles) return;
+
+    for (let index = 0; index < count; index++) {
+        const angle = randomBetween(0, TAU);
+        const magnitude = randomBetween(speed * (1 - spread), speed);
+
+        particles.spawn({
+            x,
+            y,
+            velocityX: cos(angle) * magnitude,
+            velocityY: sin(angle) * magnitude,
+            gravity,
+            size: randomBetween(minSize, maxSize),
+            endSize: 0,
+            lifetime: randomBetween(lifetime * 0.6, lifetime),
+            color: RAINBOW_COLORS[index % RAINBOW_COLORS.length],
+            shape: PARTICLE_STAR,
+            spin: randomBetween(-9, 9),
+        });
     }
 }
 

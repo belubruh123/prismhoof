@@ -39,7 +39,7 @@ import { canvasContext } from '../core/canvas.js';
 import { DIVE_KEYS, JUMP_KEYS, MOVE_LEFT_KEYS, MOVE_RIGHT_KEYS, PAINT_KEYS, isKeyDown, wasKeyPressed } from '../core/input.js';
 import { abs, clamp, cos, damp, max, min, PI, randomBetween, sign, sin, TAU } from '../core/math.js';
 import { Entity } from '../engine/entity.js';
-import { PARTICLE_CIRCLE, PARTICLE_STAR } from '../engine/particles.js';
+import { burstRainbow, PARTICLE_CIRCLE, PARTICLE_STAR } from '../engine/particles.js';
 import { HairStrand } from '../graphics/hair.js';
 import { RAINBOW_COLORS, UNICORN_COAT } from '../graphics/palette.js';
 import { playDeathSound, playJumpSound, playLandSound, playPaintSound } from '../audio/sfx.js';
@@ -479,24 +479,12 @@ export class Unicorn extends Entity {
         if (this.activeRibbon) this.endRibbon();
         this.world.camera.shake(14, 0.5);
 
-        const particles = this.world.firstOfCategory('particles');
-        for (let index = 0; particles && index < 26; index++) {
-            const angle = randomBetween(0, TAU);
-            const speed = randomBetween(80, 420);
-            particles.spawn({
-                x: this.x,
-                y: this.y,
-                velocityX: cos(angle) * speed,
-                velocityY: sin(angle) * speed,
-                gravity: 500,
-                size: randomBetween(3, 8),
-                endSize: 0,
-                lifetime: randomBetween(0.5, 1.2),
-                color: RAINBOW_COLORS[index % RAINBOW_COLORS.length],
-                shape: PARTICLE_STAR,
-                spin: randomBetween(-10, 10),
-            });
-        }
+        burstRainbow(this.world.firstOfCategory('particles'), this.x, this.y, 26, {
+            speed: 420,
+            gravity: 500,
+            maxSize: 8,
+            lifetime: 1.2,
+        });
 
         playDeathSound();
         this.onDeath?.();
