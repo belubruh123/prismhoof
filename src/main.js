@@ -4,8 +4,10 @@
  * Boots the canvas, wires up input, and starts the game loop.
  */
 
+import { initialiseAudio, resumeAudio } from './audio/audio.js';
+import { startMusic } from './audio/music.js';
 import { canvasContext, initialiseCanvas } from './core/canvas.js';
-import { clearFrameInput, initialiseInput } from './core/input.js';
+import { clearFrameInput, initialiseInput, onKeyGesture } from './core/input.js';
 import { startGameLoop } from './core/loop.js';
 import { clamp, damp } from './core/math.js';
 import { refreshPalette, setColorRestoration } from './graphics/palette.js';
@@ -14,6 +16,14 @@ import { buildLevelWorld } from './levels/build-level.js';
 
 initialiseCanvas();
 initialiseInput();
+
+// Browsers will not start an AudioContext without a trusted gesture, so audio
+// setup is attempted on every key press until one of them is accepted.
+onKeyGesture(() => {
+    initialiseAudio();
+    resumeAudio();
+    startMusic(true);
+});
 
 // --- temporary gameplay sandbox (replaced by the screen stack in phase 7) ---
 

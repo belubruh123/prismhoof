@@ -9,6 +9,7 @@
  * level literally brings the colour back. See gameplay-screen.js.
  */
 
+import { playPurifySound } from '../audio/sfx.js';
 import { GRAVITY, LAYER_GLOOM, MAX_FALL_SPEED } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { cos, damp, hypot, max, min, randomBetween, sin, TAU } from '../core/math.js';
@@ -71,6 +72,7 @@ class Gloom extends Entity {
 
     purify() {
         this.remove();
+        playPurifySound();
         this.world.camera.shake(6, 0.22);
 
         const particles = this.world.firstOfCategory('particles');

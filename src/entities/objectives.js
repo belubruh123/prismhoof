@@ -6,6 +6,7 @@
  * condition is readable from the world itself with no extra bookkeeping.
  */
 
+import { playGateSound, playShardSound } from '../audio/sfx.js';
 import { LAYER_GLOOM, LAYER_PICKUP, TILE_SIZE } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { clamp, cos, max, min, randomBetween, sin, TAU } from '../core/math.js';
@@ -98,7 +99,7 @@ export class PrismShard extends Entity {
         if (!unicorn || unicorn.isDead || !boxesOverlap(this, unicorn)) return;
 
         unicorn.paintEnergy = min(1, unicorn.paintEnergy + SHARD_PAINT_REWARD);
-        unicorn.onShardCollected?.();
+        playShardSound();
         this.burst();
         this.remove();
     }
@@ -176,6 +177,7 @@ export class RainbowGate extends Entity {
         const unicorn = this.world.firstOfCategory('unicorn');
         if (unicorn && !unicorn.isDead && boxesOverlap(this, unicorn)) {
             this.isEntered = true;
+            playGateSound();
             unicorn.onGateEntered?.();
         }
     }

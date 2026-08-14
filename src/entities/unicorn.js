@@ -42,6 +42,7 @@ import { Entity } from '../engine/entity.js';
 import { PARTICLE_CIRCLE, PARTICLE_STAR } from '../engine/particles.js';
 import { HairStrand } from '../graphics/hair.js';
 import { RAINBOW_COLORS, UNICORN_COAT } from '../graphics/palette.js';
+import { playDeathSound, playJumpSound, playLandSound, playPaintSound } from '../audio/sfx.js';
 import { RainbowRibbon } from './rainbow-ribbon.js';
 import { buildUnicornPose, drawUnicorn, hornTipPosition, maneStrandRoot } from './unicorn-art.js';
 
@@ -227,8 +228,9 @@ export class Unicorn extends Entity {
         this.coyoteTimer = 0;
         this.squash = -0.2;
 
-        this.emitHoofDust(10, -1);
-        this.onJump?.();
+        this.emitHoofDust(10);
+        this.emitManeSparkles(3);
+        playJumpSound();
     }
 
     applyMovement(elapsedSeconds) {
@@ -296,7 +298,7 @@ export class Unicorn extends Entity {
         this.squash = 0.1 + impact * 0.24;
         this.emitHoofDust(6 + impact * 12);
         this.world.camera.shake(impact * 5, 0.18);
-        this.onLand?.(impact);
+        playLandSound(impact);
     }
 
     /** A low puff of dust at hoof level, thrown outwards and slightly upwards. */
@@ -433,7 +435,7 @@ export class Unicorn extends Entity {
         ));
 
         this.hornColorIndex = (this.hornColorIndex + 1) % RAINBOW_COLORS.length;
-        this.onPaintStart?.();
+        playPaintSound();
     }
 
     endRibbon() {
@@ -496,6 +498,7 @@ export class Unicorn extends Entity {
             });
         }
 
+        playDeathSound();
         this.onDeath?.();
     }
 

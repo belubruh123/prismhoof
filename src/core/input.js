@@ -22,9 +22,25 @@ export const BACK_KEYS = ['Escape', 'Backspace'];
 export const MENU_UP_KEYS = ['ArrowUp', 'KeyW'];
 export const MENU_DOWN_KEYS = ['ArrowDown', 'KeyS'];
 
+/**
+ * Called on every key press, not just the first.
+ *
+ * Starting audio needs a trusted user gesture, and a browser may refuse the
+ * first few, so the audio setup is retried on each press until it takes. The
+ * callback is written to be safely repeatable.
+ */
+let keyGestureCallback = null;
+
+export function onKeyGesture(callback) {
+    keyGestureCallback = callback;
+}
+
 export function initialiseInput() {
     addEventListener('keydown', (event) => {
         if (KEYS_TO_SWALLOW.has(event.code)) event.preventDefault();
+
+        keyGestureCallback?.();
+
         if (event.repeat) return;
         heldKeys.add(event.code);
         pressedThisFrame.add(event.code);
