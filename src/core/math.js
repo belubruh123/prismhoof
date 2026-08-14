@@ -50,6 +50,18 @@ export function distanceBetween(firstX, firstY, secondX, secondY) {
     return hypot(secondX - firstX, secondY - firstY);
 }
 
+/**
+ * A tiny deterministic generator, so pre-rendered textures and level decoration
+ * look identical on every run and stay debuggable.
+ */
+export function createSeededRandom(seed) {
+    let state = seed;
+    return () => {
+        state = (state * 1103515245 + 12345) & 0x7fffffff;
+        return state / 0x7fffffff;
+    };
+}
+
 // --- easing ----------------------------------------------------------------
 
 export function easeOutQuadratic(progress) {

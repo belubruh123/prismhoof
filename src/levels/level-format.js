@@ -1,0 +1,95 @@
+/**
+ * Levels are authored as arrays of strings, one string per row of tiles.
+ *
+ *   '.'  empty
+ *   '#'  solid
+ *   '='  one-way platform
+ *
+ * and single letters mark where things spawn, on an otherwise empty tile:
+ *
+ *   'P'  the unicorn's starting position
+ *   'G'  the rainbow gate
+ *   'M'  a Murk   (ground patroller)
+ *   'W'  a Wisp   (drifting chaser)
+ *   'T'  a Thorn  (static hazard)
+ *   'S'  a prism shard (optional pickup)
+ *
+ * Writing levels as pictures keeps them readable in the source, and a wall of
+ * repeated characters is close to free once the build compresses it.
+ */
+
+import { TILE_SIZE } from '../config.js';
+import { TILE_EMPTY, TILE_PLATFORM, TILE_SOLID } from '../entities/terrain.js';
+
+const TILE_CHARACTERS = {
+    '#': TILE_SOLID,
+    '=': TILE_PLATFORM,
+};
+
+const SPAWN_CHARACTERS = {
+    P: 'player',
+    G: 'gate',
+    M: 'murk',
+    W: 'wisp',
+    T: 'thorn',
+    S: 'shard',
+};
+
+/**
+ * Turns a level definition into a tile grid plus a list of spawn points.
+ * Rows shorter than the widest one are padded with empty tiles.
+ */
+export function parseLevel(definition) {
+    const rows = definition.rows;
+    const columnCount = Math.max(...rows.map((row) => row.length));
+
+    const tileGrid = [];
+    const spawns = [];
+
+    rows.forEach((rowText, row) => {
+        const tileRow = new Array(columnCount).fill(TILE_EMPTY);
+
+        for (let column = 0; column < rowText.length; column++) {
+            const character = rowText[column];
+
+            if (TILE_CHARACTERS[character] !== undefined) {
+                tileRow[column] = TILE_CHARACTERS[character];
+                continue;
+            }
+
+            const spawnType = SPAWN_CHARACTERS[character];
+            if (spawnType) {
+                spawns.push({
+                    type: spawnType,
+                    x: (column + 0.5) * TILE_SIZE,
+                    y: (row + 0.5) * TILE_SIZE,
+                });
+            }
+        }
+
+        tileGrid.push(tileRow);
+    });
+
+    return {
+        name: definition.name,
+        hint: definition.hint,
+        tileGrid,
+        spawns,
+    };
+}
+
+/** Serialises a grid back into row strings. Used by the debug level editor. */
+export function formatLevelRows(tileGrid, spawns) {
+    const characterForTile = ['.', '#', '='];
+    const rows = tileGrid.map((tileRow) => tileRow.map((tile) => characterForTile[tile]).join(''));
+
+    for (const spawn of spawns) {
+        const column = Math.floor(spawn.x / TILE_SIZE);
+        const row = Math.floor(spawn.y / TILE_SIZE);
+        const character = Object.keys(SPAWN_CHARACTERS).find((key) => SPAWN_CHARACTERS[key] === spawn.type);
+        if (!character || !rows[row]) continue;
+        rows[row] = rows[row].slice(0, column) + character + rows[row].slice(column + 1);
+    }
+
+    return rows;
+}
