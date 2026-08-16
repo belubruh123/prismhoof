@@ -186,6 +186,22 @@ export class GloomWisp extends Gloom {
         this.x += this.velocityX * elapsedSeconds;
         // A gentle bob on top of the chase, so it never moves in a dead straight line.
         this.y += (this.velocityY + sin(this.age * 2.6 + this.wobbleSeed) * 34) * elapsedSeconds;
+
+        this.drinkRibbons();
+    }
+
+    /**
+     * A wisp that reaches a finished rainbow drinks it, and the whole arc starts
+     * dissolving under you.
+     *
+     * This is the reason to spend a shot on one rather than simply outrunning
+     * it: a bridge is not safe just because you built it. A stream still being
+     * poured is untouchable, because that one is busy purifying the wisp.
+     */
+    drinkRibbons() {
+        for (const ribbon of this.world.entitiesOfCategory('ribbon')) {
+            if (!ribbon.isWet && ribbon.isNearPoint(this.x, this.y, this.halfWidth)) ribbon.dissolveNow();
+        }
     }
 
     render() {

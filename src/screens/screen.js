@@ -56,9 +56,16 @@ export function topScreen() {
 }
 
 export function updateScreens(elapsedSeconds) {
-    for (let index = stack.length - 1; index >= 0; index--) {
-        stack[index].update(elapsedSeconds);
-        if (!stack[index].updatesBelow) break;
+    // Snapshotted, because a screen routinely pushes or pops during its own
+    // update. Walking the live stack meant that the frame a screen closed
+    // itself, the next line read past the end of it and threw - which skipped
+    // the end-of-frame input clear, so the very keypress that closed the screen
+    // was still down on the next frame and opened it straight back up.
+    const active = stack.slice();
+
+    for (let index = active.length - 1; index >= 0; index--) {
+        active[index].update(elapsedSeconds);
+        if (!active[index].updatesBelow) break;
     }
 }
 

@@ -7,7 +7,7 @@
  */
 
 import { canvasContext } from '../core/canvas.js';
-import { clamp, sin, TAU } from '../core/math.js';
+import { clamp, sin } from '../core/math.js';
 import { drawFourPointStar } from '../engine/particles.js';
 import { RAINBOW_COLORS } from './palette.js';
 import { drawText } from './typography.js';
@@ -139,28 +139,6 @@ export function drawPaintMeter(x, y, width, height, fillRatio, flashAmount = 0) 
     context.beginPath();
     context.roundRect(x, y, width, height, radius);
     context.stroke();
-
-    context.restore();
-}
-
-/** A ring of small gloom markers, one per enemy still to purify. */
-export function drawGloomCounter(x, y, remaining, total) {
-    const context = canvasContext;
-    const spacing = 17;
-
-    context.save();
-    context.strokeStyle = 'rgba(190,170,220,0.6)';
-    context.lineWidth = 1.5;
-
-    for (let index = 0; index < total; index++) {
-        // Filled with rainbow once purified, hollow while it is still out there.
-        const isPurified = index >= remaining;
-        context.fillStyle = isPurified ? RAINBOW_COLORS[index % RAINBOW_COLORS.length] : 'rgba(20,10,38,0.9)';
-        context.beginPath();
-        context.arc(x + index * spacing, y, 5.5, 0, TAU);
-        context.fill();
-        context.stroke();
-    }
 
     context.restore();
 }

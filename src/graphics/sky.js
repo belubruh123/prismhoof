@@ -1,26 +1,20 @@
 /**
- * The parallax backdrop: gradient sky, stars, three ranges of hills and
- * drifting clouds.
+ * The sky seen through the level: a gradient, a drifting star field and clouds.
  *
- * All of it is drawn in screen space. Parallax comes from offsetting the shapes
- * by a fraction of the camera position rather than from moving real entities,
- * which means the backdrop costs the same no matter how large the level is.
+ * All of it is drawn in screen space, and parallax comes from offsetting the
+ * shapes by a fraction of the camera position rather than from moving real
+ * entities, so the backdrop costs the same however large the level is.
+ *
+ * There are no distant hills, deliberately. A level is a chamber cut out of the
+ * world (see `Terrain.renderSurroundingRock`), and a horizon inside a chamber
+ * only fights the walls around it.
  */
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { createSeededRandom, sin, TAU } from '../core/math.js';
-import { HILL_FAR, HILL_MIDDLE, HILL_NEAR, getColorRestoration, palette, restoredColor } from './palette.js';
+import { getColorRestoration, palette } from './palette.js';
 import { starTexture } from './textures.js';
-
-/** Horizontal resolution of the hill silhouettes, in screen pixels per step. */
-const HILL_STEP = 22;
-
-const HILL_LAYERS = [
-    { color: HILL_FAR, parallax: 0.06, baseRatio: 0.62, amplitude: 34, frequency: 0.0016, phase: 0 },
-    { color: HILL_MIDDLE, parallax: 0.14, baseRatio: 0.74, amplitude: 48, frequency: 0.0023, phase: 2.1 },
-    { color: HILL_NEAR, parallax: 0.28, baseRatio: 0.88, amplitude: 62, frequency: 0.0031, phase: 4.7 },
-];
 
 /** Fixed cloud layout, generated once so the sky is stable across frames. */
 const CLOUDS = (() => {
@@ -59,8 +53,6 @@ export function renderSky(camera, timeSeconds) {
 
     renderStars(context, camera, timeSeconds);
 
-    for (const layer of HILL_LAYERS) renderHillLayer(context, camera, layer);
-
     renderClouds(context, camera, timeSeconds);
 }
 
@@ -78,27 +70,6 @@ function renderStars(context, camera, timeSeconds) {
     context.translate(offsetX, offsetY);
     context.fillRect(-offsetX, -offsetY, CANVAS_WIDTH, CANVAS_HEIGHT * 0.8);
     context.restore();
-}
-
-function renderHillLayer(context, camera, { color, parallax, baseRatio, amplitude, frequency, phase }) {
-    const offsetX = camera.x * parallax;
-    const offsetY = camera.y * parallax * 0.4;
-    const baseY = CANVAS_HEIGHT * baseRatio - offsetY;
-
-    context.fillStyle = restoredColor(color);
-    context.beginPath();
-    context.moveTo(-HILL_STEP, CANVAS_HEIGHT);
-
-    for (let screenX = -HILL_STEP; screenX <= CANVAS_WIDTH + HILL_STEP; screenX += HILL_STEP) {
-        const worldX = screenX + offsetX;
-        const height = sin(worldX * frequency + phase) * amplitude
-            + sin(worldX * frequency * 2.7 + phase * 1.9) * amplitude * 0.35
-            + sin(worldX * frequency * 0.4 + phase * 0.6) * amplitude * 0.7;
-        context.lineTo(screenX, baseY + height);
-    }
-
-    context.lineTo(CANVAS_WIDTH + HILL_STEP, CANVAS_HEIGHT);
-    context.fill();
 }
 
 function renderClouds(context, camera, timeSeconds) {

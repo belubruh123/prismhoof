@@ -97,6 +97,23 @@ export const PAINT_HEAD_INHERITANCE_X = 0.35;
 export const PAINT_HEAD_INHERITANCE_Y = 0.32;
 
 /**
+ * How hard the stream shoves back while the unicorn is off the ground, and the
+ * fastest that shove alone will ever carry it upwards.
+ *
+ * This is what stops the one verb being only a way to build. A pour in mid-air
+ * catches a fall and then holds a steady climb, so it is a glide, an extra step
+ * of height and a bridge at once - and paid for out of the same meter, so how
+ * long you can hang up there is exactly how much paint you left the ground with.
+ *
+ * Uncapped it was a rocket: the push simply beats gravity, so velocity kept
+ * building and one stroke carried the unicorn a dozen tiles into the sky. The
+ * cap is what turns it back into a move with a shape. Pouring never slows a jump
+ * that is already rising faster than this - the recoil helps or does nothing.
+ */
+export const PAINT_RECOIL = 2600;
+export const PAINT_RECOIL_TOP_SPEED = -300;
+
+/**
  * Paint energy is normalised to 0..1 so the HUD meter is a direct read.
  * A full-length stroke takes about a fifth of a second, so these rates work out
  * to roughly three strokes on a full meter, refilled in under two seconds.

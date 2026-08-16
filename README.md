@@ -13,7 +13,7 @@ assets. Every pixel is generated at runtime.
 
 ## The mechanic
 
-**One verb, three uses.** Hold the paint key and your horn hoses out a rainbow. The bright
+**One verb, four uses.** Hold the paint key and your horn hoses out a rainbow. The bright
 head of the stream flies forward, falls under its own gravity, and lays a **solid rainbow**
 behind it until it splashes against the scenery. Where you fire from decides what you get:
 
@@ -22,6 +22,11 @@ behind it until it splashes against the scenery. Where you fire from decides wha
 | Flat ground | the stream sweeps down through the Gloom standing there — **a weapon** |
 | The lip of a chasm | the ground falls away and the same shot arcs over the gap — **a bridge** |
 | The way up out of a jump | it inherits your lift and climbs — **a ramp** |
+| Anywhere in mid-air | the stream shoves back hard enough to catch a fall and hold a climb — **a way to fly** |
+
+That fourth one is what makes the meter matter: in the air, paint *is* flight time. The
+recoil is capped, so it is a glide and a step of height rather than a jetpack, and you can
+only stop to refill by landing on something — including a rainbow you painted yourself.
 
 Rainbows are one-way floors: you always pass up through your own paint and land on it
 coming down, and you can run back along an arc you have already crossed. Paint is a limited
@@ -30,9 +35,16 @@ every level is a question of *where* to spend your arcs. Purify all the Gloom an
 Rainbow Gate opens. As the Gloom clears, the color bleeds back into the world — the theme
 is literally the win condition.
 
-**Thirteen levels**, for thirteen kilobytes. They teach themselves: the first few carry
-signposts standing in the meadow rather than a tutorial screen, and after that the geometry
-does the talking.
+Wisps drink any finished rainbow they reach, so a bridge is not safe just because you
+built it — that is the reason to spend a shot on one rather than outrun it.
+
+**Thirteen levels**, for thirteen kilobytes. Most of a level is empty sky and falling into
+it kills you: solid ground comes as islands, ledges and pillars, and the rainbow is how you
+get from one to the next. They teach themselves, with signposts standing in the meadow
+rather than a tutorial screen, and after that the geometry does the talking.
+
+Each level is a chamber cut out of the world rather than a strip of ground in an open sky —
+beyond its edges is solid rock, and the sky you can see is the sky inside the chamber.
 
 > The stream fires *ahead* of the unicorn rather than trailing behind it, and that is a
 > mechanical necessity rather than a flourish. A ribbon emitted at the horn sits

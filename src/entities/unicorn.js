@@ -25,6 +25,8 @@ import {
     PAINT_HEAD_LIFT,
     PAINT_HEAD_SPEED,
     PAINT_MINIMUM_TO_START,
+    PAINT_RECOIL,
+    PAINT_RECOIL_TOP_SPEED,
     PAINT_REFILL_DELAY_SECONDS,
     PAINT_REFILL_PER_SECOND,
     RIBBON_MAX_LANDABLE_SLOPE,
@@ -403,6 +405,16 @@ export class Unicorn extends Entity {
         if (this.isAiming) {
             this.paintEnergy = max(0, this.paintEnergy - PAINT_DRAIN_PER_SECOND * elapsedSeconds);
             this.secondsSincePainting = 0;
+
+            // Pouring in mid-air pushes back hard enough to catch a fall and
+            // hold a climb. Firing from the ground is unaffected, so the stream
+            // stays a weapon down there and becomes a way to move up here.
+            if (!this.isOnGround) {
+                this.velocityY = min(
+                    this.velocityY,
+                    max(this.velocityY - PAINT_RECOIL * elapsedSeconds, PAINT_RECOIL_TOP_SPEED),
+                );
+            }
 
             if (!this.activeRibbon) this.beginRibbon();
 

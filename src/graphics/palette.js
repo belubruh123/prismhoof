@@ -36,10 +36,6 @@ export const SKY_TOP = [248, 0.62, 0.4];
 export const SKY_MIDDLE = [306, 0.66, 0.6];
 export const SKY_BOTTOM = [38, 0.94, 0.7];
 
-export const HILL_FAR = [286, 0.46, 0.52];
-export const HILL_MIDDLE = [270, 0.44, 0.38];
-export const HILL_NEAR = [258, 0.46, 0.25];
-
 export const CLOUD = [322, 0.85, 0.88, 0.2];
 export const CLOUD_SHADE = [312, 0.56, 0.74, 0.15];
 

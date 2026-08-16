@@ -39,6 +39,8 @@ const STORY = [
     ['the gap below becomes a bridge', BODY, 21],
     ['POUR AS YOU RISE AND IT CLIMBS TOO', TERM, 26],
     ['the jump becomes a ramp', BODY, 21],
+    ['IN MID-AIR', TERM, 26],
+    ['the stream holds you up, and you climb', BODY, 21],
     ['Purify every Gloom to open the Rainbow Gate, then run through it.', STRONG, 44],
     ['The colour returns to the meadow as you clear it.', BODY, 24],
 ];
@@ -53,9 +55,9 @@ const CONTROLS = [
 ];
 
 const TIPS = [
-    ['PAINT ONLY REFILLS ON SOLID GROUND', TEXT_BRIGHT, 800],
-    ['One hit is fatal. Retries are instant,', TEXT_DIM, 500],
-    ['and the run clock never stops.', TEXT_DIM, 500],
+    ['YOUR RAINBOWS FADE - KEEP MOVING', TEXT_BRIGHT, 800],
+    ['Wisps drink any rainbow they reach.', TEXT_DIM, 500],
+    ['One hit is fatal, and the clock never stops.', TEXT_DIM, 500],
 ];
 
 export class HowToPlayScreen extends Screen {

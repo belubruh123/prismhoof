@@ -14,13 +14,7 @@ import { saveData, persistSaveData } from '../core/storage.js';
 import { refreshPalette, setColorRestoration, RAINBOW_COLORS } from '../graphics/palette.js';
 import { renderSky } from '../graphics/sky.js';
 import { drawText, drawRainbowText } from '../graphics/typography.js';
-import {
-    TEXT_BRIGHT,
-    TEXT_DIM,
-    drawGloomCounter,
-    drawPaintMeter,
-    formatTime,
-} from '../graphics/ui.js';
+import { TEXT_BRIGHT, TEXT_DIM, drawPaintMeter, formatTime } from '../graphics/ui.js';
 import { buildLevelWorld } from '../levels/build-level.js';
 import { LEVELS } from '../levels/levels.js';
 import { startMusic } from '../audio/music.js';
@@ -35,6 +29,9 @@ const CLEARED_DELAY_SECONDS = 1.1;
 
 /** Never let a level start pitch black, however much Gloom is left. */
 const MINIMUM_RESTORATION = 0.06;
+
+/** How long the rainbow sweeps across the screen between one level and the next. */
+const WIPE_SECONDS = 0.45;
 
 export class GameplayScreen extends Screen {
     /** Seconds elapsed across the whole run, carried between levels. */
@@ -63,6 +60,9 @@ export class GameplayScreen extends Screen {
         this.colorRestoration = 0;
         this.restartCountdown = 0;
         this.clearedCountdown = 0;
+        // Fully covered, then pulled away: the new level is revealed by the same
+        // rainbow that closed over the last one.
+        this.wipe = 1;
 
         this.unicorn.onDeath = () => {
             this.deaths++;
@@ -97,6 +97,13 @@ export class GameplayScreen extends Screen {
 
         this.runSeconds += elapsedSeconds;
         this.meterFlash = damp(this.meterFlash, 0, 8, elapsedSeconds);
+
+        // Closes over the level once it is cleared, and pulls back off the new
+        // one the moment it loads.
+        this.wipe = clamp(
+            this.wipe + (this.clearedCountdown > 0 ? 1 : -1) * elapsedSeconds / WIPE_SECONDS,
+            0, 1,
+        );
 
         this.updateRestoration(elapsedSeconds);
         this.world.update(elapsedSeconds);
@@ -142,6 +149,28 @@ export class GameplayScreen extends Screen {
         renderSky(this.world.camera, this.age);
         this.world.render();
         this.renderHud();
+        this.renderWipe();
+    }
+
+    /**
+     * The transition between levels: seven rainbow bands sweeping the screen.
+     *
+     * They are staggered by a fraction of a band each so the sweep reads as one
+     * rainbow being drawn across the screen rather than seven bars moving in
+     * lockstep, and they always travel the same way, so closing one level and
+     * opening the next is a single continuous gesture.
+     */
+    renderWipe() {
+        if (!this.wipe) return;
+
+        const bandHeight = CANVAS_HEIGHT / RAINBOW_COLORS.length;
+        const closing = this.clearedCountdown > 0;
+
+        RAINBOW_COLORS.forEach((color, index) => {
+            const width = CANVAS_WIDTH * clamp(this.wipe * 1.5 - index * 0.08, 0, 1);
+            canvasContext.fillStyle = color;
+            canvasContext.fillRect(closing ? 0 : CANVAS_WIDTH - width, index * bandHeight, width, bandHeight + 1);
+        });
     }
 
     renderHud() {
@@ -175,14 +204,12 @@ export class GameplayScreen extends Screen {
 
         const remaining = this.world.entitiesOfCategory('gloom').length;
         if (this.level.gloomTotal) {
-            drawGloomCounter(CANVAS_WIDTH - 26 - (this.level.gloomTotal - 1) * 17, CANVAS_HEIGHT - 34,
-                remaining, this.level.gloomTotal);
-            drawText(remaining ? 'GLOOM' : 'GATE OPEN', CANVAS_WIDTH - 26, CANVAS_HEIGHT - 58, {
-                size: 13,
-                weight: 700,
+            drawText(remaining ? `GLOOM  ${remaining}` : 'GATE OPEN', CANVAS_WIDTH - 26, CANVAS_HEIGHT - 44, {
+                size: 22,
+                weight: 800,
                 spacing: 2.5,
                 align: 'right',
-                color: remaining ? TEXT_DIM : RAINBOW_COLORS[(this.age * 6 | 0) % 7],
+                color: remaining ? TEXT_BRIGHT : RAINBOW_COLORS[(this.age * 6 | 0) % 7],
             });
         }
 

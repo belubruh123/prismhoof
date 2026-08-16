@@ -236,6 +236,8 @@ export class Terrain extends Entity {
     render() {
         const context = canvasContext;
 
+        this.renderSurroundingRock(context);
+
         context.fillStyle = palette.terrainBody;
         context.fill(this.solidPath);
 
@@ -246,6 +248,31 @@ export class Terrain extends Entity {
 
         this.renderSurfaces(context);
         this.renderPlatforms(context);
+    }
+
+    /**
+     * Everything outside the level is solid rock.
+     *
+     * A level is a chamber cut out of a world, not a handful of islands adrift
+     * in an open sky - the sky is what you can see *through* the chamber. Four
+     * rectangles and a lit lip are most of what makes the edge of a level look
+     * deliberate instead of like the end of the data.
+     */
+    renderSurroundingRock(context) {
+        const width = this.widthInPixels;
+        const height = this.heightInPixels;
+        const reach = 2200;
+
+        // Nothing below: the camera never lifts its bottom edge off the floor
+        // of the level, so the only rock ever in shot is at the sides and above.
+        context.fillStyle = palette.terrainShade;
+        context.fillRect(-reach, -reach, reach, height + reach);
+        context.fillRect(width, -reach, reach, height + reach);
+        context.fillRect(0, -reach, width, reach);
+
+        context.strokeStyle = palette.terrainGrassLight;
+        context.lineWidth = 5;
+        context.strokeRect(0, 0, width, height);
     }
 
     /** A lit band just under each surface fading into the dark interior. */

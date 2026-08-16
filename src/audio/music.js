@@ -12,19 +12,27 @@
 
 import { audioTime, getAudioContext, getMusicBus, isAudioReady, noteToFrequency } from './audio.js';
 
-const BEATS_PER_MINUTE = 106;
+const BEATS_PER_MINUTE = 128;
 const STEPS_PER_BEAT = 4;
 const SECONDS_PER_STEP = 60 / BEATS_PER_MINUTE / STEPS_PER_BEAT;
 
 const STEPS_PER_BAR = STEPS_PER_BEAT * 4;
-const LOOP_STEPS = STEPS_PER_BAR * 4;
+const LOOP_STEPS = STEPS_PER_BAR * 8;
 
-/** I - V - vi - IV in D major: the most hopeful four chords there are. */
+/**
+ * Eight bars in D major. The first four are the hopeful I - V - vi - IV; the
+ * second four drop to the relative minor and climb back out, so the loop has
+ * somewhere to go and does not wear through in thirty seconds.
+ */
 const CHORDS = [
-    { root: 50, intervals: [0, 4, 7] }, // D
-    { root: 45, intervals: [0, 4, 7] }, // A
-    { root: 47, intervals: [0, 3, 7] }, // B minor
-    { root: 43, intervals: [0, 4, 7] }, // G
+    { root: 50, intervals: [0, 4, 7] },  // D
+    { root: 45, intervals: [0, 4, 7] },  // A
+    { root: 47, intervals: [0, 3, 7] },  // B minor
+    { root: 43, intervals: [0, 4, 7] },  // G
+    { root: 47, intervals: [0, 3, 7] },  // B minor
+    { root: 45, intervals: [0, 3, 7] },  // A minor
+    { root: 43, intervals: [0, 4, 7] },  // G
+    { root: 45, intervals: [0, 4, 7] },  // A
 ];
 
 /**
@@ -41,6 +49,8 @@ const MELODY = [
 
 /** Which sixteenths the bass plays on, within a bar. */
 const BASS_STEPS = [0, 6, 8, 14];
+/** And which the kick lands on. Four on the floor, with a push before the turnaround. */
+const KICK_STEPS = [0, 4, 8, 12, 14];
 
 /** How far ahead of the audio clock notes are queued, and how often we top up. */
 const LOOKAHEAD_SECONDS = 0.15;
@@ -83,6 +93,23 @@ function playVoice(midiNote, startTime, duration, waveType, volume, attack, filt
     oscillator.stop(startTime + duration + 0.05);
 }
 
+/** A kick drum: one sine whose pitch falls off a cliff. */
+function playKick(startTime) {
+    const context = getAudioContext();
+    const oscillator = context.createOscillator();
+    const envelope = context.createGain();
+
+    oscillator.frequency.setValueAtTime(150, startTime);
+    oscillator.frequency.exponentialRampToValueAtTime(42, startTime + 0.09);
+
+    envelope.gain.setValueAtTime(0.32, startTime);
+    envelope.gain.exponentialRampToValueAtTime(0.0005, startTime + 0.19);
+
+    oscillator.connect(envelope).connect(getMusicBus());
+    oscillator.start(startTime);
+    oscillator.stop(startTime + 0.24);
+}
+
 /** How long the melody note starting at `step` should ring for. */
 function melodyNoteLength(step) {
     let length = 1;
@@ -104,10 +131,17 @@ function scheduleStep(step, startTime) {
 
     const melodyNote = MELODY[step % MELODY.length];
     if (melodyNote) {
-        playVoice(melodyNote, startTime, SECONDS_PER_STEP * melodyNoteLength(step) * 0.95, 'triangle', 0.13, 0.02, 2600);
+        const length = SECONDS_PER_STEP * melodyNoteLength(step) * 0.95;
+        // Two oscillators a whisker apart. The beating between them is what
+        // turns one thin triangle wave into something with a bit of width.
+        playVoice(melodyNote, startTime, length, 'triangle', 0.12, 0.02, 2600);
+        playVoice(melodyNote + 0.06, startTime, length, 'triangle', 0.07, 0.03, 2000);
     }
 
     if (!arrangement) return;
+
+    // Kick: a sine dropped hard from a click to a thud, which is the whole drum.
+    if (KICK_STEPS.includes(stepInBar)) playKick(startTime);
 
     if (BASS_STEPS.includes(stepInBar)) {
         playVoice(chord.root - 12, startTime, SECONDS_PER_STEP * 2.6, 'sawtooth', 0.1, 0.01, 420);
