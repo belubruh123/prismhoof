@@ -9,14 +9,16 @@
  * continuously as the Gloom is purified and a baked image would go stale. Instead
  * the grid is reduced once to merged horizontal runs and a single Path2D, so a
  * frame costs a handful of fills regardless of how many tiles the level has.
+ *
+ * With levels this size that is already few enough that culling the runs against
+ * the view cost more bytes than the frames it saved, so nothing here is culled.
  */
 
 import { LAYER_TERRAIN, TILE_SIZE } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
-import { createSeededRandom, floor, max, min } from '../core/math.js';
+import { createSeededRandom, floor } from '../core/math.js';
 import { Entity } from '../engine/entity.js';
 import { TERRAIN_GRASS, palette, restoredColor } from '../graphics/palette.js';
-import { grainTexture } from '../graphics/textures.js';
 
 export const TILE_EMPTY = 0;
 export const TILE_SOLID = 1;
@@ -233,30 +235,27 @@ export class Terrain extends Entity {
 
     render() {
         const context = canvasContext;
-        const camera = this.world.camera;
 
         context.fillStyle = palette.terrainBody;
         context.fill(this.solidPath);
 
         context.save();
         context.clip(this.solidPath);
-        this.renderDepthShading(context, camera);
-        this.renderGrain(context, camera);
+        this.renderDepthShading(context);
         context.restore();
 
-        this.renderSurfaces(context, camera);
-        this.renderPlatforms(context, camera);
+        this.renderSurfaces(context);
+        this.renderPlatforms(context);
     }
 
     /** A lit band just under each surface fading into the dark interior. */
-    renderDepthShading(context, camera) {
+    renderDepthShading(context) {
         const gradient = context.createLinearGradient(0, 0, 0, DEPTH_SHADE_HEIGHT);
         gradient.addColorStop(0, restoredColor(TERRAIN_GRASS, 0.28));
         gradient.addColorStop(0.25, 'transparent');
         gradient.addColorStop(1, palette.terrainShade);
 
         for (const run of this.surfaceRuns) {
-            if (!this.isRunVisible(run, camera)) continue;
             context.save();
             context.translate(run.x, run.y);
             context.fillStyle = gradient;
@@ -265,23 +264,9 @@ export class Terrain extends Entity {
         }
     }
 
-    renderGrain(context, camera) {
-        const left = max(0, camera.viewLeft);
-        const top = max(0, camera.viewTop);
-        const right = min(this.widthInPixels, camera.viewRight);
-        const bottom = min(this.heightInPixels, camera.viewBottom);
-
-        context.globalAlpha = 0.07;
-        context.fillStyle = grainTexture;
-        context.fillRect(left, top, right - left, bottom - top);
-        context.globalAlpha = 1;
-    }
-
     /** The grass cap: blades behind, a band of colour, then a bright lit rim. */
-    renderSurfaces(context, camera) {
+    renderSurfaces(context) {
         for (const run of this.surfaceRuns) {
-            if (!this.isRunVisible(run, camera)) continue;
-
             context.fillStyle = palette.terrainGrass;
             context.fill(run.backBlades);
             context.fillRect(run.x, run.y, run.width, GRASS_CAP_HEIGHT);
@@ -292,10 +277,8 @@ export class Terrain extends Entity {
         }
     }
 
-    renderPlatforms(context, camera) {
+    renderPlatforms(context) {
         for (const run of this.platformRuns) {
-            if (!this.isRunVisible(run, camera)) continue;
-
             const height = TILE_SIZE / 3;
 
             context.fillStyle = palette.terrainBody;
@@ -308,13 +291,6 @@ export class Terrain extends Entity {
             context.roundRect(run.x, run.y, run.width, 3, 1.5);
             context.fill();
         }
-    }
-
-    isRunVisible(run, camera) {
-        return run.x + run.width > camera.viewLeft - TILE_SIZE
-            && run.x < camera.viewRight + TILE_SIZE
-            && run.y + DEPTH_SHADE_HEIGHT > camera.viewTop
-            && run.y - 40 < camera.viewBottom;
     }
 }
 

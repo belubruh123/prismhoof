@@ -124,8 +124,6 @@ export const RIBBON_LIFE_SECONDS = 6;
 export const RIBBON_FADE_SECONDS = 1;
 /** Painting a fourth ribbon dissolves the oldest, which bounds the collision work. */
 export const MAX_LIVE_RIBBONS = 3;
-/** A ribbon only purifies Gloom while it is this fresh, so old arcs are terrain, not a weapon. */
-export const RIBBON_PURIFY_SECONDS = 0.85;
 
 /**
  * How far below the hooves to keep reaching for a ribbon that is already being
@@ -146,6 +144,19 @@ export const RIBBON_MAX_LANDABLE_SLOPE = 2.2;
 // ---------------------------------------------------------------------------
 
 export const CAMERA_FOLLOW_STIFFNESS = 7.5;
+/**
+ * The vertical follow is deliberately slower than the horizontal one. Height
+ * changes in a platformer are sudden and constant, and matching them exactly is
+ * what makes a camera feel welded to the player rather than watching them.
+ */
+export const CAMERA_VERTICAL_STIFFNESS = 4;
+/**
+ * How far the unicorn may leave the camera's resting height before it starts
+ * dragging the view along. A jump fits inside this, so the horizon holds still.
+ */
+export const CAMERA_VERTICAL_SLACK = 115;
+/** The unicorn sits this far below the middle of the frame, leaving room to paint. */
+export const CAMERA_HEIGHT_OFFSET = 34;
 /** How far the camera leads the unicorn at full gallop. */
 export const CAMERA_LOOK_AHEAD = 110;
 export const CAMERA_LOOK_AHEAD_STIFFNESS = 2.4;
@@ -154,11 +165,9 @@ export const CAMERA_LOOK_AHEAD_STIFFNESS = 2.4;
 // Render order
 // ---------------------------------------------------------------------------
 
-export const LAYER_BACKGROUND = 0;
 export const LAYER_TERRAIN = 10;
 export const LAYER_PICKUP = 20;
 export const LAYER_RIBBON = 30;
 export const LAYER_GLOOM = 40;
 export const LAYER_UNICORN = 50;
 export const LAYER_PARTICLE = 60;
-export const LAYER_OVERLAY = 70;

@@ -35,7 +35,6 @@ const GLOOM_DARKENING = 0.72;
 export const SKY_TOP = [248, 0.62, 0.4];
 export const SKY_MIDDLE = [306, 0.66, 0.6];
 export const SKY_BOTTOM = [38, 0.94, 0.7];
-export const SUN_GLOW = [45, 1, 0.72];
 
 export const HILL_FAR = [286, 0.46, 0.52];
 export const HILL_MIDDLE = [270, 0.44, 0.38];
@@ -114,7 +113,6 @@ export function refreshPalette() {
     palette.skyTop = restoredColor(SKY_TOP);
     palette.skyMiddle = restoredColor(SKY_MIDDLE);
     palette.skyBottom = restoredColor(SKY_BOTTOM);
-    palette.sunGlow = restoredColor(SUN_GLOW);
 
     palette.cloud = restoredColor(CLOUD);
     palette.cloudShade = restoredColor(CLOUD_SHADE);

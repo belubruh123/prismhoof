@@ -11,9 +11,12 @@
  *   'G'  the rainbow gate
  *   'M'  a Murk   (ground patroller)
  *   'W'  a Wisp   (drifting chaser)
+ *   '!'  a sign, reading the next line of the level's `signs` list
  *
- * Writing levels as pictures keeps them readable in the source, and a wall of
- * repeated characters is close to free once the build compresses it.
+ * Writing levels as pictures keeps them readable in the source. Rows may be
+ * short, or empty: the grid is squared off to the widest row with empty tiles,
+ * and rows of empty sky are padded in above, so a level's source holds only the
+ * part of the picture that has something in it.
  */
 
 import { TILE_SIZE } from '../config.js';
@@ -34,6 +37,7 @@ const SPAWN_CHARACTERS = new Map([
     ['G', 'gate'],
     ['M', 'murk'],
     ['W', 'wisp'],
+    ['!', 'sign'],
 ]);
 
 /**
@@ -83,7 +87,7 @@ export function parseLevel(definition) {
 
     return {
         name: definition.name,
-        hint: definition.hint,
+        signs: definition.signs || [],
         tileGrid,
         spawns,
     };

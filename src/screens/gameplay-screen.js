@@ -9,7 +9,7 @@
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { BACK_KEYS, wasKeyPressed } from '../core/input.js';
-import { clamp, damp, min } from '../core/math.js';
+import { clamp, damp } from '../core/math.js';
 import { saveData, persistSaveData } from '../core/storage.js';
 import { refreshPalette, setColorRestoration, RAINBOW_COLORS } from '../graphics/palette.js';
 import { renderSky } from '../graphics/sky.js';
@@ -63,7 +63,6 @@ export class GameplayScreen extends Screen {
         this.colorRestoration = 0;
         this.restartCountdown = 0;
         this.clearedCountdown = 0;
-        this.bannerAge = 0;
 
         this.unicorn.onDeath = () => {
             this.deaths++;
@@ -83,7 +82,6 @@ export class GameplayScreen extends Screen {
 
     update(elapsedSeconds) {
         super.update(elapsedSeconds);
-        this.bannerAge += elapsedSeconds;
 
         if (wasKeyPressed(BACK_KEYS) || wasKeyPressed(['KeyP'])) {
             pushScreen(new PauseScreen(this));
@@ -155,7 +153,6 @@ export class GameplayScreen extends Screen {
             spacing: 2,
             align: 'left',
             color: TEXT_BRIGHT,
-            shadowOffset: 2,
         });
 
         drawText(formatTime(this.runSeconds), CANVAS_WIDTH - 26, 32, {
@@ -164,7 +161,6 @@ export class GameplayScreen extends Screen {
             spacing: 1,
             align: 'right',
             color: TEXT_BRIGHT,
-            shadowOffset: 2,
         });
 
         // Paint meter, bottom left, where a glance costs the least attention.
@@ -194,19 +190,6 @@ export class GameplayScreen extends Screen {
     }
 
     renderBanners() {
-        // The level's one-line hint fades in at the start and then gets out of the way.
-        if (this.level.hint && this.bannerAge < 5.5) {
-            const fade = min(1, min(this.bannerAge * 2, (5.5 - this.bannerAge) * 1.5));
-            drawText(this.level.hint, CANVAS_WIDTH / 2, 96, {
-                size: 20,
-                weight: 600,
-                spacing: 0.5,
-                color: TEXT_BRIGHT,
-                alpha: fade,
-                shadowOffset: 2,
-            });
-        }
-
         if (this.clearedCountdown > 0) {
             drawRainbowText('LEVEL CLEARED', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30, {
                 size: 62,
@@ -222,7 +205,6 @@ export class GameplayScreen extends Screen {
                 spacing: 4,
                 color: TEXT_BRIGHT,
                 alpha: clamp((RESTART_DELAY_SECONDS - this.restartCountdown) * 3, 0, 1),
-                shadowOffset: 3,
             });
         }
     }

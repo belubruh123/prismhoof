@@ -9,12 +9,17 @@
  * The left column is a list of (text, style, gap) rows rather than twenty
  * separate draw calls, which keeps the copy easy to edit and the layout in one
  * place.
+ *
+ * Several lines here are word-for-word what the signs in the first levels say.
+ * That is deliberate twice over: the phrasing a player is taught in the meadow
+ * is the phrasing they find again here, and a string the build has already seen
+ * costs the packed payload almost nothing to repeat.
  */
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { BACK_KEYS, CONFIRM_KEYS, wasKeyPressed } from '../core/input.js';
 import { drawRainbowText, drawText } from '../graphics/typography.js';
-import { TEXT_BRIGHT, TEXT_DIM, drawKeyRow, drawPanel, drawScreenDim } from '../graphics/ui.js';
+import { TEXT_BRIGHT, TEXT_DIM, drawPanel, drawScreenDim } from '../graphics/ui.js';
 import { Screen, popScreen } from './screen.js';
 
 const HEADING = { size: 19, weight: 900, spacing: 1.5, align: 'left', color: TEXT_BRIGHT };
@@ -26,29 +31,29 @@ const TERM = { size: 15, weight: 800, spacing: 1.5, align: 'left', color: TEXT_B
 const STORY = [
     ['The Gloom drained the colour from the Skyward Meadows.', STRONG, 0],
     ['You are the last unicorn. Your horn still holds the seven colours.', STRONG, 25],
-    ['HOLD SHIFT AND YOUR HORN POURS A RAINBOW.', HEADING, 44],
+    ['HOLD SHIFT TO POUR A RAINBOW', HEADING, 44],
     ['It flies out ahead of you, falls, and hardens where it lands.', BODY, 26],
     ['ON FLAT GROUND', TERM, 34],
     ['the stream sweeps down and purifies the Gloom', BODY, 21],
-    ['AT THE EDGE OF A DROP', TERM, 26],
-    ['it arcs across and becomes a bridge', BODY, 21],
-    ['ON THE WAY UP FROM A JUMP', TERM, 26],
-    ['it climbs, and becomes a ramp', BODY, 21],
+    ['AT THE EDGE OF A DROP IT ARCS ACROSS', TERM, 26],
+    ['the gap below becomes a bridge', BODY, 21],
+    ['POUR AS YOU RISE AND IT CLIMBS TOO', TERM, 26],
+    ['the jump becomes a ramp', BODY, 21],
     ['Purify every Gloom to open the Rainbow Gate, then run through it.', STRONG, 44],
     ['The colour returns to the meadow as you clear it.', BODY, 24],
 ];
 
 const CONTROLS = [
-    [['A', 'D'], 'GALLOP'],
-    [['SPACE'], 'JUMP  (hold for height)'],
-    [['S'], 'DIVE'],
-    [['SHIFT'], 'POUR RAINBOW  (hold)'],
-    [['R'], 'RETRY LEVEL'],
-    [['ESC'], 'PAUSE'],
+    ['A  D  or  ARROWS', 'GALLOP'],
+    ['SPACE  or  W', 'JUMP  (hold for height)'],
+    ['S', 'DIVE'],
+    ['SHIFT', 'POUR RAINBOW  (hold)'],
+    ['R', 'RETRY LEVEL'],
+    ['ESC', 'PAUSE'],
 ];
 
 const TIPS = [
-    ['PAINT REFILLS ONLY ON SOLID FOOTING.', TEXT_BRIGHT, 800],
+    ['PAINT ONLY REFILLS ON SOLID GROUND', TEXT_BRIGHT, 800],
     ['One hit is fatal. Retries are instant,', TEXT_DIM, 500],
     ['and the run clock never stops.', TEXT_DIM, 500],
 ];
@@ -84,9 +89,9 @@ export class HowToPlayScreen extends Screen {
         drawText('CONTROLS', columnX, y, { size: 19, weight: 900, spacing: 3, color: TEXT_BRIGHT });
 
         for (const [keys, label] of CONTROLS) {
-            y += 58;
-            drawKeyRow(keys, columnX, y, 15);
-            drawText(label, columnX, y + 26, { size: 14, weight: 600, spacing: 1, color: TEXT_DIM });
+            y += 52;
+            drawText(keys, columnX, y, { size: 17, weight: 900, spacing: 3, color: TEXT_BRIGHT });
+            drawText(label, columnX, y + 22, { size: 14, weight: 600, spacing: 1, color: TEXT_DIM });
         }
 
         y += 62;

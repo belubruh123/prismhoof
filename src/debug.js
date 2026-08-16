@@ -68,8 +68,23 @@ export function runDebugWarmUp() {
 
         updateScreens(1 / 60);
         applyDebugZoom(zoom);
+        countRibbonFrames();
         clearFrameInput();
     }
+}
+
+/**
+ * Warm-up steps spent standing on a painted rainbow, reported in the overlay.
+ *
+ * Whether the unicorn stays on its own arc is a question about a span of time,
+ * and a screenshot only shows an instant, so it is counted here and read back
+ * off a single frame instead of hunting for the right one.
+ */
+let framesOnRibbon = 0;
+
+function countRibbonFrames() {
+    const unicorn = topScreen()?.unicorn;
+    if (unicorn?.ribbonUnderfoot) framesOnRibbon++;
 }
 
 function applyDebugZoom(zoom) {
@@ -104,7 +119,7 @@ export function renderDebugOverlay(elapsedSeconds) {
         parts.push(
             `paint ${unicorn.paintEnergy.toFixed(2)}`,
             `ground ${unicorn.isOnGround ? 1 : 0}`,
-            `onRibbon ${unicorn.ribbonUnderfoot ? 1 : 0}`,
+            `onRibbon ${unicorn.ribbonUnderfoot ? 1 : 0}/${framesOnRibbon}`,
             unicorn.isDead ? 'DEAD' : '',
         );
     }

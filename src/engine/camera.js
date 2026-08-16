@@ -5,13 +5,16 @@
 
 import {
     CAMERA_FOLLOW_STIFFNESS,
+    CAMERA_HEIGHT_OFFSET,
     CAMERA_LOOK_AHEAD,
     CAMERA_LOOK_AHEAD_STIFFNESS,
+    CAMERA_VERTICAL_SLACK,
+    CAMERA_VERTICAL_STIFFNESS,
     CANVAS_HEIGHT,
     CANVAS_WIDTH,
     RUN_MAX_SPEED,
 } from '../config.js';
-import { clamp, damp, max, randomBetween } from '../core/math.js';
+import { clamp, damp, max, min, randomBetween } from '../core/math.js';
 import { saveData } from '../core/storage.js';
 
 export class Camera {
@@ -24,6 +27,9 @@ export class Camera {
 
     lookAheadX = 0;
 
+    /** The height the view rests at. See `update` for why it is not just the target's. */
+    focusY = 0;
+
     shakeStrength = 0;
     shakeSeconds = 0;
     shakeOffsetX = 0;
@@ -32,7 +38,7 @@ export class Camera {
     /** Drops the camera straight onto the target, with no spring, for level starts. */
     snapTo(x, y) {
         this.x = x;
-        this.y = y;
+        this.y = this.focusY = y;
         this.lookAheadX = 0;
         this.shakeSeconds = 0;
     }
@@ -49,8 +55,21 @@ export class Camera {
             const desiredLookAhead = clamp(this.target.velocityX / RUN_MAX_SPEED, -1, 1) * CAMERA_LOOK_AHEAD;
             this.lookAheadX = damp(this.lookAheadX, desiredLookAhead, CAMERA_LOOK_AHEAD_STIFFNESS, elapsedSeconds);
 
+            // Vertically the view chases a resting height rather than the
+            // unicorn itself. That height only moves while there is something
+            // under the hooves, and otherwise gives way just enough to keep a
+            // long fall in frame. A camera welded to the player's y instead
+            // pumps up and down through every single jump, which is the most
+            // obvious tell there is that nobody tuned the camera.
+            if (this.target.isOnGround) this.focusY = this.target.y;
+            this.focusY = clamp(
+                this.focusY,
+                this.target.y - CAMERA_VERTICAL_SLACK,
+                this.target.y + CAMERA_VERTICAL_SLACK,
+            );
+
             this.x = damp(this.x, this.target.x + this.lookAheadX, CAMERA_FOLLOW_STIFFNESS, elapsedSeconds);
-            this.y = damp(this.y, this.target.y - 30, CAMERA_FOLLOW_STIFFNESS, elapsedSeconds);
+            this.y = damp(this.y, this.focusY - CAMERA_HEIGHT_OFFSET, CAMERA_VERTICAL_STIFFNESS, elapsedSeconds);
         }
 
         this.clampToBounds(world);
@@ -67,22 +86,21 @@ export class Camera {
     }
 
     /**
-     * Keeps the view inside the level. When the level is smaller than the view
-     * on an axis, the level is centred on that axis instead.
+     * Keeps the view inside the level. When the level is narrower than the view
+     * it is centred horizontally instead.
      */
     clampToBounds(world) {
         const halfViewWidth = CANVAS_WIDTH / 2 / this.zoom;
-        const halfViewHeight = CANVAS_HEIGHT / 2 / this.zoom;
-
-        const { boundsLeft, boundsRight, boundsTop, boundsBottom } = world;
+        const { boundsLeft, boundsRight, boundsBottom } = world;
 
         this.x = boundsRight - boundsLeft < halfViewWidth * 2
             ? (boundsLeft + boundsRight) / 2
             : clamp(this.x, boundsLeft + halfViewWidth, boundsRight - halfViewWidth);
 
-        this.y = boundsBottom - boundsTop < halfViewHeight * 2
-            ? (boundsTop + boundsBottom) / 2
-            : clamp(this.y, boundsTop + halfViewHeight, boundsBottom - halfViewHeight);
+        // Only the floor is a hard edge. The sky above a level is deliberately
+        // open - it is where the rainbows go - so the view is allowed to climb
+        // straight out of the level's own bounds and follow the unicorn up.
+        this.y = min(this.y, boundsBottom - CANVAS_HEIGHT / 2 / this.zoom);
     }
 
     applyTransform(context) {

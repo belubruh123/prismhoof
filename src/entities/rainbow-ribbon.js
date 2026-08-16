@@ -28,7 +28,7 @@ import {
     RIBBON_THICKNESS,
 } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
-import { abs, clamp, distanceBetween, max, TAU } from '../core/math.js';
+import { abs, clamp, distanceBetween, max, min, TAU } from '../core/math.js';
 import { pointToSegmentDistanceSquared, segmentCrossFraction } from '../core/rect.js';
 import { Entity } from '../engine/entity.js';
 import { RAINBOW_COLORS } from '../graphics/palette.js';
@@ -155,6 +155,32 @@ export class RainbowRibbon extends Entity {
         }
 
         return landingY;
+    }
+
+    /**
+     * The height of the ribbon directly above or below a point, or null if the
+     * point is not over a landable stretch or is further from it than `reach`.
+     *
+     * Standing on a rainbow is resolved with this rather than with the swept
+     * test, because feet walking *up* a slope never cross the segment they are
+     * already on. The swept test alone can only catch a ribbon that is being
+     * fallen through, so on its own it drops the unicorn straight off the arc
+     * the moment it turns round and heads back the way it came.
+     */
+    surfaceYNear(x, y, reach) {
+        for (let index = 1; index < this.points.length; index++) {
+            const start = this.points[index - 1];
+            const end = this.points[index];
+
+            // Near-vertical stretches are walls, not floors. Checked first
+            // because it is also what rules out a zero-width segment below.
+            if (abs(end.y - start.y) > abs(end.x - start.x) * RIBBON_MAX_LANDABLE_SLOPE) continue;
+            if (x < min(start.x, end.x) || x > max(start.x, end.x)) continue;
+
+            const surfaceY = start.y + (end.y - start.y) * ((x - start.x) / (end.x - start.x));
+            if (abs(surfaceY - y) <= reach) return surfaceY;
+        }
+        return null;
     }
 
     /** Closest approach of any segment to a point, for Gloom purification tests. */

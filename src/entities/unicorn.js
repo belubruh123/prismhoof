@@ -27,6 +27,7 @@ import {
     PAINT_MINIMUM_TO_START,
     PAINT_REFILL_DELAY_SECONDS,
     PAINT_REFILL_PER_SECOND,
+    RIBBON_MAX_LANDABLE_SLOPE,
     RIBBON_SNAP_DISTANCE,
     RUN_ACCELERATION_AIR,
     RUN_ACCELERATION_GROUND,
@@ -262,20 +263,31 @@ export class Unicorn extends Entity {
             return;
         }
 
-        // Reach further down when already standing on a ribbon, otherwise
-        // running down a curving arc steps off it and re-lands every few frames.
-        const probeDepth = this.ribbonUnderfoot ? RIBBON_SNAP_DISTANCE : 0;
+        // Already on a rainbow: follow its surface uphill as well as down. The
+        // swept test below only catches an arc being fallen through, so it
+        // cannot hold a unicorn that is climbing the curve - which is what used
+        // to drop it through its own paint the instant it turned around.
+        if (this.ribbonUnderfoot && !this.ribbonUnderfoot.isRemoved) {
+            // Reach as far as the steepest landable stretch could climb in the
+            // distance covered this frame, so speed never outruns the snap.
+            const reach = RIBBON_SNAP_DISTANCE
+                + abs(this.x - this.previousX) * RIBBON_MAX_LANDABLE_SLOPE;
+            const surfaceY = this.ribbonUnderfoot.surfaceYNear(this.x, this.y + this.halfHeight, reach);
 
-        const fromX = this.previousX;
-        const fromY = this.previousY + this.halfHeight;
-        const toX = this.x;
-        const toY = this.y + this.halfHeight + probeDepth;
+            if (surfaceY !== null) {
+                this.standOnRibbon(this.ribbonUnderfoot, surfaceY);
+                return;
+            }
+        }
 
         let highestLandingY = null;
         let landedOn = null;
 
         for (const ribbon of this.world.entitiesOfCategory('ribbon')) {
-            const landingY = ribbon.findLandingY(fromX, fromY, toX, toY);
+            const landingY = ribbon.findLandingY(
+                this.previousX, this.previousY + this.halfHeight,
+                this.x, this.y + this.halfHeight,
+            );
             if (landingY === null) continue;
             if (highestLandingY === null || landingY < highestLandingY) {
                 highestLandingY = landingY;
@@ -284,12 +296,14 @@ export class Unicorn extends Entity {
         }
 
         this.ribbonUnderfoot = landedOn;
+        if (landedOn) this.standOnRibbon(landedOn, highestLandingY);
+    }
 
-        if (landedOn) {
-            this.y = highestLandingY - this.halfHeight;
-            this.velocityY = 0;
-            this.isOnGround = true;
-        }
+    standOnRibbon(ribbon, surfaceY) {
+        this.ribbonUnderfoot = ribbon;
+        this.y = surfaceY - this.halfHeight;
+        this.velocityY = 0;
+        this.isOnGround = true;
     }
 
     land() {

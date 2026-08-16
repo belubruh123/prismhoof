@@ -24,10 +24,15 @@ behind it until it splashes against the scenery. Where you fire from decides wha
 | The way up out of a jump | it inherits your lift and climbs — **a ramp** |
 
 Rainbows are one-way floors: you always pass up through your own paint and land on it
-coming down. Paint is a limited meter that only refills when your hooves are on something
-solid, so every level is a question of *where* to spend your arcs. Purify all the Gloom and
-the Rainbow Gate opens. As the Gloom clears, the color bleeds back into the world — the
-theme is literally the win condition.
+coming down, and you can run back along an arc you have already crossed. Paint is a limited
+meter that only refills when your hooves are on something solid — a rainbow counts — so
+every level is a question of *where* to spend your arcs. Purify all the Gloom and the
+Rainbow Gate opens. As the Gloom clears, the color bleeds back into the world — the theme
+is literally the win condition.
+
+**Thirteen levels**, for thirteen kilobytes. They teach themselves: the first few carry
+signposts standing in the meadow rather than a tutorial screen, and after that the geometry
+does the talking.
 
 > The stream fires *ahead* of the unicorn rather than trailing behind it, and that is a
 > mechanical necessity rather than a flourish. A ribbon emitted at the horn sits
@@ -99,7 +104,7 @@ src/
   core/       canvas, loop, input, storage, maths, geometry   (no game knowledge)
   engine/     entity, world, camera, particles                (no game knowledge)
   graphics/   palette, textures, sky, hair, typography, ui
-  entities/   unicorn, unicorn art, rainbow ribbon, terrain, gloom, gate
+  entities/   unicorn, unicorn art, rainbow ribbon, terrain, gloom, gate, signs
   screens/    title, how to play, settings, gameplay, pause
   levels/     level format, level builder, level data
   audio/      context, sound effects, music
@@ -111,6 +116,10 @@ Two files are worth reading first: `src/entities/rainbow-ribbon.js` is the whole
 one class, and `src/entities/unicorn-art.js` is the entire character performance — flat
 vector only, with legs solved by two-bone IK from a hoof target so they stay planted, and
 a mane and tail built from angular spring chains.
+
+`src/levels/levels.js` is worth a look too: every level is drawn as a picture, one string
+per row, with `!` marking where a signpost stands and the level's `signs` list supplying
+what it reads.
 
 ## Credits
 

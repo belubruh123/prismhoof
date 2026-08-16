@@ -99,7 +99,6 @@ export class TitleScreen extends MenuScreen {
                 weight: 600,
                 spacing: 4,
                 color: TEXT_BRIGHT,
-                shadowOffset: 2,
             });
         }
 
@@ -114,7 +113,6 @@ export class TitleScreen extends MenuScreen {
                 weight: 700,
                 spacing: 2.5,
                 color: TEXT_DIM,
-                shadowOffset: 2,
             });
         }
 
@@ -134,7 +132,6 @@ export class TitleScreen extends MenuScreen {
             weight: 700,
             spacing: 3,
             color: TEXT_BRIGHT,
-            shadowOffset: 2,
         });
 
         drawText(formatTime(seconds), CANVAS_WIDTH / 2, y + 74, {
@@ -142,14 +139,13 @@ export class TitleScreen extends MenuScreen {
             weight: 900,
             spacing: 3,
             color: TEXT_BRIGHT,
-            shadowOffset: 3,
         });
 
         drawText(
             `${isBest ? 'NEW BEST RUN' : `BEST ${formatTime(saveData.bestRunSeconds)}`}`
             + `   -   ${deaths} ${deaths === 1 ? 'fall' : 'falls'}`,
             CANVAS_WIDTH / 2, y + 126,
-            { size: 16, weight: 800, spacing: 2.5, color: isBest ? TEXT_BRIGHT : TEXT_DIM, shadowOffset: 2 },
+            { size: 16, weight: 800, spacing: 2.5, color: isBest ? TEXT_BRIGHT : TEXT_DIM },
         );
     }
 }

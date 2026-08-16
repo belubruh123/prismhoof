@@ -1,8 +1,6 @@
 /**
- * The Rainbow Gate: a level's exit.
- *
- * It stays shut until every Gloom is purified, so the win condition is readable
- * from the world itself with no extra bookkeeping.
+ * The furniture a level is built out of: the gate that ends it, and the signs
+ * that stand along the way.
  */
 
 import { playGateSound } from '../audio/sfx.js';
@@ -11,9 +9,10 @@ import { canvasContext } from '../core/canvas.js';
 import { clamp, sin, TAU } from '../core/math.js';
 import { boxesOverlap } from '../core/rect.js';
 import { Entity } from '../engine/entity.js';
-import { drawFourPointStar } from '../engine/particles.js';
 import { palette, RAINBOW_COLORS } from '../graphics/palette.js';
 import { drawRadialGlow } from '../graphics/textures.js';
+import { drawText } from '../graphics/typography.js';
+import { TEXT_BRIGHT } from '../graphics/ui.js';
 
 /**
  * The level exit. Shut and grey while any Gloom remains, then it blooms open
@@ -81,5 +80,43 @@ export class RainbowGate extends Entity {
         }
 
         context.globalAlpha = 1;
+    }
+}
+
+/**
+ * A line of text standing in the level itself.
+ *
+ * The game teaches itself where the player is already looking rather than in a
+ * banner across the top of the screen. The picture in `levels.js` says where
+ * each sign stands and the level's `signs` list says what it reads, in the
+ * order they are walked past.
+ */
+export class LevelSign extends Entity {
+    categories = ['sign'];
+    layer = LAYER_PICKUP;
+
+    constructor(x, y, text) {
+        super();
+        this.x = x;
+        this.y = y;
+        this.text = text;
+    }
+
+    render() {
+        const y = this.y + sin(this.age * 1.5) * 3;
+        const width = drawText(this.text, this.x, y, {
+            size: 21,
+            weight: 800,
+            spacing: 1.6,
+            color: TEXT_BRIGHT,
+        });
+
+        // A rainbow rule the width of the line. It costs almost nothing and it
+        // is what stops the words reading as HUD that drifted into the world.
+        const bandWidth = width / RAINBOW_COLORS.length;
+        RAINBOW_COLORS.forEach((color, index) => {
+            canvasContext.fillStyle = color;
+            canvasContext.fillRect(this.x - width / 2 + index * bandWidth, y + 16, bandWidth + 1, 3);
+        });
     }
 }

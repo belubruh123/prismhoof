@@ -1,5 +1,5 @@
 /**
- * Canvas UI pieces: panels, menu lists, key caps and meters.
+ * Canvas UI pieces: panels, menu lists and meters.
  *
  * All of it is drawn with paths on the game canvas. Nothing here touches the
  * DOM, so the whole interface letterboxes and scales with the game and looks
@@ -10,7 +10,7 @@ import { canvasContext } from '../core/canvas.js';
 import { clamp, sin, TAU } from '../core/math.js';
 import { drawFourPointStar } from '../engine/particles.js';
 import { RAINBOW_COLORS } from './palette.js';
-import { drawText, measureText } from './typography.js';
+import { drawText } from './typography.js';
 
 const PANEL_BACKGROUND = 'rgba(18,10,34,0.82)';
 export const TEXT_DIM = 'rgba(233,220,255,0.62)';
@@ -66,7 +66,6 @@ export function drawMenu(items, selectedIndex, centreX, startY, {
             spacing: 1.5,
             align: item.detail ? 'left' : 'center',
             color: isSelected ? TEXT_BRIGHT : TEXT_DIM,
-            shadowOffset: 2,
         });
 
         if (item.detail) {
@@ -76,7 +75,6 @@ export function drawMenu(items, selectedIndex, centreX, startY, {
                 spacing: 1,
                 align: 'right',
                 color: isSelected ? TEXT_BRIGHT : TEXT_DIM,
-                shadowOffset: 2,
             });
         }
     });
@@ -98,39 +96,6 @@ function drawSelectionMarker(centreX, y, width, time) {
     drawFourPointStar(context, centreX - width / 2 - 6, y, 6 * pulse, time * 2);
 
     context.restore();
-}
-
-/** A row of key legends, each a rounded cap with the key name inside. */
-export function drawKeyRow(labels, x, y, size = 17) {
-    const context = canvasContext;
-    const gap = 7;
-    const height = size + 15;
-
-    const widths = labels.map((label) => measureText(label, size, 700, 1) + 20);
-    const totalWidth = widths.reduce((sum, width) => sum + width, 0) + gap * (labels.length - 1);
-
-    context.save();
-    context.fillStyle = 'rgba(255,255,255,0.13)';
-    context.strokeStyle = 'rgba(255,255,255,0.36)';
-    context.lineWidth = 1.5;
-
-    let cursor = x - totalWidth / 2;
-    for (const width of widths) {
-        context.beginPath();
-        context.roundRect(cursor, y - height / 2, width, height, 6);
-        context.fill();
-        context.stroke();
-        cursor += width + gap;
-    }
-    context.restore();
-
-    cursor = x - totalWidth / 2;
-    labels.forEach((label, index) => {
-        drawText(label, cursor + widths[index] / 2, y + 1, {
-            size, weight: 700, spacing: 1, color: TEXT_BRIGHT,
-        });
-        cursor += widths[index] + gap;
-    });
 }
 
 /**

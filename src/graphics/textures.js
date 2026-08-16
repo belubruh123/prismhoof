@@ -1,12 +1,9 @@
 /**
- * Pre-rendered tiling textures.
+ * A pre-rendered tiling texture, and the soft glow used all over the game.
  *
- * Each one is drawn once into a small offscreen canvas and turned into a
- * repeating CanvasPattern. Overlaying these at low alpha is what keeps the flat
- * vector art from looking like plain filled shapes, and it costs almost nothing
- * per frame compared to generating detail live.
- *
- * They are all white-on-transparent so the same texture can be tinted by
+ * The star field is drawn once into a small offscreen canvas and turned into a
+ * repeating CanvasPattern, which costs almost nothing per frame compared to
+ * generating the detail live. It is white-on-transparent, so it can be tinted by
  * whatever it is laid over.
  */
 
@@ -20,17 +17,6 @@ function createPattern(width, height, renderCallback) {
     pattern.height = height;
     return pattern;
 }
-
-/** Fine speckle. Laid over terrain so the rock reads as rough rather than flat. */
-export const grainTexture = createPattern(128, 128, (context) => {
-    const random = createSeededRandom(9137);
-    context.fillStyle = '#fff';
-    for (let index = 0; index < 460; index++) {
-        const size = random() * 1.8 + 0.4;
-        context.globalAlpha = random() * 0.6 + 0.2;
-        context.fillRect(random() * 128, random() * 128, size, size);
-    }
-});
 
 /** Distant stars. Only visible while the Gloom still holds the sky. */
 export const starTexture = createPattern(256, 256, (context) => {

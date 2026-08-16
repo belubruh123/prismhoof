@@ -16,7 +16,7 @@ import { cos, damp, hypot, max, min, randomBetween, sin, TAU } from '../core/mat
 import { boxesOverlap } from '../core/rect.js';
 import { Entity } from '../engine/entity.js';
 import { burstRainbow } from '../engine/particles.js';
-import { palette, RAINBOW_COLORS } from '../graphics/palette.js';
+import { palette } from '../graphics/palette.js';
 
 const MURK_SPEED = 78;
 const WISP_SPEED = 105;

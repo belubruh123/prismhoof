@@ -3,14 +3,19 @@
  *
  * Everything is canvas text - there is no DOM UI anywhere in this game, and no
  * webfont either, since the entry has to run with zero network requests. The
- * font stack is ordinary system faces, and character is added with weight,
- * letter spacing and rainbow gradient fills rather than with a typeface.
+ * stack asks for the roundest geometric faces that ship with Windows and macOS
+ * and falls back through Trebuchet, so the lettering keeps a soft storybook
+ * shape wherever it lands.
  */
 
 import { canvasContext } from '../core/canvas.js';
 import { RAINBOW_COLORS } from './palette.js';
 
-const FONT_STACK = `'Trebuchet MS','Segoe UI',system-ui,sans-serif`;
+const FONT_STACK = `'Century Gothic',Futura,'Trebuchet MS',system-ui,sans-serif`;
+
+/** Thickness of the border drawn around every string, as a fraction of its size. */
+const OUTLINE_RATIO = 0.17;
+const OUTLINE_COLOR = '#22103f';
 
 /** Applies a font to the context and returns the measured width of `text`. */
 function applyFont(text, size, weight, spacing) {
@@ -39,7 +44,7 @@ export function drawText(text, x, y, {
     baseline = 'middle',
     color = '#fff',
     alpha = 1,
-    shadowOffset = 0,
+    outline = OUTLINE_RATIO,
 } = {}) {
     const context = canvasContext;
     context.save();
@@ -49,9 +54,19 @@ export function drawText(text, x, y, {
     context.textBaseline = baseline;
     context.globalAlpha = alpha;
 
-    if (shadowOffset) {
-        context.fillStyle = 'rgba(20,8,40,0.55)';
-        context.fillText(text, x, y + shadowOffset);
+    // A dark border and a soft drop shadow on every string. Between them the
+    // text holds up over a bright sky, a rainbow and a wall of grass without
+    // needing a panel behind it, which is what lets the signs stand in the
+    // level itself rather than in a box at the top of the screen.
+    if (outline) {
+        context.lineWidth = size * outline;
+        context.lineJoin = 'round';
+        context.strokeStyle = OUTLINE_COLOR;
+        context.shadowColor = 'rgba(14,5,32,0.45)';
+        context.shadowBlur = size * 0.3;
+        context.shadowOffsetY = size * 0.1;
+        context.strokeText(text, x, y);
+        context.shadowColor = 'transparent';
     }
 
     context.fillStyle = color;

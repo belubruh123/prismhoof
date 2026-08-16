@@ -13,7 +13,7 @@
 
 import { UNICORN_HALF_HEIGHT } from '../config.js';
 import { canvasContext, wrap } from '../core/canvas.js';
-import { abs, acos, atan2, clamp, cos, hypot, lerp, min, PI, sin, TAU } from '../core/math.js';
+import { abs, acos, atan2, clamp, cos, hypot, lerp, PI, sin, TAU } from '../core/math.js';
 import { HORN_COLOR, RAINBOW_COLORS, UNICORN_COAT, UNICORN_EYE, UNICORN_HOOF, UNICORN_SHADE } from '../graphics/palette.js';
 import { drawRadialGlow } from '../graphics/textures.js';
 

@@ -1,5 +1,5 @@
 /**
- * The parallax backdrop: gradient sky, stars, sun, three ranges of hills and
+ * The parallax backdrop: gradient sky, stars, three ranges of hills and
  * drifting clouds.
  *
  * All of it is drawn in screen space. Parallax comes from offsetting the shapes
@@ -10,7 +10,7 @@
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { createSeededRandom, sin, TAU } from '../core/math.js';
-import { HILL_FAR, HILL_MIDDLE, HILL_NEAR, SUN_GLOW, getColorRestoration, palette, restoredColor } from './palette.js';
+import { HILL_FAR, HILL_MIDDLE, HILL_NEAR, getColorRestoration, palette, restoredColor } from './palette.js';
 import { starTexture } from './textures.js';
 
 /** Horizontal resolution of the hill silhouettes, in screen pixels per step. */
@@ -58,7 +58,6 @@ export function renderSky(camera, timeSeconds) {
     context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     renderStars(context, camera, timeSeconds);
-    renderSun(context, camera, timeSeconds);
 
     for (const layer of HILL_LAYERS) renderHillLayer(context, camera, layer);
 
@@ -79,23 +78,6 @@ function renderStars(context, camera, timeSeconds) {
     context.translate(offsetX, offsetY);
     context.fillRect(-offsetX, -offsetY, CANVAS_WIDTH, CANVAS_HEIGHT * 0.8);
     context.restore();
-}
-
-function renderSun(context, camera, timeSeconds) {
-    const x = CANVAS_WIDTH * 0.78 - camera.x * 0.03;
-    const y = CANVAS_HEIGHT * 0.3 - camera.y * 0.03;
-    const radius = 54 + sin(timeSeconds * 0.8) * 2;
-
-    const glow = context.createRadialGradient(x, y, radius * 0.4, x, y, radius * 5);
-    glow.addColorStop(0, restoredColor(SUN_GLOW, 0.5));
-    glow.addColorStop(1, 'transparent');
-    context.fillStyle = glow;
-    context.fillRect(x - radius * 5, y - radius * 5, radius * 10, radius * 10);
-
-    context.fillStyle = palette.sunGlow;
-    context.beginPath();
-    context.arc(x, y, radius, 0, TAU);
-    context.fill();
 }
 
 function renderHillLayer(context, camera, { color, parallax, baseRatio, amplitude, frequency, phase }) {
