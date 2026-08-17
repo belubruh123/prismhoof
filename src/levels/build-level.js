@@ -5,7 +5,8 @@
  * keeps both the level format and the gameplay screen ignorant of the cast.
  */
 
-import { TILE_SIZE } from '../config.js';
+import { CANVAS_HEIGHT, CANVAS_WIDTH, TILE_SIZE } from '../config.js';
+import { min } from '../core/math.js';
 import { GloomMurk, GloomWisp } from '../entities/gloom.js';
 import { LevelSign, RainbowGate } from '../entities/objectives.js';
 import { Terrain } from '../entities/terrain.js';
@@ -50,6 +51,13 @@ export function buildLevelWorld(definition) {
         SPAWN_BUILDERS.get(spawn.type)?.(world, spawn);
     }
 
+    // The whole chamber is meant to sit on the screen at once, so the view is
+    // scaled to fit the level instead of following the unicorn around inside it.
+    // That makes the unicorn small and costs some of the character animation up
+    // close; what it buys is worth more - you can read the shape of a course and
+    // plan a route through it before you move, and the walls around it are
+    // visible, so a level looks like a place rather than a strip of ground.
+    world.camera.zoom = min(1, CANVAS_WIDTH / terrain.widthInPixels, CANVAS_HEIGHT / terrain.heightInPixels);
     world.camera.target = unicorn;
     world.camera.snapTo(unicorn.x, unicorn.y);
 

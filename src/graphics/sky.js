@@ -1,5 +1,5 @@
 /**
- * The sky seen through the level: a gradient, a drifting star field and clouds.
+ * The sky seen through the level: a gradient and drifting clouds.
  *
  * All of it is drawn in screen space, and parallax comes from offsetting the
  * shapes by a fraction of the camera position rather than from moving real
@@ -14,7 +14,6 @@ import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { createSeededRandom, sin, TAU } from '../core/math.js';
 import { getColorRestoration, palette } from './palette.js';
-import { starTexture } from './textures.js';
 
 /** Fixed cloud layout, generated once so the sky is stable across frames. */
 const CLOUDS = (() => {
@@ -51,25 +50,8 @@ export function renderSky(camera, timeSeconds) {
     context.fillStyle = getSkyGradient(context);
     context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    renderStars(context, camera, timeSeconds);
 
     renderClouds(context, camera, timeSeconds);
-}
-
-/** Stars belong to the Gloom - they fade out as the colour comes back. */
-function renderStars(context, camera, timeSeconds) {
-    const visibility = 1 - getColorRestoration();
-    if (visibility <= 0.01) return;
-
-    const offsetX = -camera.x * 0.02 % starTexture.width;
-    const offsetY = -camera.y * 0.02 % starTexture.height;
-
-    context.save();
-    context.globalAlpha = visibility * (0.55 + 0.12 * sin(timeSeconds * 1.7));
-    context.fillStyle = starTexture;
-    context.translate(offsetX, offsetY);
-    context.fillRect(-offsetX, -offsetY, CANVAS_WIDTH, CANVAS_HEIGHT * 0.8);
-    context.restore();
 }
 
 function renderClouds(context, camera, timeSeconds) {

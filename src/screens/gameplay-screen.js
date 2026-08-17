@@ -226,7 +226,7 @@ export class GameplayScreen extends Screen {
         }
 
         if (this.restartCountdown > 0) {
-            drawText('THE GLOOM TOOK YOU', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20, {
+            drawText(this.unicorn.deathCause, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20, {
                 size: 40,
                 weight: 900,
                 spacing: 4,

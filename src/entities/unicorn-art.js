@@ -434,7 +434,7 @@ export function buildUnicornPose(unicorn) {
         bodyLean,
         neckAngle,
         headAngle,
-        earAngle: unicorn.earTwitch * 0.55 - 0.1 + sin(age * 1.3) * 0.06 * idleAmount,
+        earAngle: sin(age * 1.3) * 0.06 * idleAmount - 0.1,
         eyeOpenness: unicorn.eyeOpenness,
         hornGlow: unicorn.hornGlow,
         hornColorIndex: unicorn.hornColorIndex,

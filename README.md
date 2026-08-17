@@ -38,13 +38,22 @@ is literally the win condition.
 Wisps drink any finished rainbow they reach, so a bridge is not safe just because you
 built it — that is the reason to spend a shot on one rather than outrun it.
 
-**Thirteen levels**, for thirteen kilobytes. Most of a level is empty sky and falling into
-it kills you: solid ground comes as islands, ledges and pillars, and the rainbow is how you
-get from one to the next. They teach themselves, with signposts standing in the meadow
-rather than a tutorial screen, and after that the geometry does the talking.
+**Thirteen levels**, for thirteen kilobytes. Solid ground is scarce and comes as islands,
+ledges and pillars; under all of it is a lake of lava, and the rainbow is how you get from
+one piece of ground to the next. They teach themselves, with signposts standing in the
+meadow rather than a tutorial screen, and after that the geometry does the talking.
 
-Each level is a chamber cut out of the world rather than a strip of ground in an open sky —
-beyond its edges is solid rock, and the sky you can see is the sky inside the chamber.
+Each level is a **chamber cut out of the world** rather than a strip of ground under an
+open sky — beyond its edges is solid rock, below it is the lava, and the sky you can see is
+the sky inside the chamber. The whole chamber is scaled to fit the screen, so the view
+never moves: you can read the shape of a course and plan a route before you commit to it.
+That makes the unicorn small and costs some of the character animation up close, which is a
+trade made on purpose.
+
+The story is told in a short opening rather than buried in a menu, and the colour floods
+back into the sky as the last line lands — the screen states the premise and demonstrates
+the win condition in the same gesture. It is skippable, and only shown to a save file that
+has never finished a level.
 
 > The stream fires *ahead* of the unicorn rather than trailing behind it, and that is a
 > mechanical necessity rather than a flourish. A ribbon emitted at the horn sits
@@ -116,8 +125,8 @@ src/
   core/       canvas, loop, input, storage, maths, geometry   (no game knowledge)
   engine/     entity, world, camera, particles                (no game knowledge)
   graphics/   palette, textures, sky, hair, typography, ui
-  entities/   unicorn, unicorn art, rainbow ribbon, terrain, gloom, gate, signs
-  screens/    title, how to play, settings, gameplay, pause
+  entities/   unicorn, unicorn art, rainbow ribbon, terrain, lava, gloom, gate, signs
+  screens/    opening, title, how to play, settings, gameplay, pause
   levels/     level format, level builder, level data
   audio/      context, sound effects, music
   debug.js    headless-testing hooks, dropped from the release build

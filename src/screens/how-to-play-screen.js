@@ -1,10 +1,10 @@
 /**
  * How to play - the game explaining itself.
  *
- * A judge may never read a line of this repository, so everything needed to
- * understand and enjoy PRISMHOOF is here: the premise, the goal, the one verb
- * and its three uses, the controls, and the two tips that are hardest to
- * discover by accident. Reachable from the title screen and from the pause menu.
+ * A judge may never read a line of this repository, so everything needed to play
+ * PRISMHOOF well is here: the one verb and its four uses, the goal, the controls
+ * and the tips that are hardest to discover by accident. The premise is not -
+ * that is what the opening is for. Reachable from the title and the pause menu.
  *
  * The left column is a list of (text, style, gap) rows rather than twenty
  * separate draw calls, which keeps the copy easy to edit and the layout in one
@@ -29,9 +29,7 @@ const TERM = { size: 15, weight: 800, spacing: 1.5, align: 'left', color: TEXT_B
 
 /** [text, style, pixels of space before this line] */
 const STORY = [
-    ['The Gloom drained the colour from the Skyward Meadows.', STRONG, 0],
-    ['You are the last unicorn. Your horn still holds the seven colours.', STRONG, 25],
-    ['HOLD SHIFT TO POUR A RAINBOW', HEADING, 44],
+    ['HOLD SHIFT TO POUR A RAINBOW', HEADING, 0],
     ['It flies out ahead of you, falls, and hardens where it lands.', BODY, 26],
     ['ON FLAT GROUND', TERM, 34],
     ['the stream sweeps down and purifies the Gloom', BODY, 21],

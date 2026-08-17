@@ -174,6 +174,12 @@ export const CAMERA_VERTICAL_STIFFNESS = 4;
 export const CAMERA_VERTICAL_SLACK = 115;
 /** The unicorn sits this far below the middle of the frame, leaving room to paint. */
 export const CAMERA_HEIGHT_OFFSET = 34;
+/**
+ * A framed level is pushed this far up the screen rather than sitting dead
+ * centre, which leaves the lava under it in shot and keeps the HUD off the
+ * playfield.
+ */
+export const CAMERA_FRAME_BIAS = 20;
 /** How far the camera leads the unicorn at full gallop. */
 export const CAMERA_LOOK_AHEAD = 110;
 export const CAMERA_LOOK_AHEAD_STIFFNESS = 2.4;

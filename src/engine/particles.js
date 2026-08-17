@@ -13,7 +13,6 @@ import { cos, randomBetween, sin, TAU } from '../core/math.js';
 import { RAINBOW_COLORS } from '../graphics/palette.js';
 import { Entity } from './entity.js';
 
-export const PARTICLE_CIRCLE = 0;
 export const PARTICLE_STAR = 1;
 
 const POOL_CAPACITY = 280;
@@ -47,7 +46,7 @@ export class ParticleField extends Entity {
         endSize = 0,
         color,
         lifetime = 0.5,
-        shape = PARTICLE_CIRCLE,
+        shape = 0,
         spin = 0,
     }) {
         const particle = this.particles[this.nextSlot];
@@ -103,12 +102,12 @@ export class ParticleField extends Entity {
             context.globalAlpha = progress > 0.7 ? (1 - progress) / 0.3 : 1;
             context.fillStyle = particle.color;
 
-            if (particle.shape === PARTICLE_CIRCLE) {
+            if (particle.shape) {
+                drawFourPointStar(context, particle.x, particle.y, size, particle.rotation);
+            } else {
                 context.beginPath();
                 context.arc(particle.x, particle.y, size, 0, TAU);
                 context.fill();
-            } else {
-                drawFourPointStar(context, particle.x, particle.y, size, particle.rotation);
             }
         }
 

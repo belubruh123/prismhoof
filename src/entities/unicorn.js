@@ -42,11 +42,12 @@ import { canvasContext } from '../core/canvas.js';
 import { DIVE_KEYS, JUMP_KEYS, MOVE_LEFT_KEYS, MOVE_RIGHT_KEYS, PAINT_KEYS, isKeyDown, wasKeyPressed } from '../core/input.js';
 import { abs, approach, clamp, damp, max, min, PI, randomBetween, sign } from '../core/math.js';
 import { Entity } from '../engine/entity.js';
-import { burstRainbow, PARTICLE_CIRCLE, PARTICLE_STAR } from '../engine/particles.js';
+import { burstRainbow, PARTICLE_STAR } from '../engine/particles.js';
 import { HairStrand } from '../graphics/hair.js';
 import { RAINBOW_COLORS, UNICORN_COAT } from '../graphics/palette.js';
 import { playDeathSound, playJumpSound, playLandSound, playPaintSound } from '../audio/sfx.js';
 import { RainbowRibbon } from './rainbow-ribbon.js';
+import { LAVA_SURFACE_DEPTH } from './terrain.js';
 import { buildUnicornPose, drawUnicorn, hornTipPosition } from './unicorn-art.js';
 
 /** Speed below which the unicorn counts as standing still and starts idling. */
@@ -103,8 +104,6 @@ export class Unicorn extends Entity {
 
     eyeOpenness = 1;
     blinkCountdown = 2;
-    earTwitch = 0;
-    earTwitchCountdown = 3;
 
     hornGlow = 0;
     hornColorIndex = 0;
@@ -168,9 +167,12 @@ export class Unicorn extends Entity {
             this.y += this.velocityY * elapsedSeconds;
         }
 
-        // Falling out of the bottom of the level is fatal. Checked here rather
-        // than in the gameplay screen so nothing can fall forever.
-        if (!this.isDead && this.y > this.world.boundsBottom + 90) this.die();
+        // Touching the lava is fatal, and it is what is under every hole in
+        // every floor. Checked here rather than in the gameplay screen so
+        // nothing can fall forever.
+        if (!this.isDead && this.y + this.halfHeight > this.world.boundsBottom + LAVA_SURFACE_DEPTH) {
+            this.die('THE LAVA TOOK YOU');
+        }
 
         this.updateAnimation(elapsedSeconds);
         this.updatePainting(elapsedSeconds);
@@ -332,7 +334,6 @@ export class Unicorn extends Entity {
                 endSize: 0,
                 lifetime: randomBetween(0.25, 0.5),
                 color: UNICORN_COAT,
-                shape: PARTICLE_CIRCLE,
             });
         }
     }
@@ -370,13 +371,6 @@ export class Unicorn extends Entity {
         } else {
             this.eyeOpenness = 1;
         }
-
-        this.earTwitchCountdown -= elapsedSeconds;
-        if (this.earTwitchCountdown < 0) {
-            this.earTwitch = this.earTwitchCountdown > -0.22 ? 1 : 0;
-            if (this.earTwitchCountdown <= -0.22) this.earTwitchCountdown = randomBetween(2.2, 6);
-        }
-        this.earTwitch = damp(this.earTwitch, 0, 9, elapsedSeconds);
 
         // Snaps on and eases off: the horn should light the instant the key is
         // pressed, because the pose it produces is what aims the shot.
@@ -494,9 +488,10 @@ export class Unicorn extends Entity {
      * as a real event rather than a freeze; the gameplay screen restarts once
      * the burst has had a moment to play.
      */
-    die() {
+    die(cause = 'THE GLOOM TOOK YOU') {
         if (this.isDead) return;
         this.isDead = true;
+        this.deathCause = cause;
 
         this.velocityX = -this.facing * 150;
         this.velocityY = -420;

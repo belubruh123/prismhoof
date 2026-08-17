@@ -5,6 +5,7 @@
 
 import {
     CAMERA_FOLLOW_STIFFNESS,
+    CAMERA_FRAME_BIAS,
     CAMERA_HEIGHT_OFFSET,
     CAMERA_LOOK_AHEAD,
     CAMERA_LOOK_AHEAD_STIFFNESS,
@@ -86,21 +87,23 @@ export class Camera {
     }
 
     /**
-     * Keeps the view inside the level. When the level is narrower than the view
-     * it is centred horizontally instead.
+     * Keeps the view inside the level, and centres the level on any axis it is
+     * smaller than the view on - which, now that levels are scaled to fit, is
+     * usually both, so the camera holds perfectly still and the chamber sits
+     * framed on the screen.
      */
     clampToBounds(world) {
         const halfViewWidth = CANVAS_WIDTH / 2 / this.zoom;
-        const { boundsLeft, boundsRight, boundsBottom } = world;
+        const halfViewHeight = CANVAS_HEIGHT / 2 / this.zoom;
+        const { boundsLeft, boundsRight, boundsTop, boundsBottom } = world;
 
         this.x = boundsRight - boundsLeft < halfViewWidth * 2
             ? (boundsLeft + boundsRight) / 2
             : clamp(this.x, boundsLeft + halfViewWidth, boundsRight - halfViewWidth);
 
-        // Only the floor is a hard edge. The sky above a level is deliberately
-        // open - it is where the rainbows go - so the view is allowed to climb
-        // straight out of the level's own bounds and follow the unicorn up.
-        this.y = min(this.y, boundsBottom - CANVAS_HEIGHT / 2 / this.zoom);
+        this.y = boundsBottom - boundsTop < halfViewHeight * 2
+            ? (boundsTop + boundsBottom) / 2 + CAMERA_FRAME_BIAS / this.zoom
+            : min(this.y, boundsBottom - halfViewHeight);
     }
 
     applyTransform(context) {

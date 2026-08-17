@@ -16,9 +16,9 @@
 
 import { LAYER_TERRAIN, TILE_SIZE } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
-import { createSeededRandom, floor } from '../core/math.js';
+import { createSeededRandom, floor, sin } from '../core/math.js';
 import { Entity } from '../engine/entity.js';
-import { TERRAIN_GRASS, palette, restoredColor } from '../graphics/palette.js';
+import { palette } from '../graphics/palette.js';
 
 export const TILE_EMPTY = 0;
 export const TILE_SOLID = 1;
@@ -28,9 +28,21 @@ export const TILE_PLATFORM = 2;
 /** Pulls the collision box in slightly so a flush wall does not count as a floor. */
 const COLLISION_INSET = 0.5;
 
-/** How deep the lit-to-dark gradient under a surface reaches. */
-const DEPTH_SHADE_HEIGHT = 96;
 const GRASS_CAP_HEIGHT = 9;
+
+/**
+ * The lake the chamber is suspended over. Its surface sits a little below the
+ * level's own floor, so a gap in the ground is a hole straight down into it.
+ *
+ * Lava keeps its own colours rather than taking them from the palette. Everything
+ * else in the world drains towards grey while the Gloom holds it; the one thing
+ * that will kill you on contact has to read at a glance from the first frame of a
+ * level to the last.
+ */
+export const LAVA_SURFACE_DEPTH = 24;
+const LAVA_DEEP = '#8c1c10';
+const LAVA_BRIGHT = '#ff6a24';
+const LAVA_GLOW = '#ffc247';
 
 export class Terrain extends Entity {
     categories = ['terrain'];
@@ -237,14 +249,10 @@ export class Terrain extends Entity {
         const context = canvasContext;
 
         this.renderSurroundingRock(context);
+        this.renderLava(context);
 
         context.fillStyle = palette.terrainBody;
         context.fill(this.solidPath);
-
-        context.save();
-        context.clip(this.solidPath);
-        this.renderDepthShading(context);
-        context.restore();
 
         this.renderSurfaces(context);
         this.renderPlatforms(context);
@@ -275,21 +283,33 @@ export class Terrain extends Entity {
         context.strokeRect(0, 0, width, height);
     }
 
-    /** A lit band just under each surface fading into the dark interior. */
-    renderDepthShading(context) {
-        const gradient = context.createLinearGradient(0, 0, 0, DEPTH_SHADE_HEIGHT);
-        gradient.addColorStop(0, restoredColor(TERRAIN_GRASS, 0.28));
-        gradient.addColorStop(0.25, 'transparent');
-        gradient.addColorStop(1, palette.terrainShade);
+    /**
+     * The lava, with a surface that rolls. Two offset waves rather than one, so
+     * the crest never repeats on a beat you can count.
+     */
+    renderLava(context) {
+        const width = this.widthInPixels;
+        const top = this.heightInPixels + LAVA_SURFACE_DEPTH;
+        const reach = 2200;
 
-        for (const run of this.surfaceRuns) {
-            context.save();
-            context.translate(run.x, run.y);
-            context.fillStyle = gradient;
-            context.fillRect(0, 0, run.width, DEPTH_SHADE_HEIGHT);
-            context.restore();
+        context.fillStyle = LAVA_DEEP;
+        context.fillRect(-reach, top, width + reach * 2, reach);
+
+        for (const [color, height, phase] of [[LAVA_BRIGHT, 12, 0], [LAVA_GLOW, 4, 1.7]]) {
+            context.fillStyle = color;
+            context.beginPath();
+            context.moveTo(-reach, top + height * 3);
+
+            for (let x = -reach; x <= width + reach; x += 30) {
+                const wave = sin(x * 0.012 + this.age * 1.9 + phase) + sin(x * 0.031 - this.age * 1.3);
+                context.lineTo(x, top + wave * 5 - height / 2);
+            }
+
+            context.lineTo(width + reach, top + height * 3);
+            context.fill();
         }
     }
+
 
     /** The grass cap: blades behind, a band of colour, then a bright lit rim. */
     renderSurfaces(context) {

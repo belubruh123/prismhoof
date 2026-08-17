@@ -22,6 +22,7 @@ import { buildLevelWorld } from '../levels/build-level.js';
 import { LEVELS } from '../levels/levels.js';
 import { startMusic } from '../audio/music.js';
 import { GameplayScreen } from './gameplay-screen.js';
+import { StoryScreen } from './story-screen.js';
 import { HowToPlayScreen } from './how-to-play-screen.js';
 import { SettingsScreen } from './settings-screen.js';
 import { MenuScreen, pushScreen, resetScreens } from './screen.js';
@@ -59,7 +60,11 @@ export class TitleScreen extends MenuScreen {
         this.items = [
             {
                 label: completedRun ? 'RUN IT AGAIN' : saveData.furthestLevelIndex ? 'CONTINUE' : 'PLAY',
-                onSelect: () => resetScreens(new GameplayScreen(0)),
+                // The opening is for a save file that has never played. Anyone
+                // coming back drops straight into the meadow.
+                onSelect: () => resetScreens(
+                    saveData.furthestLevelIndex ? new GameplayScreen(0) : new StoryScreen(),
+                ),
             },
             { label: 'HOW TO PLAY', onSelect: () => pushScreen(new HowToPlayScreen()) },
             { label: 'SETTINGS', onSelect: () => pushScreen(new SettingsScreen()) },
