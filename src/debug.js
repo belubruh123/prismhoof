@@ -96,9 +96,20 @@ export function runDebugWarmUp() {
  */
 let framesOnRibbon = 0;
 
+/** Dashes started, and how far the unicorn got, for the same reason. */
+let dashCount = 0;
+let wasDashing = false;
+let furthestX = 0;
+
 function countRibbonFrames() {
     const unicorn = topScreen()?.unicorn;
     if (unicorn?.ribbonUnderfoot) framesOnRibbon++;
+
+    const isDashing = unicorn?.dashTimer > 0;
+    if (isDashing && !wasDashing) dashCount++;
+    wasDashing = isDashing;
+
+    if (unicorn) furthestX = Math.max(furthestX, unicorn.x);
 }
 
 function applyDebugZoom(zoom) {
@@ -134,9 +145,15 @@ export function renderDebugOverlay(elapsedSeconds) {
             `paint ${unicorn.paintEnergy.toFixed(2)}`,
             `ground ${unicorn.isOnGround ? 1 : 0}`,
             `onRibbon ${unicorn.ribbonUnderfoot ? 1 : 0}/${framesOnRibbon}`,
+            `dash ${unicorn.hasDash ? 1 : 0}/${dashCount}`,
+            `x ${unicorn.x.toFixed(0)}/${furthestX.toFixed(0)}`,
             unicorn.isDead ? 'DEAD' : '',
         );
     }
+
+    // Also on the page title, so a headless run can be read with --dump-dom
+    // instead of a screenshot when the answer is a number rather than a picture.
+    document.title = parts.filter(Boolean).join('  ');
 
     canvasContext.save();
     canvasContext.fillStyle = '#0af';

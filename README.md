@@ -68,9 +68,18 @@ has never finished a level.
 | `←` `→` / `A` `D` | Gallop |
 | `Space` / `W` / `↑` | Jump (hold for height) |
 | `↓` / `S` | Dive |
+| `K` / `X` | Air dash (once per jump) |
 | `Shift` (hold) | Pour rainbow |
 | `R` | Retry level |
 | `P` / `Esc` | Pause |
+
+The air dash is a short flat burst that only the ground gives back — the same rule the paint
+meter runs on. It is deliberately worth about **1.8 tiles** of extra reach, measured: a plain
+jump carries 6 tiles and the gaps that ask for a bridge are 7, so a dash rescues a jump that
+was going to come up short without ever turning a bridge into a choice. Gravity is skipped
+for its duration but the vertical axis is left alone, so a pour fired mid-dash still lifts —
+dash for distance, paint for height, and using both at once is the interesting thing to do
+with them.
 
 Music and sound have independent on/off switches and volume sliders under **Settings**,
 reachable from the title screen and from the pause menu.

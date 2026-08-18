@@ -47,6 +47,7 @@ const CONTROLS = [
     ['A  D  or  ARROWS', 'GALLOP'],
     ['SPACE  or  W', 'JUMP  (hold for height)'],
     ['S', 'DIVE'],
+    ['K  or  X', 'AIR DASH  (once per jump)'],
     ['SHIFT', 'POUR RAINBOW  (hold)'],
     ['R', 'RETRY LEVEL'],
     ['ESC', 'PAUSE'],

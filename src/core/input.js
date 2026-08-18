@@ -15,6 +15,7 @@ export const MOVE_LEFT_KEYS = ['ArrowLeft', 'KeyA'];
 export const MOVE_RIGHT_KEYS = ['ArrowRight', 'KeyD'];
 export const JUMP_KEYS = ['Space', 'ArrowUp', 'KeyW'];
 export const DIVE_KEYS = ['ArrowDown', 'KeyS'];
+export const DASH_KEYS = ['KeyK', 'KeyX'];
 export const PAINT_KEYS = ['ShiftLeft', 'ShiftRight', 'KeyJ'];
 export const CONFIRM_KEYS = ['Enter', 'Space', 'KeyE'];
 export const BACK_KEYS = ['Escape', 'Backspace'];

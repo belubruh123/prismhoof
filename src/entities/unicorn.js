@@ -10,6 +10,9 @@
 import {
     AIR_FRICTION,
     COYOTE_SECONDS,
+    DASH_END_SPEED,
+    DASH_SECONDS,
+    DASH_SPEED,
     DIVE_ACCELERATION,
     GRAVITY,
     GROUND_FRICTION,
@@ -39,7 +42,7 @@ import {
     UNICORN_HALF_WIDTH,
 } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
-import { DIVE_KEYS, JUMP_KEYS, MOVE_LEFT_KEYS, MOVE_RIGHT_KEYS, PAINT_KEYS, isKeyDown, wasKeyPressed } from '../core/input.js';
+import { DASH_KEYS, DIVE_KEYS, JUMP_KEYS, MOVE_LEFT_KEYS, MOVE_RIGHT_KEYS, PAINT_KEYS, isKeyDown, wasKeyPressed } from '../core/input.js';
 import { abs, approach, clamp, damp, max, min, PI, randomBetween, sign } from '../core/math.js';
 import { Entity } from '../engine/entity.js';
 import { burstRainbow, PARTICLE_STAR } from '../engine/particles.js';
@@ -89,6 +92,10 @@ export class Unicorn extends Entity {
     coyoteTimer = 0;
     jumpBufferTimer = 0;
     isJumpRising = false;
+
+    dashTimer = 0;
+    /** One dash per airtime; landing on anything solid hands it back. */
+    hasDash = true;
 
     /** Position in the gait cycle, in whole cycles. */
     runPhase = 0;
@@ -189,6 +196,9 @@ export class Unicorn extends Entity {
 
         if (moveInput) this.facing = moveInput;
 
+        // A dash owns the frame it runs in: no gravity, no steering, no jump.
+        if (this.applyDash(elapsedSeconds)) return;
+
         const isTurning = moveInput && sign(moveInput) !== sign(this.velocityX);
         const acceleration = !moveInput
             ? (this.isOnGround ? GROUND_FRICTION : AIR_FRICTION)
@@ -205,6 +215,52 @@ export class Unicorn extends Entity {
         }
 
         this.applyJump(elapsedSeconds);
+    }
+
+    /**
+     * The air dash, and whether it is currently running the show.
+     *
+     * Held flat rather than launched: gravity is skipped for its duration and
+     * the burst decays to a run rather than ending at full speed. The vertical
+     * axis is left alone on purpose, so a pour fired mid-dash still lifts - the
+     * dash buys distance, the paint buys height, and using both at once is the
+     * interesting thing to do with them.
+     *
+     * There is one per airtime and only the ground gives it back, which is the
+     * rule the paint meter already runs on.
+     *
+     * A dash frame skips the jump handling below it, so a jump pressed during
+     * one is not buffered. Wiring that up measured 22 bytes and the case is very
+     * nearly unreachable - the dash suspends the fall, so it hovers rather than
+     * lands - which is not a trade worth making with the budget this close.
+     */
+    applyDash(elapsedSeconds) {
+        const wasDashing = this.dashTimer > 0;
+        this.dashTimer -= elapsedSeconds;
+
+        if (wasKeyPressed(DASH_KEYS) && this.hasDash && !this.isOnGround) this.startDash();
+
+        if (this.dashTimer > 0) {
+            this.velocityX = DASH_SPEED * this.facing;
+            return true;
+        }
+
+        // Bleed off on the frame the burst runs out rather than letting the
+        // unicorn keep sprinting out of it.
+        if (wasDashing) this.velocityX = DASH_END_SPEED * this.facing;
+
+        return false;
+    }
+
+    startDash() {
+        this.dashTimer = DASH_SECONDS;
+        this.hasDash = false;
+        this.velocityX = DASH_SPEED * this.facing;
+        this.velocityY = 0;
+        this.squash = 0.25;
+
+        this.emitManeSparkles(6);
+        playJumpSound(1.6);
     }
 
     applyJump(elapsedSeconds) {
@@ -252,6 +308,7 @@ export class Unicorn extends Entity {
 
         if (this.isOnGround) {
             this.coyoteTimer = COYOTE_SECONDS;
+            this.hasDash = true;
             if (!wasOnGround) this.land();
         }
     }

@@ -58,6 +58,19 @@ export const JUMP_BUFFER_SECONDS = 0.12;
 /** Extra downward acceleration while holding the dive key. */
 export const DIVE_ACCELERATION = 2400;
 
+/**
+ * The air dash: one flat burst per airtime, refunded on landing, like the paint.
+ *
+ * Sized deliberately short. A jump already carries six tiles and the gaps that
+ * ask for a bridge are six to ten, so a dash long enough to be exciting is also
+ * long enough to make the one verb optional. Two tiles of extra reach rescues a
+ * jump that was going to come up short without turning a bridge into a choice.
+ */
+export const DASH_SPEED = 560;
+export const DASH_SECONDS = 0.14;
+/** Speed the burst decays to when it ends, so it is a dash and not a launch. */
+export const DASH_END_SPEED = 360;
+
 // ---------------------------------------------------------------------------
 // The rainbow ribbon - the core mechanic
 // ---------------------------------------------------------------------------

@@ -69,7 +69,8 @@ function playArpeggio(frequencies, duration, volume, waveType, gap) {
 
 // --- the sound design ------------------------------------------------------
 
-export const playJumpSound = () => playTone(260, 560, 0.16, 0.3, 'square');
+/** `pitch` multiplies both ends of the sweep: the dash reuses it, an octave up. */
+export const playJumpSound = (pitch = 1) => playTone(260 * pitch, 560 * pitch, 0.16, 0.3, 'square');
 
 export function playLandSound(impact) {
     playNoise(0.12, 0.15 + impact * 0.2, 1400, 260);
