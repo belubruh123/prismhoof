@@ -18,7 +18,9 @@ debug:
 verify:
 	npm run build:verify
 
-# Minified, packed release build -> build/index.html
+# Minified, packed release build -> build/index.html.
+# Packs five times and keeps the smallest, because Roadroller's optimiser is
+# randomised and a single unlucky pack is worth more than the margin.
 build:
 	npm run build
 

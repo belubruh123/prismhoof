@@ -9,16 +9,16 @@ body {
     user-select: none;
 }
 
-/* The canvas keeps a fixed 16:9 aspect ratio and is letterboxed into the window. */
-#container {
+/*
+ * The canvas keeps a fixed 16:9 aspect ratio and is letterboxed into the window.
+ * It centres itself rather than sitting inside a wrapper: the resize code sets
+ * its CSS size in display pixels, which is the only thing the wrapper was ever
+ * for, and one element fewer is one element fewer to ship.
+ */
+#game {
+    display: block;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-}
-
-#game {
-    display: block;
-    width: 100%;
-    height: 100%;
 }

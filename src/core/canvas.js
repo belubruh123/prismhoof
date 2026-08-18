@@ -38,9 +38,10 @@ function resizeCanvas() {
     canvas.width = round(CANVAS_WIDTH * renderScale);
     canvas.height = round(CANVAS_HEIGHT * renderScale);
 
-    const containerStyle = document.getElementById('container').style;
-    containerStyle.width = displayWidth + 'px';
-    containerStyle.height = displayHeight + 'px';
+    // The element's own CSS size is the letterbox; the backing store above is
+    // the real pixel count behind it.
+    canvas.style.width = displayWidth + 'px';
+    canvas.style.height = displayHeight + 'px';
 }
 
 /** Resets the transform to world space and clears the frame. */

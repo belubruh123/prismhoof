@@ -104,8 +104,18 @@ size — full descriptive identifiers, one concept per file, no abbreviations.
    constant so every debug branch — and the entire `src/debug.js` module — is eliminated
    rather than shipped.
 2. **terser** compresses and mangles, including our own property names.
-3. **Roadroller** packs the result into a self-extracting payload.
+3. **Roadroller** packs the result into a self-extracting payload, five times over, keeping
+   the smallest. Its optimiser searches randomly, so identical source packs to results about
+   30 bytes apart; taking the best of five is worth real bytes and, more usefully, makes a 20
+   byte experiment anywhere else in the source measurable at all. It runs with `allowFreeVars`
+   (Roadroller's `--dirty`), which lets the decoder keep its working variables on the global
+   object instead of declaring them — worth 50 bytes of packed payload, and safe because the
+   page holds one script and one element.
 4. The packed script and the minified CSS are inlined into `src/index.html`.
+
+The build also writes `build/packme.js`, the exact bytes handed to Roadroller, so the same
+input can be dropped into [the Roadroller page](https://lifthrasiir.github.io/roadroller/) to
+try settings by hand and compare them against what the build gets.
 
 It prints a per-module byte table on every build, so the size budget stays visible while
 the game is being written rather than becoming a crisis at the end.
@@ -142,6 +152,48 @@ a mane and tail built from angular spring chains.
 per row, with `!` marking where a signpost stands and the level's `signs` list supplying
 what it reads.
 
+## Q&A
+
+**Do you use AI?**
+Yes. I build this with [Claude Code](https://claude.com/claude-code). I make the design, art
+direction and gameplay calls, and Claude Code writes and refactors the code against them.
+
+**Is it really under 13kB?**
+Yes — **13,293 of 13,312 bytes**, and that is the worst of several builds rather than the
+luckiest. The whole game is one `index.html`, zipped, everything included, checked by
+`make zip` on every build. No network requests, no external assets,
+nothing streamed in at runtime.
+
+**Why no game library?**
+Because I measured one. A tree-shaken [Kontra](https://straker.github.io/kontra/) build of
+just `init` + `GameLoop` + keyboard is **1,928 minified bytes**, against the **1,323** of
+hand-written code in `core/loop.js`, `core/input.js` and `core/canvas.js` that it would
+replace. Adding `Sprite` takes it to **7,516**, and the full `kontra.min.js` is 33,089 bytes —
+12.1kB gzipped, 91% of the entire budget. Kontra is a good library, and at this size a
+library you use a tenth of is a tax. The same is true of every other engine I checked.
+
+**Why not ZzFX, or a tracker, or just a WAV?**
+Measured those too. The [ZzFX](https://github.com/KilledByAPixel/ZzFX) micro engine is 1,024
+minified bytes and the [ZzFXM](https://github.com/keithclark/ZzFXM) player 623 — *engines
+only*, before a single sound array or song pattern. `audio/sfx.js` and `audio/music.js`
+together are 3,106 bytes for the engine **and** all the content, because the music derives its
+pad, bass and arpeggio from a chord table instead of storing patterns.
+
+A WAV is out by two orders of magnitude. 8kHz 8-bit mono is 8,000 bytes *per second*, so the
+entire 13,312-byte budget buys 1.6 seconds of the worst-sounding audio you can make — and PCM
+is noise-like, so neither Roadroller nor deflate makes a dent in it. Runtime synthesis is not
+a compromise here, it *is* the compressed form of the music. Same reason every pixel is drawn
+from code rather than stored.
+
+**Can I use the code?**
+No — see the copyright below.
+
+**Mobile? Gamepad?**
+Desktop, keyboard only, on purpose. The whole game is aimed at precision on a keyboard.
+
+**Why thirteen levels?**
+Thirteen kilobytes.
+
 ## Credits
 
 Everything — art, music, sound synthesis, engine, levels — is original to this entry. No
@@ -149,3 +201,10 @@ libraries ship in the build; the four dev dependencies are build tooling only.
 
 Structure and build approach are indebted to [CLAWSTRIKE](https://github.com/remvst/clawstrike)
 by Rémi Vansteelandt, the js13kGames 2025 winner, whose source is a great read.
+
+## Copyright
+
+Copyright (c) 2026
+
+All rights reserved. It is not allowed to take the code or game and publish it anywhere. I
+reserve all rights.

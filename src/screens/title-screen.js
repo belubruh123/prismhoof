@@ -121,7 +121,9 @@ export class TitleScreen extends MenuScreen {
             });
         }
 
-        drawText('js13kGames 2026 - UNICORNS AND RAINBOWS', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30, {
+        // One string, not two draws: the copyright rides along on the line that
+        // was already here, so it costs characters rather than a call site.
+        drawText('js13kGames 2026 - UNICORNS AND RAINBOWS - (C) 2026, ALL RIGHTS RESERVED', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30, {
             size: 14,
             weight: 600,
             spacing: 2,

@@ -14,6 +14,7 @@
  *   node tools/build.mjs --debug     readable -> build/debug.html (DEBUG = true)
  *   node tools/build.mjs --verify    both     -> build/verify.html
  *   node tools/build.mjs --opt=2     slower, thorough Roadroller search
+ *   node tools/build.mjs --repeat=5  pack five times and keep the smallest
  *
  * `--verify` is the safety net for property mangling: it applies the full
  * release squeeze but leaves DEBUG on, so the debug hooks can drive a mangled
@@ -44,6 +45,8 @@ const isDebugBuild = commandLineArguments.includes('--debug');
 const isVerifyBuild = commandLineArguments.includes('--verify');
 const optimizeLevelArgument = commandLineArguments.find((argument) => argument.startsWith('--opt='));
 const roadrollerOptimizeLevel = optimizeLevelArgument ? Number(optimizeLevelArgument.split('=')[1]) : 1;
+const repeatArgument = commandLineArguments.find((argument) => argument.startsWith('--repeat='));
+const packAttemptCount = repeatArgument ? Number(repeatArgument.split('=')[1]) : 1;
 
 /** Bundles src/main.js into a single IIFE and returns the code plus the esbuild metafile. */
 export async function bundleGameScript({ debug }) {
@@ -137,13 +140,51 @@ async function compressGameScript(code) {
     return result.code;
 }
 
-/** Packs the script with Roadroller, falling back to the plain script if packing does not help. */
-async function packGameScript(code) {
-    const packer = new Packer([{ data: code, type: 'js', action: 'eval' }], { maxMemoryMB: 150 });
+/**
+ * Packs the script with Roadroller once.
+ *
+ * Only the script goes through here. Handing the stylesheet to the packer as a
+ * second input was measured and is not possible: this version of Roadroller
+ * takes exactly one JS or text input, and folding the CSS into the script by
+ * hand costs more glue than the two hundred-odd bytes of stylesheet could repay.
+ */
+async function packOnce(code) {
+    const packer = new Packer([{ data: code, type: 'js', action: 'eval' }], {
+        maxMemoryMB: 150,
+        // Roadroller's `--dirty` mode: the decoder is allowed to leave its
+        // working variables on the global object instead of declaring them,
+        // which shortens it. Safe here because the page runs exactly one script
+        // and holds exactly one element, whose id is too long to collide with
+        // the single letters the decoder helps itself to.
+        allowFreeVars: true,
+    });
     await packer.optimize(roadrollerOptimizeLevel);
 
     const { firstLine, secondLine } = packer.makeDecoder();
-    const packed = firstLine + '\n' + secondLine;
+    return firstLine + '\n' + secondLine;
+}
+
+/**
+ * Packs the script and returns the smallest result, falling back to the plain
+ * script if packing does not help.
+ *
+ * Roadroller's optimiser searches randomly, so two packs of identical input land
+ * around 8 bytes apart. Packing several times and keeping the best turns that
+ * spread into a consistent win at the low end, and - more useful day to day -
+ * makes a 20 byte experiment elsewhere in the source measurable at all, which a
+ * single noisy pack does not.
+ */
+async function packGameScript(code) {
+    let packed = null;
+
+    for (let attempt = 0; attempt < packAttemptCount; attempt++) {
+        const candidate = await packOnce(code);
+        if (!packed || candidate.length < packed.length) packed = candidate;
+        if (packAttemptCount > 1) {
+            console.log(`  roadroller attempt ${attempt + 1}/${packAttemptCount}: ${candidate.length} bytes` +
+                (candidate.length === packed.length ? '  <- best' : ''));
+        }
+    }
 
     // Roadroller wins big on real payloads but loses on tiny ones, because the
     // decoder itself costs around 300 bytes.
@@ -170,6 +211,16 @@ async function main() {
     if (!isDebugBuild) {
         const compressed = await compressGameScript(bundledCode);
         console.log(`\n  esbuild ${bundledCode.length} -> terser ${compressed.length} bytes`);
+
+        // The exact bytes handed to Roadroller, written out so the same input can
+        // be dropped into https://lifthrasiir.github.io/roadroller/ to try knob
+        // settings by hand and compare against what this build gets. Release only:
+        // a verify build carries all the debug code, so packing that would answer
+        // a question nobody asked.
+        if (!isVerifyBuild) {
+            await mkdir(resolve(projectRoot, 'build'), { recursive: true });
+            await writeFile(resolve(projectRoot, 'build/packme.js'), compressed);
+        }
 
         scriptForPage = await packGameScript(compressed);
         console.log(`  terser  ${compressed.length} -> packed ${scriptForPage.length} bytes`);
