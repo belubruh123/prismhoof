@@ -171,7 +171,6 @@ export const LEVELS = [
         // Two voids and one stone between them, barely wide enough to stand on.
         name: 'THE LONG DARK',
         rows: [
-            '',
             '.....................W',
             '',
             '',

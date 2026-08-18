@@ -1,0 +1,521 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>PRISMHOOF course editor</title>
+
+<!--
+  A course editor for PRISMHOOF, and a dev tool only: nothing here ships, so it
+  is written for comfort rather than for bytes.
+
+  It speaks exactly the format in src/levels/levels.js - eighteen rows tall, one
+  character per tile - and prints levels back out through tools/level-text.mjs,
+  which tools/check-editor.mjs proves is byte-for-byte what the file already
+  holds.
+
+  Run it with `make dev` and open http://localhost:8013/editor.html. It has to be
+  served rather than opened from disk: the "play it" button hands the level to
+  the game through localStorage, and that only works if both pages come from the
+  same origin.
+-->
+
+<style>
+    :root {
+        --ink: #f4eeff;
+        --dim: #9d92b8;
+        --panel: #241a3a;
+        --panel-edge: #3b2c5e;
+        --page: #16112a;
+        --accent: #ff5fa2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 20px;
+        align-items: start;
+        background: var(--page);
+        color: var(--ink);
+        font: 14px/1.5 'Century Gothic', Futura, 'Trebuchet MS', system-ui, sans-serif;
+    }
+
+    h1 {
+        margin: 0 0 4px;
+        font-size: 22px;
+        letter-spacing: 2px;
+        background: linear-gradient(90deg, #ff4d6d, #ff9f45, #ffd93d, #6bcB77, #4dd4e8, #6c7bff, #b86bff);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    h2 {
+        margin: 0 0 8px;
+        font-size: 13px;
+        letter-spacing: 2px;
+        color: var(--dim);
+        text-transform: uppercase;
+    }
+
+    section {
+        margin-bottom: 16px;
+        padding: 14px;
+        border: 1px solid var(--panel-edge);
+        border-radius: 10px;
+        background: var(--panel);
+    }
+
+    canvas {
+        display: block;
+        border: 1px solid var(--panel-edge);
+        border-radius: 10px;
+        background: #2b2140;
+        cursor: crosshair;
+        touch-action: none;
+        max-width: 100%;
+    }
+
+    .palette { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .palette button {
+        flex: 1 0 auto;
+        padding: 8px 10px;
+        border: 1px solid var(--panel-edge);
+        border-radius: 8px;
+        background: #1b1430;
+        color: var(--ink);
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .palette button[aria-pressed='true'] {
+        border-color: var(--accent);
+        background: #3a2350;
+    }
+
+    .swatch {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        margin-right: 6px;
+        border-radius: 2px;
+        vertical-align: -1px;
+    }
+
+    label { display: block; margin-bottom: 10px; color: var(--dim); font-size: 12px; letter-spacing: 1px; }
+
+    input, textarea, select, button.action {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--panel-edge);
+        border-radius: 8px;
+        background: #1b1430;
+        color: var(--ink);
+        font: inherit;
+    }
+
+    textarea { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; resize: vertical; }
+
+    button.action { cursor: pointer; margin-bottom: 8px; }
+    button.action:hover { border-color: var(--accent); }
+
+    .row { display: flex; gap: 8px; }
+
+    .hint { margin: 0; color: var(--dim); font-size: 12px; }
+    .warn { color: #ffb03b; }
+</style>
+
+<div>
+    <h1>PRISMHOOF COURSE EDITOR</h1>
+    <p class="hint">
+        Left-drag paints, right-drag erases, <b>1</b>–<b>8</b> pick a tile.
+        Levels are 18 rows tall; the bottom row is the floor.
+    </p>
+
+    <section>
+        <div class="palette" id="palette"></div>
+    </section>
+
+    <canvas id="grid"></canvas>
+
+    <section style="margin-top: 16px">
+        <h2>Reach guides</h2>
+        <p class="hint">
+            Hover the grid to measure from a tile. A jump rises <b>3</b> and carries <b>6</b>;
+            a pour reaches <b>10</b> from a standstill and <b>12</b> at a gallop; a pour into a
+            jump climbs <b>5</b> over about <b>10</b>. Gaps of 6–10 need a bridge, climbs of 4
+            need a ramp.
+        </p>
+        <label><input type="checkbox" id="guides" checked style="width:auto"> Show them on the grid</label>
+    </section>
+</div>
+
+<div>
+    <section>
+        <h2>Level</h2>
+        <label>Name <input id="name" value="UNTITLED"></label>
+        <label>Width in tiles <input id="width" type="number" min="8" max="120" value="42"></label>
+        <label>Signs, one per line, in the order they are walked past
+            <textarea id="signs" rows="3" placeholder="HOLD SHIFT TO POUR A RAINBOW"></textarea>
+        </label>
+        <p class="hint" id="signCount"></p>
+    </section>
+
+    <section>
+        <h2>Open</h2>
+        <label>A level from the game <select id="levelPicker"></select></label>
+        <button class="action" id="loadLevel">Load it into the grid</button>
+        <button class="action" id="clear">Clear the grid</button>
+    </section>
+
+    <section>
+        <h2>Play it</h2>
+        <p class="hint">Hands the course straight to the debug build in a new tab.</p>
+        <button class="action" id="play">Play this course</button>
+    </section>
+
+    <section>
+        <h2>Paste into src/levels/levels.js</h2>
+        <textarea id="output" rows="14" readonly></textarea>
+        <button class="action" id="copy">Copy</button>
+    </section>
+
+    <section>
+        <h2>Import</h2>
+        <p class="hint">Paste a level literal, or a whole levels.js, and load the first one.</p>
+        <textarea id="import" rows="5" placeholder="{ name: 'THE SPAN', rows: [ … ] }"></textarea>
+        <button class="action" id="importButton">Load from the paste</button>
+        <p class="hint warn" id="importError"></p>
+    </section>
+</div>
+
+<script type="module">
+    import { LEVEL_ROW_COUNT, formatLevel, gridToRows, parseLevelSource, rowsToGrid } from './level-text.mjs';
+
+    /**
+     * How each tile is drawn and named. The colours are picked to read like the
+     * game does - dark slabs, a lit top edge, the cast in their own colours -
+     * rather than to match its palette exactly, which shifts as Gloom clears.
+     */
+    const TILES = [
+        { character: '.', label: 'Empty', color: '#2b2140' },
+        { character: '#', label: 'Solid', color: '#3c3357' },
+        { character: '=', label: 'One-way', color: '#4a6c8a' },
+        { character: 'P', label: 'Start', color: '#ffffff' },
+        { character: 'G', label: 'Gate', color: '#ff5fa2' },
+        { character: 'M', label: 'Murk', color: '#8a4bd6' },
+        { character: 'W', label: 'Wisp', color: '#c56bff' },
+        { character: '!', label: 'Sign', color: '#ffd93d' },
+    ];
+
+    const CELL = 26;
+    const WORK_IN_PROGRESS_KEY = 'prismhoof.editorDraft';
+    const PLAY_KEY = 'prismhoof.editorLevel';
+
+    const canvas = document.getElementById('grid');
+    const context = canvas.getContext('2d');
+
+    const nameInput = document.getElementById('name');
+    const widthInput = document.getElementById('width');
+    const signsInput = document.getElementById('signs');
+    const outputArea = document.getElementById('output');
+    const importArea = document.getElementById('import');
+    const importError = document.getElementById('importError');
+    const signCount = document.getElementById('signCount');
+    const levelPicker = document.getElementById('levelPicker');
+    const guidesToggle = document.getElementById('guides');
+
+    let width = Number(widthInput.value);
+    let grid = rowsToGrid([], width);
+    let selected = 1;
+    let painting = null;
+    let hover = null;
+    let gameLevels = [];
+
+    /* ---- drawing ---- */
+
+    function draw() {
+        canvas.width = width * CELL;
+        canvas.height = LEVEL_ROW_COUNT * CELL;
+
+        for (let row = 0; row < LEVEL_ROW_COUNT; row++) {
+            for (let column = 0; column < width; column++) {
+                drawCell(row, column);
+            }
+        }
+
+        if (guidesToggle.checked && hover) drawGuides(hover.row, hover.column);
+        drawGridLines();
+    }
+
+    function drawCell(row, column) {
+        const character = grid[row][column];
+        const tile = TILES.find((candidate) => candidate.character === character) || TILES[0];
+        const x = column * CELL;
+        const y = row * CELL;
+
+        context.fillStyle = character === '.' ? (row === LEVEL_ROW_COUNT - 1 ? '#241c38' : '#2b2140') : tile.color;
+
+        if (character === '=') {
+            context.fillRect(x, y + CELL - 6, CELL, 6);
+            return;
+        }
+
+        if ('PGMW!'.includes(character)) {
+            context.fillStyle = '#2b2140';
+            context.fillRect(x, y, CELL, CELL);
+            context.fillStyle = tile.color;
+            context.beginPath();
+            context.arc(x + CELL / 2, y + CELL / 2, CELL * 0.32, 0, Math.PI * 2);
+            context.fill();
+            context.fillStyle = '#16112a';
+            context.font = '700 12px system-ui, sans-serif';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(character, x + CELL / 2, y + CELL / 2 + 1);
+            return;
+        }
+
+        context.fillRect(x, y, CELL, CELL);
+
+        // Solid ground gets the lit top edge the game draws, so a ledge reads as
+        // a ledge at a glance rather than as a block of colour.
+        if (character === '#' && (row === 0 || grid[row - 1][column] !== '#')) {
+            context.fillStyle = '#5ad6c8';
+            context.fillRect(x, y, CELL, 2);
+        }
+    }
+
+    function drawGridLines() {
+        context.strokeStyle = 'rgba(255,255,255,0.05)';
+        context.lineWidth = 1;
+        for (let column = 0; column <= width; column++) {
+            context.beginPath();
+            context.moveTo(column * CELL + 0.5, 0);
+            context.lineTo(column * CELL + 0.5, canvas.height);
+            context.stroke();
+        }
+        for (let row = 0; row <= LEVEL_ROW_COUNT; row++) {
+            context.beginPath();
+            context.moveTo(0, row * CELL + 0.5);
+            context.lineTo(canvas.width, row * CELL + 0.5);
+            context.stroke();
+        }
+    }
+
+    /**
+     * The three distances a course is built out of, drawn from the hovered tile:
+     * a plain jump, a pour, and a pour ridden into a jump. Sketching a gap and
+     * then checking it against these is the whole job of laying out a level.
+     */
+    function drawGuides(row, column) {
+        const x = column * CELL + CELL / 2;
+        const y = row * CELL + CELL / 2;
+
+        const guides = [
+            { across: 6, up: 3, color: 'rgba(90,214,200,0.7)', label: 'jump' },
+            { across: 10, up: 0, color: 'rgba(255,217,61,0.7)', label: 'pour' },
+            { across: 10, up: 5, color: 'rgba(255,95,162,0.7)', label: 'pour + jump' },
+        ];
+
+        context.save();
+        context.setLineDash([4, 4]);
+        context.font = '600 11px system-ui, sans-serif';
+        context.textBaseline = 'bottom';
+
+        for (const guide of guides) {
+            context.strokeStyle = guide.color;
+            context.fillStyle = guide.color;
+            context.lineWidth = 1.5;
+
+            context.beginPath();
+            context.moveTo(x, y);
+            context.quadraticCurveTo(
+                x + (guide.across * CELL) / 2, y - (guide.up + 1) * CELL,
+                x + guide.across * CELL, y - guide.up * CELL,
+            );
+            context.stroke();
+
+            context.textAlign = 'left';
+            context.fillText(guide.label, x + guide.across * CELL + 4, y - guide.up * CELL);
+        }
+
+        context.restore();
+    }
+
+    /* ---- editing ---- */
+
+    function cellFromEvent(event) {
+        const bounds = canvas.getBoundingClientRect();
+        const scale = canvas.width / bounds.width;
+        const column = Math.floor(((event.clientX - bounds.left) * scale) / CELL);
+        const row = Math.floor(((event.clientY - bounds.top) * scale) / CELL);
+        if (row < 0 || column < 0 || row >= LEVEL_ROW_COUNT || column >= width) return null;
+        return { row, column };
+    }
+
+    function paint(cell, character) {
+        if (!cell || grid[cell.row][cell.column] === character) return;
+
+        // Only one unicorn and one gate can be in a level, so placing either
+        // takes the old one away rather than quietly making an unloadable course.
+        if (character === 'P' || character === 'G') {
+            for (const cells of grid) {
+                for (let column = 0; column < cells.length; column++) {
+                    if (cells[column] === character) cells[column] = '.';
+                }
+            }
+        }
+
+        grid[cell.row][cell.column] = character;
+        refresh();
+    }
+
+    canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+
+    canvas.addEventListener('pointerdown', (event) => {
+        canvas.setPointerCapture(event.pointerId);
+        painting = event.button === 2 ? '.' : TILES[selected].character;
+        paint(cellFromEvent(event), painting);
+    });
+
+    canvas.addEventListener('pointermove', (event) => {
+        const cell = cellFromEvent(event);
+        if (painting) paint(cell, painting);
+        else if (guidesToggle.checked) {
+            hover = cell;
+            draw();
+        }
+    });
+
+    canvas.addEventListener('pointerleave', () => { hover = null; draw(); });
+    addEventListener('pointerup', () => { painting = null; });
+
+    addEventListener('keydown', (event) => {
+        if (event.target.matches('input, textarea, select')) return;
+        const index = Number(event.key) - 1;
+        if (index >= 0 && index < TILES.length) {
+            selected = index;
+            renderPalette();
+        }
+    });
+
+    /* ---- panels ---- */
+
+    function renderPalette() {
+        const palette = document.getElementById('palette');
+        palette.replaceChildren(...TILES.map((tile, index) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.setAttribute('aria-pressed', String(index === selected));
+            button.innerHTML = `<span class="swatch" style="background:${tile.color}"></span>${index + 1} ${tile.label} <b>${tile.character}</b>`;
+            button.onclick = () => { selected = index; renderPalette(); };
+            return button;
+        }));
+    }
+
+    function currentDefinition() {
+        return {
+            name: nameInput.value.trim() || 'UNTITLED',
+            signs: signsInput.value.split('\n').map((line) => line.trim()).filter(Boolean),
+            rows: gridToRows(grid),
+        };
+    }
+
+    function refresh() {
+        const definition = currentDefinition();
+        outputArea.value = formatLevel(definition);
+
+        const signMarks = definition.rows.join('').split('!').length - 1;
+        const written = definition.signs.length;
+        signCount.textContent = `${signMarks} sign${signMarks === 1 ? '' : 's'} on the grid, ${written} written`;
+        signCount.className = signMarks === written ? 'hint' : 'hint warn';
+
+        localStorage.setItem(WORK_IN_PROGRESS_KEY, JSON.stringify(definition));
+        draw();
+    }
+
+    function load(definition) {
+        nameInput.value = definition.name || 'UNTITLED';
+        signsInput.value = (definition.signs || []).join('\n');
+        width = Math.max(8, ...(definition.rows || []).map((row) => row.length));
+        widthInput.value = width;
+        grid = rowsToGrid(definition.rows || [], width);
+        refresh();
+    }
+
+    nameInput.oninput = refresh;
+    signsInput.oninput = refresh;
+    guidesToggle.onchange = draw;
+
+    widthInput.onchange = () => {
+        const next = Math.max(8, Math.min(120, Number(widthInput.value) || 8));
+        widthInput.value = next;
+        // Re-laying the rows out at the new width keeps whatever is already
+        // painted, and drops only what falls off the right-hand edge.
+        grid = rowsToGrid(gridToRows(grid), next);
+        width = next;
+        refresh();
+    };
+
+    document.getElementById('clear').onclick = () => {
+        grid = rowsToGrid([], width);
+        refresh();
+    };
+
+    document.getElementById('copy').onclick = async () => {
+        await navigator.clipboard.writeText(outputArea.value);
+    };
+
+    document.getElementById('importButton').onclick = () => {
+        importError.textContent = '';
+        try {
+            const [first] = parseLevelSource(importArea.value);
+            if (!first) throw new Error('nothing to load');
+            load(first);
+        } catch (error) {
+            importError.textContent = `Could not read that: ${error.message}`;
+        }
+    };
+
+    document.getElementById('loadLevel').onclick = () => {
+        const level = gameLevels[Number(levelPicker.value)];
+        if (level) load(level);
+    };
+
+    document.getElementById('play').onclick = () => {
+        localStorage.setItem(PLAY_KEY, JSON.stringify(currentDefinition()));
+        open('./debug.html#level=edit', '_blank');
+    };
+
+    /* ---- start up ---- */
+
+    // The dev server drops a copy of the level file next to this page, so the
+    // editor can offer every course in the game as a starting point.
+    try {
+        gameLevels = parseLevelSource(await (await fetch('./levels.js')).text());
+        levelPicker.replaceChildren(...gameLevels.map((level, index) => new Option(`${index + 1}. ${level.name}`, index)));
+    } catch (error) {
+        console.error('could not read levels.js', error);
+        levelPicker.replaceChildren(new Option('run `make dev` to list them', ''));
+    }
+
+    // #level=4 opens that course straight from the game, which saves a trip
+    // through the picker when you know which one you are here to change.
+    const requested = new URLSearchParams(location.hash.slice(1)).get('level');
+    const draft = localStorage.getItem(WORK_IN_PROGRESS_KEY);
+
+    if (requested && gameLevels[Number(requested) - 1]) {
+        levelPicker.value = String(Number(requested) - 1);
+        load(gameLevels[Number(requested) - 1]);
+    } else if (draft) {
+        load(JSON.parse(draft));
+    } else {
+        refresh();
+    }
+
+    renderPalette();
+</script>

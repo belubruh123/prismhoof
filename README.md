@@ -84,9 +84,32 @@ make install     # npm install (4 dev dependencies)
 make dev         # watch + serve the debug build on http://localhost:8013
 make verify      # fully squeezed but with DEBUG on -> build/verify.html
 make build       # minified, Roadroller-packed build/index.html
+make check       # prove the course editor round-trips every level unchanged
 make zip         # build/game.zip, checked against the 13312 byte limit
 make all         # build + zip
 ```
+
+## The course editor
+
+`make dev` serves a course editor at **http://localhost:8013/editor.html** next to the game.
+It is a dev tool, not part of the entry — nothing in `tools/` ships, so it costs zero bytes
+of the budget and can be as comfortable as it likes.
+
+Paint terrain with the mouse, `1`–`8` to pick a tile, and it prints the level literal ready
+to paste into `src/levels/levels.js` — trailing empty tiles trimmed and empty sky rows
+dropped, which `parseLevel` pads back in and which would otherwise be bytes the build carries
+for nothing. It opens any of the thirteen courses to start from (`#level=4` deep-links to
+one), and **Play this course** hands what is on the grid straight to the debug build through
+`localStorage`, where it runs down exactly the same path as a shipped level.
+
+It also draws the three distances a course is built out of — a jump, a pour, and a pour
+ridden into a jump — from whichever tile the mouse is over, because laying out a level is
+mostly checking a gap against those three numbers.
+
+`make check` reads every level in the game through the editor's own loader, prints it back
+out through the editor's own formatter, and fails unless the result is byte-for-byte what is
+already in the file. Without that, the first course opened in the editor would come back
+quietly reformatted.
 
 `make zip` will use [advancecomp](https://github.com/amadvance/advancecomp)'s `advzip` or
 [ECT](https://github.com/fhanau/Efficient-Compression-Tool) to recompress the archive if
@@ -140,7 +163,7 @@ src/
   levels/     level format, level builder, level data
   audio/      context, sound effects, music
   debug.js    headless-testing hooks, dropped from the release build
-tools/        build, zip and dev server
+tools/        build, zip, dev server, and the course editor
 ```
 
 Two files are worth reading first: `src/entities/rainbow-ribbon.js` is the whole game in

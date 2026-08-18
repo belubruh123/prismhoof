@@ -1,13 +1,18 @@
-.PHONY: all install dev debug verify build zip clean
+.PHONY: all install dev debug verify build check zip clean
 
 all: build zip
 
 install:
 	npm install
 
-# Watch + serve the unminified debug build on http://localhost:8013
+# Watch + serve the unminified debug build on http://localhost:8013,
+# with the course editor alongside it at /editor.html
 dev:
 	npm run dev
+
+# Prove the course editor still round-trips every level in the game unchanged
+check:
+	npm run check
 
 # One-off unminified build with DEBUG on -> build/debug.html
 debug:

@@ -9,6 +9,7 @@
     "build:debug": "node tools/build.mjs --debug",
     "build:verify": "node tools/build.mjs --verify",
     "build": "node tools/build.mjs --repeat=5",
+    "check": "node tools/check-editor.mjs",
     "zip": "node tools/zip.mjs",
     "release": "node tools/build.mjs --repeat=5 && node tools/zip.mjs"
   },

@@ -5,10 +5,14 @@
  * The debug build defines DEBUG = true, which switches on the hitbox overlay,
  * the FPS counter and the level-skip keys. None of that reaches the release
  * build, because esbuild eliminates the `if (DEBUG)` branches when it is false.
+ *
+ * It also serves the course editor at /editor.html. The editor has to come from
+ * the same origin as the game, because the two of them pass a level to each
+ * other through localStorage.
  */
 
 import { context } from 'esbuild';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,10 +39,34 @@ const writeDebugPagePlugin = {
 
             await mkdir(resolve(projectRoot, 'build'), { recursive: true });
             await writeFile(resolve(projectRoot, 'build/debug.html'), html);
+
+            // Picks up edits to the level file and to the editor itself, so the
+            // course list stays in step with the game without a restart.
+            await copyEditorFiles();
+
             console.log(`  rebuilt  ${script.length} bytes  ${new Date().toLocaleTimeString()}`);
         });
     },
 };
+
+/**
+ * Puts the editor and the files it reads where the server can reach them: the
+ * page itself, the format helpers it imports, and a copy of the level file so it
+ * can offer every course in the game as a starting point.
+ */
+async function copyEditorFiles() {
+    await mkdir(resolve(projectRoot, 'build'), { recursive: true });
+
+    for (const [from, to] of [
+        ['tools/editor.html', 'build/editor.html'],
+        ['tools/level-text.mjs', 'build/level-text.mjs'],
+        ['src/levels/levels.js', 'build/levels.js'],
+    ]) {
+        await copyFile(resolve(projectRoot, from), resolve(projectRoot, to));
+    }
+}
+
+await copyEditorFiles();
 
 const buildContext = await context({
     entryPoints: [resolve(projectRoot, 'src/main.js')],
@@ -55,4 +83,8 @@ const buildContext = await context({
 await buildContext.watch();
 await buildContext.serve({ port: PORT, servedir: resolve(projectRoot, 'build') });
 
-console.log(`\n  PRISMHOOF dev server\n  http://localhost:${PORT}/debug.html\n`);
+console.log(
+    `\n  PRISMHOOF dev server`
+    + `\n  game    http://localhost:${PORT}/debug.html`
+    + `\n  editor  http://localhost:${PORT}/editor.html\n`,
+);

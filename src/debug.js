@@ -10,6 +10,7 @@
  *
  *   #screen=howto            jump straight to a screen
  *   #level=3                 start a run at a given level
+ *   #level=edit              play the course held by tools/editor.html
  *   #hold=ArrowRight,KeyJ    hold keys down from the start
  *   #seq=Space:60,-KeyJ:90   press and release keys at given warm-up steps
  *   #warm=180                step the simulation before the first frame
@@ -20,6 +21,7 @@ import { CANVAS_HEIGHT } from './config.js';
 import { canvasContext } from './core/canvas.js';
 import { clearFrameInput } from './core/input.js';
 import { recentFrameDurations } from './core/loop.js';
+import { LEVELS } from './levels/levels.js';
 import { GameplayScreen } from './screens/gameplay-screen.js';
 import { HowToPlayScreen } from './screens/how-to-play-screen.js';
 import { pushScreen, resetScreens, topScreen, updateScreens } from './screens/screen.js';
@@ -41,6 +43,18 @@ const SCREEN_SHORTCUTS = new Map([
  */
 export function runDebugWarmUp() {
     SCREEN_SHORTCUTS.get(options.get('screen'))?.();
+
+    // The course editor leaves a level here for the game to pick up. Appending it
+    // to LEVELS rather than special-casing the gameplay screen means an edited
+    // course goes through exactly the same path as a shipped one, including the
+    // retry and level-cleared handling.
+    if (options.get('level') === 'edit') {
+        const edited = localStorage.getItem('prismhoof.editorLevel');
+        if (edited) {
+            LEVELS.push(JSON.parse(edited));
+            resetScreens(new GameplayScreen(LEVELS.length - 1));
+        }
+    }
 
     const levelIndex = parseInt(options.get('level'));
     if (levelIndex >= 0 && !options.get('screen')) resetScreens(new GameplayScreen(levelIndex));
