@@ -90,7 +90,7 @@ Requires Node 20+.
 
 ```sh
 make install     # npm install (4 dev dependencies)
-make dev         # watch + serve the debug build on http://localhost:8013
+make dev         # watch + serve the debug build and the editor on port 8013
 make verify      # fully squeezed but with DEBUG on -> build/verify.html
 make build       # minified, Roadroller-packed build/index.html
 make check       # prove the course editor round-trips every level unchanged
@@ -100,16 +100,25 @@ make all         # build + zip
 
 ## The course editor
 
-`make dev` serves a course editor at **http://localhost:8013/editor.html** next to the game.
-It is a dev tool, not part of the entry — nothing in `tools/` ships, so it costs zero bytes
-of the budget and can be as comfortable as it likes.
+`make dev` starts a local server on **port 8013** and puts a course editor next to the game
+there, at the path `/editor.html` — open it from your own browser once the server is running.
+It is a dev tool, not part of the entry: nothing in `tools/` ships, so it costs zero bytes of
+the budget and can be as comfortable as it likes.
 
 Paint terrain with the mouse, `1`–`8` to pick a tile, and it prints the level literal ready
 to paste into `src/levels/levels.js` — trailing empty tiles trimmed and empty sky rows
 dropped, which `parseLevel` pads back in and which would otherwise be bytes the build carries
 for nothing. It opens any of the thirteen courses to start from (`#level=4` deep-links to
-one), and **Play this course** hands what is on the grid straight to the debug build through
-`localStorage`, where it runs down exactly the same path as a shipped level.
+one).
+
+**Test run** plays the course without leaving the editor. The stage under the grid is the
+real debug build in a frame: what is on the grid is handed over through `localStorage`,
+picked up by the `#level=edit` hook in `src/debug.js`, and appended to `LEVELS`, so an edited
+course loads down exactly the path a shipped one takes — a preview that could disagree with
+the real game would be worse than useless for judging a jump. Click the stage to give it the
+keyboard, **Stop** to hand it back. There is an **Open in a new tab** button for playing at
+full size, and `#play=1` starts a run on arrival, so `#level=4&play=1` is a deep link
+straight into playing the fourth course.
 
 It also draws the three distances a course is built out of — a jump, a pour, and a pour
 ridden into a jump — from whichever tile the mouse is over, because laying out a level is
