@@ -18,130 +18,126 @@
 -->
 
 <style>
-    :root {
-        --ink: #f4eeff;
-        --dim: #9d92b8;
-        --panel: #241a3a;
-        --panel-edge: #3b2c5e;
-        --page: #16112a;
-        --accent: #ff5fa2;
-    }
+    /*
+     * Plain on purpose. This is a tool for reading a level and checking a gap,
+     * so the only things allowed to carry colour are the grid and the game
+     * running underneath it - everything else is black text, grey rules and
+     * white space, and stays out of the way.
+     */
 
     * { box-sizing: border-box; }
 
     body {
         margin: 0;
-        padding: 20px;
+        padding: 16px;
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 340px;
-        gap: 20px;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 16px;
         align-items: start;
-        background: var(--page);
-        color: var(--ink);
-        font: 14px/1.5 'Century Gothic', Futura, 'Trebuchet MS', system-ui, sans-serif;
+        background: #fff;
+        color: #111;
+        font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
     }
 
     h1 {
-        margin: 0 0 4px;
-        font-size: 22px;
-        letter-spacing: 2px;
-        background: linear-gradient(90deg, #ff4d6d, #ff9f45, #ffd93d, #6bcB77, #4dd4e8, #6c7bff, #b86bff);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
+        margin: 0 0 2px;
+        font-size: 15px;
+        font-weight: 600;
     }
 
     h2 {
         margin: 0 0 8px;
-        font-size: 13px;
-        letter-spacing: 2px;
-        color: var(--dim);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
+        color: #666;
     }
 
     section {
-        margin-bottom: 16px;
-        padding: 14px;
-        border: 1px solid var(--panel-edge);
-        border-radius: 10px;
-        background: var(--panel);
+        margin-bottom: 12px;
+        padding: 12px;
+        border: 1px solid #ccc;
     }
 
     canvas {
         display: block;
-        border: 1px solid var(--panel-edge);
-        border-radius: 10px;
+        border: 1px solid #999;
         background: #2b2140;
         cursor: crosshair;
         touch-action: none;
         max-width: 100%;
     }
 
-    .palette { display: flex; flex-wrap: wrap; gap: 6px; }
+    .palette { display: flex; flex-wrap: wrap; gap: 4px; }
 
-    .palette button {
-        flex: 1 0 auto;
-        padding: 8px 10px;
-        border: 1px solid var(--panel-edge);
-        border-radius: 8px;
-        background: #1b1430;
-        color: var(--ink);
-        font: inherit;
-        font-size: 12px;
-        cursor: pointer;
-    }
+    /* The one place buttons sit in a row, so they opt out of the full width. */
+    .palette button { width: auto; flex: 1 0 auto; margin-bottom: 0; }
 
+    /* Selection is weight and a darker rule, never a fill. */
     .palette button[aria-pressed='true'] {
-        border-color: var(--accent);
-        background: #3a2350;
+        border-color: #111;
+        font-weight: 700;
     }
 
-    .swatch {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        margin-right: 6px;
-        border-radius: 2px;
-        vertical-align: -1px;
-    }
+    label { display: block; margin-bottom: 8px; color: #666; }
 
-    label { display: block; margin-bottom: 10px; color: var(--dim); font-size: 12px; letter-spacing: 1px; }
-
-    input, textarea, select, button.action {
+    input, textarea, select, button {
         width: 100%;
-        padding: 8px;
-        border: 1px solid var(--panel-edge);
-        border-radius: 8px;
-        background: #1b1430;
-        color: var(--ink);
+        padding: 5px 7px;
+        border: 1px solid #999;
+        background: #fff;
+        color: #111;
         font: inherit;
     }
 
     textarea { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; resize: vertical; }
 
-    button.action { cursor: pointer; margin-bottom: 8px; }
-    button.action:hover { border-color: var(--accent); }
+    button { cursor: pointer; margin-bottom: 6px; }
+    button:hover { border-color: #111; }
 
-    .row { display: flex; gap: 8px; }
+    .row { display: flex; gap: 6px; }
+    .row button { margin-bottom: 0; }
 
     #stage {
         display: block;
         width: 100%;
         aspect-ratio: 16 / 9;
-        margin-top: 10px;
-        border: 1px solid var(--panel-edge);
-        border-radius: 10px;
-        background: #07060f;
+        margin-top: 8px;
+        border: 1px solid #999;
+        background: #000;
     }
 
     #stage[hidden] { display: none; }
 
-    .hint { margin: 0; color: var(--dim); font-size: 12px; }
-    .warn { color: #ffb03b; }
+    .hint { margin: 0 0 8px; color: #666; }
+    .warn { color: #a33; }
+
+    /* Shown only when the page is opened from disk, where nothing works. */
+    #served {
+        margin: 0 0 16px;
+        padding: 12px;
+        border: 1px solid #a33;
+        color: #a33;
+        grid-column: 1 / -1;
+    }
 </style>
 
+<p id="served" hidden>
+    <b>Opened from disk, so nothing on this page works.</b>
+    Run <code>make dev</code> and load it from the server on port 8013, at
+    <code>/editor.html</code>. From a <code>file://</code> URL the browser blocks the module
+    this page imports, and the test run has no way to reach the game.
+</p>
+
+<script>
+    // Deliberately not a module: this has to run even when the module below
+    // fails to load, which is exactly the case it is here to report.
+    if (location.protocol === 'file:') document.getElementById('served').hidden = false;
+</script>
+
 <div>
-    <h1>PRISMHOOF COURSE EDITOR</h1>
+    <h1>PRISMHOOF course editor</h1>
     <p class="hint">
         Left-drag paints, right-drag erases, <b>1</b>–<b>8</b> pick a tile.
         Levels are 18 rows tall; the bottom row is the floor.
@@ -160,9 +156,9 @@
             shipped level. Click the stage to give it the keyboard.
         </p>
         <div class="row">
-            <button class="action" id="play">Play this course</button>
-            <button class="action" id="playTab">Open in a new tab</button>
-            <button class="action" id="stop" hidden>Stop</button>
+            <button id="play">Play this course</button>
+            <button id="playTab">Open in a new tab</button>
+            <button id="stop" hidden>Stop</button>
         </div>
         <iframe id="stage" title="test run" hidden></iframe>
     </section>
@@ -193,21 +189,21 @@
     <section>
         <h2>Open</h2>
         <label>A level from the game <select id="levelPicker"></select></label>
-        <button class="action" id="loadLevel">Load it into the grid</button>
-        <button class="action" id="clear">Clear the grid</button>
+        <button id="loadLevel">Load it into the grid</button>
+        <button id="clear">Clear the grid</button>
     </section>
 
     <section>
         <h2>Paste into src/levels/levels.js</h2>
         <textarea id="output" rows="14" readonly></textarea>
-        <button class="action" id="copy">Copy</button>
+        <button id="copy">Copy</button>
     </section>
 
     <section>
         <h2>Import</h2>
         <p class="hint">Paste a level literal, or a whole levels.js, and load the first one.</p>
         <textarea id="import" rows="5" placeholder="{ name: 'THE SPAN', rows: [ … ] }"></textarea>
-        <button class="action" id="importButton">Load from the paste</button>
+        <button id="importButton">Load from the paste</button>
         <p class="hint warn" id="importError"></p>
     </section>
 </div>
@@ -431,7 +427,7 @@
             const button = document.createElement('button');
             button.type = 'button';
             button.setAttribute('aria-pressed', String(index === selected));
-            button.innerHTML = `<span class="swatch" style="background:${tile.color}"></span>${index + 1} ${tile.label} <b>${tile.character}</b>`;
+            button.textContent = `${index + 1} ${tile.label} ${tile.character}`;
             button.onclick = () => { selected = index; renderPalette(); };
             return button;
         }));

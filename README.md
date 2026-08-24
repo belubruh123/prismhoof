@@ -103,7 +103,12 @@ make all         # build + zip
 `make dev` starts a local server on **port 8013** and puts a course editor next to the game
 there, at the path `/editor.html` — open it from your own browser once the server is running.
 It is a dev tool, not part of the entry: nothing in `tools/` ships, so it costs zero bytes of
-the budget and can be as comfortable as it likes.
+the budget. It looks like a form because that is what it is — the only things on the page
+allowed any colour are the grid and the game running under it.
+
+It has to be served rather than opened from disk: a `file://` page cannot import the module
+it shares with `make check`, and the test run could not reach the game. Opened that way it
+says so at the top instead of sitting there looking functional.
 
 Paint terrain with the mouse, `1`–`8` to pick a tile, and it prints the level literal ready
 to paste into `src/levels/levels.js` — trailing empty tiles trimmed and empty sky rows
