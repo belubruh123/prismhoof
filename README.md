@@ -138,52 +138,119 @@ quietly reformatted.
 [ECT](https://github.com/fhanau/Efficient-Compression-Tool) to recompress the archive if
 either is installed, and says so if neither is.
 
-## How the source stays readable
+## Squeezing it into 13kB
 
-The competition asks for readable source, and 13kB asks for the opposite. Every
-byte-saving step therefore lives in `tools/`, and nothing under `src/` is written for
-size — full descriptive identifiers, one concept per file, no abbreviations.
+The game is 13,288 of 13,312 bytes, so nearly every technique below was worth the trouble.
+The numbers are all measured on the real zip, one change at a time — none are estimates, and
+several ideas that sounded certain turned out to be worth nothing at all.
 
 `tools/build.mjs` runs the whole squeeze:
 
-1. **esbuild** bundles the ES modules into one IIFE, with `DEBUG` as a compile-time
-   constant so every debug branch — and the entire `src/debug.js` module — is eliminated
-   rather than shipped. A plugin swaps the level pictures for a run-length encoding on the
-   way past: 5,820 characters of rows become 1,887, expanded again at load.
-2. **Google Closure Compiler** in ADVANCED mode does the whole-program pass terser
-   structurally cannot — inlining across module boundaries, collapsing namespaces, dropping
-   unreachable code. On its own it packs *worse* than terser (17,833 against 17,792); run
-   before terser it is worth **243 bytes**, because the two do different jobs.
-3. **terser** compresses and mangles, including our own property names.
-4. **Roadroller** packs the result into a self-extracting payload, five times over, keeping
-   the smallest. Its optimiser searches randomly, so identical source packs to results about
-   30 bytes apart; taking the best of five is worth real bytes and, more usefully, makes a 20
-   byte experiment anywhere else in the source measurable at all. It runs with `allowFreeVars`
-   (Roadroller's `--dirty`), which lets the decoder keep its working variables on the global
-   object instead of declaring them — worth 50 bytes of packed payload, and safe because the
-   page holds one script and one element.
-5. The packed script and the minified CSS are inlined into `src/index.html`.
+1. **esbuild** bundles the ES modules into one IIFE, with `DEBUG` as a compile-time constant
+   so every debug branch — and the entire `src/debug.js` module — is eliminated rather than
+   shipped. A plugin (`tools/levels-plugin.mjs`) swaps the level pictures for a run-length
+   encoding on the way past.
+2. **Google Closure Compiler**, ADVANCED. Whole-program optimisation: inlining across module
+   boundaries, collapsing namespaces, dropping code no path reaches, renaming properties
+   globally.
+3. **terser**, compressing and mangling what Closure leaves, including our own property
+   names.
+4. **Roadroller**, packing the result into a self-extracting payload.
+5. The packed script and the minified CSS are inlined into `src/index.html`, which is zipped
+   by hand and recompressed with **advzip**'s Zopfli.
 
-Property names in `src/` avoid anything a browser API also calls itself — `inkColor` rather
-than `color`, `typeSize` rather than `size`, `velocityAcross` rather than `velocityX`. The
-mangler protects every name it recognises from a JS or DOM API, and that list is long enough
-to catch a dozen of ours by accident: `velocityX` is shielded because IE's `MSGestureEvent`
-had one. Naming around it costs nothing to read and is worth 74 bytes of the zip.
+### What each step is worth
 
-The build also writes `build/packme.js`, the exact bytes handed to Roadroller, so the same
-input can be dropped into [the Roadroller page](https://lifthrasiir.github.io/roadroller/) to
-try settings by hand and compare them against what the build gets.
+| Technique | Bytes |
+| --- | --- |
+| Property mangling (terser, `builtins: false`) | ~1,830 packed, about 8% of the zip |
+| **Closure ADVANCED, run before terser** | **243** |
+| **Run-length encoding the level pictures** | **78** |
+| **Property names chosen to dodge the mangler's shield list** | **74** |
+| Dropping the wrapper element, unquoted HTML attributes | 40 |
+| Roadroller `allowFreeVars` (its `--dirty` mode) | ~35 |
+| Best-of-N packing | ~16 |
+| Roadroller `--opt=2` | 10 |
+| `maxMemoryMB` 150 → 320 | ~9 |
 
-It prints a per-module byte table on every build, so the size budget stays visible while
-the game is being written rather than becoming a crisis at the end.
+Two of those need explaining, because both are counter-intuitive.
 
-Property mangling is worth about 8% of the final zip, and it only stays safe because the
-source never reaches a property through a string built at runtime — the palette assigns
-its colours by name, the level character table is a `Map`, and the settings screen names
-every field it writes. `make verify` exists for exactly this: it applies the full release
-squeeze with `DEBUG` still on, so a mangled build can be driven by the debug hooks. A
-debug build cannot catch a mangling bug and a release build cannot be driven, so neither
-one alone is enough. It caught two real ones.
+**Closure only pays as a pair with terser.** On its own it packs *worse* than terser alone —
+17,833 against 17,792 — because its output is regular in ways Roadroller does not reward.
+Run first, it restructures the program in ways terser structurally cannot; terser then
+re-minifies the result. Tested the obvious way, this technique looks useless.
+
+**Property names in `src/` avoid anything a browser API also calls itself** — `inkColor`
+rather than `color`, `typeSize` rather than `size`, `velocityAcross` rather than `velocityX`,
+`levelTitle` rather than `name`. Terser's `builtins: false` refuses to touch any name it
+recognises from a JS or DOM API, which is what makes property mangling safe — but that list
+is long enough to catch a dozen of ours by accident. `size`, `color`, `weight`, `label`,
+`items`, `name`, `rows`, `target` and `update` are all real DOM properties somewhere, and
+`velocityX` is shielded because IE's `MSGestureEvent` had one. They were shipping in full,
+hundreds of times over.
+
+### What was measured and thrown away
+
+Worth as much as the list above, because each of these looks like it should work:
+
+| Idea | Result |
+| --- | --- |
+| Deduplicating similar code into shared helpers | **6 bytes** for 112 minified bytes removed |
+| A shared dictionary of repeated level rows | 7 bytes — less than its own decoder costs |
+| Splitting entities out of the terrain grid | **168 bytes worse** |
+| ECT instead of advzip | 2 bytes |
+| advzip beyond `-i 256` | nothing, tested to 4000 |
+| Roadroller `precision` and `recipLearningRate` sweeps | nothing — its optimiser already tunes both |
+| `maxMemoryMB` above 320 | nothing, and the player's browser has to allocate it |
+| Closure's `assume_function_wrapper`, `use_types_for_optimization` | nothing |
+| Packing the CSS as a second Roadroller input | impossible — this version takes exactly one |
+| Disabling terser's toplevel mangling | inside the noise |
+
+The first line is the important one. **Roadroller's context mixing already compresses
+repeated call patterns almost perfectly**, so collapsing duplicate code buys nothing; only
+*distinct* content moves the number. The same logic explains the level data: run-length
+encoding removed 4,302 characters, 61% of it, and bought 78 bytes, because the compressor was
+already predicting those runs. Once a payload is at its entropy floor, re-encoding it — as
+rectangles, dictionaries, bit-packing — cannot help. The information has to actually go away.
+
+### Making the measurements trustworthy
+
+Roadroller's optimiser searches randomly, so identical source packs to results about 30 bytes
+apart. A 20-byte experiment is invisible against that. `--repeat=N` packs N times and keeps
+the smallest, which is both a real saving and the instrument that makes everything else
+measurable. Release builds run the thorough search (`--opt=2`) twice and take a few minutes:
+the margin is 24 bytes, and the quick search lands over the limit about as often as under it.
+
+The build writes `build/packme.js`, the exact bytes handed to Roadroller, so the same input
+can be dropped into [the Roadroller page](https://lifthrasiir.github.io/roadroller/) and
+tried by hand against what the build gets. It also prints a per-module byte table on every
+build, so the budget stays visible while the game is being written rather than becoming a
+crisis at the end.
+
+## How the source stays readable
+
+The competition asks for readable source, and 13kB asks for the opposite. Almost every
+byte-saving step therefore lives in `tools/`: the pictures in `src/levels/levels.js` are
+pictures, the identifiers are full words, and there is no golfed code anywhere under `src/`.
+
+**Comments are free** — esbuild and terser strip every one of them before the payload is
+built — so the two places where the source does bend towards the compiler are commented
+rather than left to be puzzled over. Those are the property names above, and the level
+encoding, which is why `make check` exists.
+
+Both bends are also checked rather than trusted:
+
+- `make check` reads every level through the course editor's loader and prints it back
+  through its formatter, failing unless the result is byte-for-byte the file it came from,
+  then encodes and expands every row and fails unless each one survives exactly.
+- `make verify` applies the full release squeeze with `DEBUG` still on, so a fully mangled,
+  Closure-compiled, Roadroller-packed build can be driven by the debug hooks. A debug build
+  cannot catch a mangling bug and a release build cannot be driven, so neither alone is
+  enough. It has caught three real ones.
+
+Property mangling only stays safe because the source never reaches a property through a
+string built at runtime — the palette assigns its colours by name, the level character table
+is a `Map`, and the settings screen names every field it writes.
 
 ## Layout
 
@@ -216,7 +283,7 @@ Yes. I build this with [Claude Code](https://claude.com/claude-code). I make the
 direction and gameplay calls, and Claude Code writes and refactors the code against them.
 
 **Is it really under 13kB?**
-Yes — **13,282 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
+Yes — **13,288 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
 `make zip` on every build. No network requests, no external assets,
 nothing streamed in at runtime.
 
