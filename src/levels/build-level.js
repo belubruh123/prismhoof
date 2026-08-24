@@ -58,13 +58,13 @@ export function buildLevelWorld(definition) {
     // plan a route through it before you move, and the walls around it are
     // visible, so a level looks like a place rather than a strip of ground.
     world.camera.zoom = min(1, CANVAS_WIDTH / terrain.widthInPixels, CANVAS_HEIGHT / terrain.heightInPixels);
-    world.camera.target = unicorn;
+    world.camera.followTarget = unicorn;
     world.camera.snapTo(unicorn.x, unicorn.y);
 
     return {
         world,
         unicorn,
-        name: level.name,
+        levelTitle: level.levelTitle,
         /** Captured up front so the colour restoration has a denominator. */
         gloomTotal: world.entitiesOfCategory('gloom').length,
     };

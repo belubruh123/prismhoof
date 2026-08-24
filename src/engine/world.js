@@ -55,12 +55,12 @@ export class World {
         return this.entitiesOfCategory(category)[0];
     }
 
-    update(elapsedSeconds) {
+    updateStep(elapsedSeconds) {
         // A copy, because entities routinely add or remove entities while updating.
         for (const entity of this.entities.slice()) {
-            if (!entity.isRemoved) entity.update(elapsedSeconds);
+            if (!entity.isRemoved) entity.updateStep(elapsedSeconds);
         }
-        this.camera.update(elapsedSeconds, this);
+        this.camera.updateStep(elapsedSeconds, this);
     }
 
     /** Draws every entity in camera space. Screen-space layers are the caller's job. */

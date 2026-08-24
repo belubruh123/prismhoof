@@ -52,7 +52,7 @@ export const LEVEL_ROW_COUNT = 18;
  * Rows shorter than the widest one are padded with empty tiles.
  */
 export function parseLevel(definition) {
-    const authoredRows = definition.rows;
+    const authoredRows = definition.tileRows;
     const skyRowCount = Math.max(0, LEVEL_ROW_COUNT - authoredRows.length);
     const rows = [...new Array(skyRowCount).fill(''), ...authoredRows];
 
@@ -86,9 +86,24 @@ export function parseLevel(definition) {
     });
 
     return {
-        name: definition.name,
+        levelTitle: definition.levelTitle,
         signs: definition.signs || [],
         tileGrid,
         spawns,
     };
 }
+
+/**
+ * Expands the run-length form the build packs level rows into.
+ *
+ * A row is mostly one character repeated - sky, a floor, the wall of a shaft -
+ * so `tools/levels-plugin.mjs` rewrites every run of three or more as the
+ * character followed by its count, and joins the rows with commas. Nothing in
+ * the level alphabet is a digit, so a digit can only ever be a count.
+ *
+ * The pictures in `levels.js` stay exactly as they are written; only what the
+ * bundle carries changes. `make check` proves the two agree.
+ */
+export const expandRows = (packed) => packed
+    .split(',')
+    .map((row) => row.replace(/(\D)(\d+)/g, (_, character, count) => character.repeat(count)));

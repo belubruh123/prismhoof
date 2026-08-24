@@ -18,16 +18,16 @@ const OUTLINE_RATIO = 0.17;
 const OUTLINE_COLOR = '#22103f';
 
 /** Applies a font to the context and returns the measured width of `text`. */
-function applyFont(text, size, weight, spacing) {
+function applyFont(text, typeSize, typeWeight, typeSpacing) {
     const context = canvasContext;
-    context.font = `${weight} ${size}px ${FONT_STACK}`;
-    context.letterSpacing = `${spacing}px`;
+    context.font = `${typeWeight} ${typeSize}px ${FONT_STACK}`;
+    context.letterSpacing = `${typeSpacing}px`;
     return context.measureText(text).width;
 }
 
-export function measureText(text, size, weight = 700, spacing = 0) {
+export function measureText(text, typeSize, typeWeight = 700, typeSpacing = 0) {
     canvasContext.save();
-    const width = applyFont(text, size, weight, spacing);
+    const width = applyFont(text, typeSize, typeWeight, typeSpacing);
     canvasContext.restore();
     return width;
 }
@@ -37,20 +37,20 @@ export function measureText(text, size, weight = 700, spacing = 0) {
  * `align` and `baseline` take the usual canvas values.
  */
 export function drawText(text, x, y, {
-    size = 24,
-    weight = 700,
-    spacing = 0,
-    align = 'center',
+    typeSize = 24,
+    typeWeight = 700,
+    typeSpacing = 0,
+    alignment = 'center',
     baseline = 'middle',
-    color = '#fff',
+    inkColor = '#fff',
     alpha = 1,
     outline = OUTLINE_RATIO,
 } = {}) {
     const context = canvasContext;
     context.save();
 
-    const width = applyFont(text, size, weight, spacing);
-    context.textAlign = align;
+    const width = applyFont(text, typeSize, typeWeight, typeSpacing);
+    context.textAlign = alignment;
     context.textBaseline = baseline;
     context.globalAlpha = alpha;
 
@@ -59,17 +59,17 @@ export function drawText(text, x, y, {
     // needing a panel behind it, which is what lets the signs stand in the
     // level itself rather than in a box at the top of the screen.
     if (outline) {
-        context.lineWidth = size * outline;
+        context.lineWidth = typeSize * outline;
         context.lineJoin = 'round';
         context.strokeStyle = OUTLINE_COLOR;
         context.shadowColor = 'rgba(14,5,32,0.45)';
-        context.shadowBlur = size * 0.3;
-        context.shadowOffsetY = size * 0.1;
+        context.shadowBlur = typeSize * 0.3;
+        context.shadowOffsetY = typeSize * 0.1;
         context.strokeText(text, x, y);
         context.shadowColor = 'transparent';
     }
 
-    context.fillStyle = color;
+    context.fillStyle = inkColor;
     context.fillText(text, x, y);
 
     context.restore();
@@ -81,15 +81,15 @@ export function drawText(text, x, y, {
  * Used for headings, so the theme is present even in the menus.
  */
 export function drawRainbowText(text, x, y, options = {}) {
-    const { size = 24, weight = 900, spacing = 0, align = 'center' } = options;
+    const { typeSize = 24, typeWeight = 900, typeSpacing = 0, alignment = 'center' } = options;
 
-    const width = measureText(text, size, weight, spacing);
-    const left = align === 'center' ? x - width / 2 : align === 'right' ? x - width : x;
+    const width = measureText(text, typeSize, typeWeight, typeSpacing);
+    const left = alignment === 'center' ? x - width / 2 : alignment === 'right' ? x - width : x;
 
     const gradient = canvasContext.createLinearGradient(left, 0, left + width, 0);
-    RAINBOW_COLORS.forEach((color, index) => {
-        gradient.addColorStop(index / (RAINBOW_COLORS.length - 1), color);
+    RAINBOW_COLORS.forEach((inkColor, index) => {
+        gradient.addColorStop(index / (RAINBOW_COLORS.length - 1), inkColor);
     });
 
-    return drawText(text, x, y, { ...options, color: gradient });
+    return drawText(text, x, y, { ...options, inkColor: gradient });
 }

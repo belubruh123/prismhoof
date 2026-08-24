@@ -38,13 +38,13 @@ export class ParticleField extends Entity {
     spawn({
         x,
         y,
-        velocityX = 0,
-        velocityY = 0,
+        velocityAcross = 0,
+        velocityDown = 0,
         gravity = 0,
         drag = 1.4,
-        size,
+        typeSize,
         endSize = 0,
-        color,
+        inkColor,
         lifetime = 0.5,
         shape = 0,
         spin = 0,
@@ -54,13 +54,13 @@ export class ParticleField extends Entity {
 
         particle.x = x;
         particle.y = y;
-        particle.velocityX = velocityX;
-        particle.velocityY = velocityY;
+        particle.velocityAcross = velocityAcross;
+        particle.velocityDown = velocityDown;
         particle.gravity = gravity;
         particle.drag = drag;
-        particle.size = size;
+        particle.typeSize = typeSize;
         particle.endSize = endSize;
-        particle.color = color;
+        particle.inkColor = inkColor;
         particle.age = 0;
         particle.lifetime = lifetime;
         particle.shape = shape;
@@ -70,21 +70,21 @@ export class ParticleField extends Entity {
         return particle;
     }
 
-    update(elapsedSeconds) {
-        super.update(elapsedSeconds);
+    updateStep(elapsedSeconds) {
+        super.updateStep(elapsedSeconds);
 
         for (const particle of this.particles) {
             if (particle.age >= particle.lifetime) continue;
 
             particle.age += elapsedSeconds;
-            particle.velocityY += particle.gravity * elapsedSeconds;
+            particle.velocityDown += particle.gravity * elapsedSeconds;
 
             const dragFactor = 1 - particle.drag * elapsedSeconds;
-            particle.velocityX *= dragFactor;
-            particle.velocityY *= dragFactor;
+            particle.velocityAcross *= dragFactor;
+            particle.velocityDown *= dragFactor;
 
-            particle.x += particle.velocityX * elapsedSeconds;
-            particle.y += particle.velocityY * elapsedSeconds;
+            particle.x += particle.velocityAcross * elapsedSeconds;
+            particle.y += particle.velocityDown * elapsedSeconds;
             particle.rotation += particle.spin * elapsedSeconds;
         }
     }
@@ -96,17 +96,17 @@ export class ParticleField extends Entity {
             const progress = particle.age / particle.lifetime;
             if (progress >= 1) continue;
 
-            const size = particle.size + (particle.endSize - particle.size) * progress;
-            if (size <= 0) continue;
+            const typeSize = particle.typeSize + (particle.endSize - particle.typeSize) * progress;
+            if (typeSize <= 0) continue;
 
             context.globalAlpha = progress > 0.7 ? (1 - progress) / 0.3 : 1;
-            context.fillStyle = particle.color;
+            context.fillStyle = particle.inkColor;
 
             if (particle.shape) {
-                drawFourPointStar(context, particle.x, particle.y, size, particle.rotation);
+                drawFourPointStar(context, particle.x, particle.y, typeSize, particle.rotation);
             } else {
                 context.beginPath();
-                context.arc(particle.x, particle.y, size, 0, TAU);
+                context.arc(particle.x, particle.y, typeSize, 0, TAU);
                 context.fill();
             }
         }
@@ -139,13 +139,13 @@ export function burstRainbow(particles, x, y, count, {
         particles.spawn({
             x,
             y,
-            velocityX: cos(angle) * magnitude,
-            velocityY: sin(angle) * magnitude,
+            velocityAcross: cos(angle) * magnitude,
+            velocityDown: sin(angle) * magnitude,
             gravity,
-            size: randomBetween(minSize, maxSize),
+            typeSize: randomBetween(minSize, maxSize),
             endSize: 0,
             lifetime: randomBetween(lifetime * 0.6, lifetime),
-            color: RAINBOW_COLORS[index % RAINBOW_COLORS.length],
+            inkColor: RAINBOW_COLORS[index % RAINBOW_COLORS.length],
             shape: PARTICLE_STAR,
             spin: randomBetween(-9, 9),
         });

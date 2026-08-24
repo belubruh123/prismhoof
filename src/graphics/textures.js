@@ -6,9 +6,9 @@
 
 
 /** A soft radial glow, for the horn, pickups and the gate. */
-export function drawRadialGlow(context, x, y, radius, color, alpha = 1) {
+export function drawRadialGlow(context, x, y, radius, inkColor, alpha = 1) {
     const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
-    gradient.addColorStop(0, color);
+    gradient.addColorStop(0, inkColor);
     gradient.addColorStop(1, 'transparent');
     context.save();
     context.globalAlpha = alpha;

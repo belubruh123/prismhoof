@@ -40,7 +40,7 @@ export class RainbowRibbon extends Entity {
     categories = ['ribbon'];
     layer = LAYER_RIBBON;
 
-    points = [];
+    nodePoints = [];
 
     /** True while the paint key is still held and points are being added. */
     isBeingPainted = true;
@@ -75,7 +75,7 @@ export class RainbowRibbon extends Entity {
         if (terrain.isSolidAtWorld(this.headX, this.headY)) return false;
 
         this.addPoint(this.headX, this.headY);
-        return this.points.length < RIBBON_MAX_POINTS;
+        return this.nodePoints.length < RIBBON_MAX_POINTS;
     }
 
     /**
@@ -83,12 +83,12 @@ export class RainbowRibbon extends Entity {
      * Returns true when a point was actually added, so the caller can spark.
      */
     addPoint(x, y) {
-        if (this.points.length >= RIBBON_MAX_POINTS) return false;
+        if (this.nodePoints.length >= RIBBON_MAX_POINTS) return false;
 
-        const lastPoint = this.points[this.points.length - 1];
+        const lastPoint = this.nodePoints[this.nodePoints.length - 1];
         if (lastPoint && distanceBetween(lastPoint.x, lastPoint.y, x, y) < RIBBON_POINT_SPACING) return false;
 
-        this.points.push({ x, y });
+        this.nodePoints.push({ x, y });
         this.cachedPath = null;
         return true;
     }
@@ -116,8 +116,8 @@ export class RainbowRibbon extends Entity {
         return this.isBeingPainted;
     }
 
-    update(elapsedSeconds) {
-        super.update(elapsedSeconds);
+    updateStep(elapsedSeconds) {
+        super.updateStep(elapsedSeconds);
 
         if (this.isBeingPainted) return;
 
@@ -135,14 +135,14 @@ export class RainbowRibbon extends Entity {
      * passing straight through a thin rainbow.
      */
     findLandingY(fromX, fromY, toX, toY) {
-        const lastUsablePoint = this.points.length - (this.isBeingPainted ? WET_POINT_COUNT : 0);
+        const lastUsablePoint = this.nodePoints.length - (this.isBeingPainted ? WET_POINT_COUNT : 0);
 
         let earliestFraction = 2;
         let landingY = null;
 
         for (let index = 1; index < lastUsablePoint; index++) {
-            const start = this.points[index - 1];
-            const end = this.points[index];
+            const start = this.nodePoints[index - 1];
+            const end = this.nodePoints[index];
 
             // Near-vertical stretches are walls, not floors.
             if (abs(end.y - start.y) > abs(end.x - start.x) * RIBBON_MAX_LANDABLE_SLOPE) continue;
@@ -168,9 +168,9 @@ export class RainbowRibbon extends Entity {
      * the moment it turns round and heads back the way it came.
      */
     surfaceYNear(x, y, reach) {
-        for (let index = 1; index < this.points.length; index++) {
-            const start = this.points[index - 1];
-            const end = this.points[index];
+        for (let index = 1; index < this.nodePoints.length; index++) {
+            const start = this.nodePoints[index - 1];
+            const end = this.nodePoints[index];
 
             // Near-vertical stretches are walls, not floors. Checked first
             // because it is also what rules out a zero-width segment below.
@@ -187,9 +187,9 @@ export class RainbowRibbon extends Entity {
     isNearPoint(x, y, radius) {
         const radiusSquared = (radius + RIBBON_THICKNESS / 2) ** 2;
 
-        for (let index = 1; index < this.points.length; index++) {
-            const start = this.points[index - 1];
-            const end = this.points[index];
+        for (let index = 1; index < this.nodePoints.length; index++) {
+            const start = this.nodePoints[index - 1];
+            const end = this.nodePoints[index];
             if (pointToSegmentDistanceSquared(x, y, start.x, start.y, end.x, end.y) < radiusSquared) return true;
         }
         return false;
@@ -199,15 +199,15 @@ export class RainbowRibbon extends Entity {
 
     buildPath() {
         const path = new Path2D();
-        path.moveTo(this.points[0].x, this.points[0].y);
-        for (let index = 1; index < this.points.length; index++) {
-            path.lineTo(this.points[index].x, this.points[index].y);
+        path.moveTo(this.nodePoints[0].x, this.nodePoints[0].y);
+        for (let index = 1; index < this.nodePoints.length; index++) {
+            path.lineTo(this.nodePoints[index].x, this.nodePoints[index].y);
         }
         return path;
     }
 
     render() {
-        if (this.points.length < 2) return;
+        if (this.nodePoints.length < 2) return;
 
         const context = canvasContext;
         const path = (this.cachedPath ||= this.buildPath());

@@ -15,6 +15,7 @@ import { context } from 'esbuild';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { packLevelsPlugin } from './levels-plugin.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = 8013;
@@ -77,7 +78,7 @@ const buildContext = await context({
     sourcemap: 'inline',
     write: false,
     outfile: resolve(projectRoot, 'build/debug.js'),
-    plugins: [writeDebugPagePlugin],
+    plugins: [packLevelsPlugin, writeDebugPagePlugin],
 });
 
 await buildContext.watch();

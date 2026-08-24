@@ -112,7 +112,7 @@ export class Terrain extends Entity {
             for (let row = firstRow; row <= lastRow; row++) {
                 if (this.tileAt(column, row) !== TILE_SOLID) continue;
                 entity.x = column * TILE_SIZE - entity.halfWidth;
-                entity.velocityX = 0;
+                entity.velocityAcross = 0;
                 entity.wallDirection = 1;
                 return;
             }
@@ -121,7 +121,7 @@ export class Terrain extends Entity {
             for (let row = firstRow; row <= lastRow; row++) {
                 if (this.tileAt(column, row) !== TILE_SOLID) continue;
                 entity.x = (column + 1) * TILE_SIZE + entity.halfWidth;
-                entity.velocityX = 0;
+                entity.velocityAcross = 0;
                 entity.wallDirection = -1;
                 return;
             }
@@ -148,7 +148,7 @@ export class Terrain extends Entity {
                     && (bottomBeforeMove > surfaceY + 1 || entity.wantsToDropThrough)) continue;
 
                 entity.y = surfaceY - entity.halfHeight;
-                entity.velocityY = 0;
+                entity.velocityDown = 0;
                 entity.isOnGround = true;
                 return;
             }
@@ -157,7 +157,7 @@ export class Terrain extends Entity {
             for (let column = firstColumn; column <= lastColumn; column++) {
                 if (this.tileAt(column, row) !== TILE_SOLID) continue;
                 entity.y = (row + 1) * TILE_SIZE + entity.halfHeight;
-                entity.velocityY = 0;
+                entity.velocityDown = 0;
                 return;
             }
         }
@@ -295,8 +295,8 @@ export class Terrain extends Entity {
         context.fillStyle = LAVA_DEEP;
         context.fillRect(-reach, top, width + reach * 2, reach);
 
-        for (const [color, height, phase] of [[LAVA_BRIGHT, 12, 0], [LAVA_GLOW, 4, 1.7]]) {
-            context.fillStyle = color;
+        for (const [inkColor, height, phase] of [[LAVA_BRIGHT, 12, 0], [LAVA_GLOW, 4, 1.7]]) {
+            context.fillStyle = inkColor;
             context.beginPath();
             context.moveTo(-reach, top + height * 3);
 

@@ -16,16 +16,16 @@ export function lerp(from, to, amount) {
 }
 
 /** Moves `value` towards `target` by at most `maximumStep`. */
-export function approach(value, target, maximumStep) {
-    return value < target ? min(value + maximumStep, target) : max(value - maximumStep, target);
+export function approach(value, followTarget, maximumStep) {
+    return value < followTarget ? min(value + maximumStep, followTarget) : max(value - maximumStep, followTarget);
 }
 
 /**
  * Frame-rate independent exponential smoothing.
  * `stiffness` is roughly "how many e-folds per second".
  */
-export function damp(value, target, stiffness, elapsedSeconds) {
-    return lerp(value, target, 1 - pow(2, -stiffness * elapsedSeconds));
+export function damp(value, followTarget, stiffness, elapsedSeconds) {
+    return lerp(value, followTarget, 1 - pow(2, -stiffness * elapsedSeconds));
 }
 
 export function randomBetween(lowest, highest) {

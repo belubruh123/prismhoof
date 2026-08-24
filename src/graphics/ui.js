@@ -28,8 +28,8 @@ export function drawPanel(x, y, width, height, radius = 18) {
     // The rainbow rule is inset past the corner radius, so it needs no clip.
     const ruleWidth = width - radius * 2;
     const bandWidth = ruleWidth / RAINBOW_COLORS.length;
-    RAINBOW_COLORS.forEach((color, index) => {
-        context.fillStyle = color;
+    RAINBOW_COLORS.forEach((inkColor, index) => {
+        context.fillStyle = inkColor;
         context.fillRect(x + radius + index * bandWidth, y, bandWidth + 1, 4);
     });
 }
@@ -48,33 +48,33 @@ export function drawScreenDim(alpha = 0.55) {
  * A vertical menu. `items` are `{ label, detail }`; `detail` is drawn on the
  * right, which is how the settings screen shows each value.
  */
-export function drawMenu(items, selectedIndex, centreX, startY, {
+export function drawMenu(menuItems, chosenIndex, centreX, startY, {
     lineHeight = 52,
-    size = 27,
+    typeSize = 27,
     width = 520,
     time = 0,
 } = {}) {
-    items.forEach((item, index) => {
+    menuItems.forEach((item, index) => {
         const y = startY + index * lineHeight;
-        const isSelected = index === selectedIndex;
+        const isSelected = index === chosenIndex;
 
         if (isSelected) drawSelectionMarker(centreX, y, width, time);
 
-        drawText(item.label, item.detail ? centreX - width / 2 + 26 : centreX, y, {
-            size,
-            weight: isSelected ? 800 : 600,
-            spacing: 1.5,
-            align: item.detail ? 'left' : 'center',
-            color: isSelected ? TEXT_BRIGHT : TEXT_DIM,
+        drawText(item.menuLabel, item.subLabel ? centreX - width / 2 + 26 : centreX, y, {
+            typeSize,
+            typeWeight: isSelected ? 800 : 600,
+            typeSpacing: 1.5,
+            alignment: item.subLabel ? 'left' : 'center',
+            inkColor: isSelected ? TEXT_BRIGHT : TEXT_DIM,
         });
 
-        if (item.detail) {
-            drawText(item.detail, centreX + width / 2 - 26, y, {
-                size: size - 2,
-                weight: 700,
-                spacing: 1,
-                align: 'right',
-                color: isSelected ? TEXT_BRIGHT : TEXT_DIM,
+        if (item.subLabel) {
+            drawText(item.subLabel, centreX + width / 2 - 26, y, {
+                typeSize: typeSize - 2,
+                typeWeight: 700,
+                typeSpacing: 1,
+                alignment: 'right',
+                inkColor: isSelected ? TEXT_BRIGHT : TEXT_DIM,
             });
         }
     });
@@ -119,8 +119,8 @@ export function drawPaintMeter(x, y, width, height, fillRatio, flashAmount = 0) 
     context.clip();
 
     const bandWidth = width / RAINBOW_COLORS.length;
-    RAINBOW_COLORS.forEach((color, index) => {
-        context.fillStyle = color;
+    RAINBOW_COLORS.forEach((inkColor, index) => {
+        context.fillStyle = inkColor;
         context.fillRect(x + index * bandWidth, y, bandWidth + 1, height);
     });
     context.restore();

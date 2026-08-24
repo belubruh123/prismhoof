@@ -32,7 +32,7 @@ export class Entity {
      * Subclasses should call `super.update(elapsedSeconds)` first and then move,
      * so that previousX/previousY hold the pre-movement position.
      */
-    update(elapsedSeconds) {
+    updateStep(elapsedSeconds) {
         this.age += elapsedSeconds;
         this.previousX = this.x;
         this.previousY = this.y;

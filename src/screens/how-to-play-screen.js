@@ -22,10 +22,10 @@ import { drawRainbowText, drawText } from '../graphics/typography.js';
 import { TEXT_BRIGHT, TEXT_DIM, drawPanel, drawScreenDim } from '../graphics/ui.js';
 import { Screen, popScreen } from './screen.js';
 
-const HEADING = { size: 19, weight: 900, spacing: 1.5, align: 'left', color: TEXT_BRIGHT };
-const STRONG = { size: 17, weight: 700, align: 'left', color: TEXT_BRIGHT };
-const BODY = { size: 15, weight: 500, align: 'left', color: TEXT_DIM };
-const TERM = { size: 15, weight: 800, spacing: 1.5, align: 'left', color: TEXT_BRIGHT };
+const HEADING = { typeSize: 19, typeWeight: 900, typeSpacing: 1.5, alignment: 'left', inkColor: TEXT_BRIGHT };
+const STRONG = { typeSize: 17, typeWeight: 700, alignment: 'left', inkColor: TEXT_BRIGHT };
+const BODY = { typeSize: 15, typeWeight: 500, alignment: 'left', inkColor: TEXT_DIM };
+const TERM = { typeSize: 15, typeWeight: 800, typeSpacing: 1.5, alignment: 'left', inkColor: TEXT_BRIGHT };
 
 /** [text, style, pixels of space before this line] */
 const STORY = [
@@ -60,15 +60,15 @@ const TIPS = [
 ];
 
 export class HowToPlayScreen extends Screen {
-    update(elapsedSeconds) {
-        super.update(elapsedSeconds);
+    updateStep(elapsedSeconds) {
+        super.updateStep(elapsedSeconds);
         if (wasKeyPressed(BACK_KEYS) || wasKeyPressed(CONFIRM_KEYS)) popScreen();
     }
 
     render() {
         drawScreenDim(0.72);
         drawPanel(70, 44, CANVAS_WIDTH - 140, CANVAS_HEIGHT - 118);
-        drawRainbowText('HOW TO PLAY', CANVAS_WIDTH / 2, 96, { size: 40, weight: 900, spacing: 6 });
+        drawRainbowText('HOW TO PLAY', CANVAS_WIDTH / 2, 96, { typeSize: 40, typeWeight: 900, typeSpacing: 6 });
 
         let y = 152;
         for (const [text, style, gap] of STORY) {
@@ -79,7 +79,7 @@ export class HowToPlayScreen extends Screen {
         this.renderControls();
 
         drawText('ESC or ENTER to go back', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 42, {
-            size: 15, weight: 600, spacing: 2, color: TEXT_DIM,
+            typeSize: 15, typeWeight: 600, typeSpacing: 2, inkColor: TEXT_DIM,
         });
     }
 
@@ -87,17 +87,17 @@ export class HowToPlayScreen extends Screen {
         const columnX = CANVAS_WIDTH - 340;
         let y = 158;
 
-        drawText('CONTROLS', columnX, y, { size: 19, weight: 900, spacing: 3, color: TEXT_BRIGHT });
+        drawText('CONTROLS', columnX, y, { typeSize: 19, typeWeight: 900, typeSpacing: 3, inkColor: TEXT_BRIGHT });
 
-        for (const [keys, label] of CONTROLS) {
+        for (const [keys, menuLabel] of CONTROLS) {
             y += 52;
-            drawText(keys, columnX, y, { size: 17, weight: 900, spacing: 3, color: TEXT_BRIGHT });
-            drawText(label, columnX, y + 22, { size: 14, weight: 600, spacing: 1, color: TEXT_DIM });
+            drawText(keys, columnX, y, { typeSize: 17, typeWeight: 900, typeSpacing: 3, inkColor: TEXT_BRIGHT });
+            drawText(menuLabel, columnX, y + 22, { typeSize: 14, typeWeight: 600, typeSpacing: 1, inkColor: TEXT_DIM });
         }
 
         y += 62;
-        for (const [text, color, weight] of TIPS) {
-            drawText(text, columnX, y, { size: 14, weight, spacing: weight > 700 ? 1 : 0, color });
+        for (const [text, inkColor, typeWeight] of TIPS) {
+            drawText(text, columnX, y, { typeSize: 14, typeWeight, typeSpacing: typeWeight > 700 ? 1 : 0, inkColor });
             y += 24;
         }
     }

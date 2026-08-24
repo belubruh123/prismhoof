@@ -8,14 +8,15 @@
     "dev": "node tools/dev.mjs",
     "build:debug": "node tools/build.mjs --debug",
     "build:verify": "node tools/build.mjs --verify",
-    "build": "node tools/build.mjs --repeat=5",
-    "check": "node tools/check-editor.mjs",
+    "build": "node tools/build.mjs --opt=2 --repeat=2",
+    "check": "node tools/check-editor.mjs && node tools/check-levels.mjs",
     "zip": "node tools/zip.mjs",
-    "release": "node tools/build.mjs --repeat=5 && node tools/zip.mjs"
+    "release": "node tools/build.mjs --opt=2 --repeat=2 && node tools/zip.mjs"
   },
   "devDependencies": {
     "clean-css": "^5.3.3",
     "esbuild": "^0.28.2",
+    "google-closure-compiler": "^20260819.0.0",
     "roadroller": "^2.1.0",
     "terser": "^5.50.0"
   }

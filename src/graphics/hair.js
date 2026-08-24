@@ -42,7 +42,7 @@ export class HairStrand {
         }
     }
 
-    update(elapsedSeconds, baseAngle, facing, forceX, forceY) {
+    updateStep(elapsedSeconds, baseAngle, facing, forceX, forceY) {
         const forceAngle = atan2(forceY, forceX);
         const forceStrength = min(hypot(forceX, forceY) / FORCE_SATURATION, 1);
 
@@ -67,11 +67,11 @@ export class HairStrand {
      * Strokes the strand from a world-space root, tapering towards the tip.
      * Each segment is its own stroke so the width can shrink along the length.
      */
-    render(context, rootX, rootY, color) {
+    render(context, rootX, rootY, inkColor) {
         let x = rootX;
         let y = rootY;
 
-        context.strokeStyle = color;
+        context.strokeStyle = inkColor;
         context.lineCap = 'round';
 
         for (let index = 0; index < this.segmentAngles.length; index++) {

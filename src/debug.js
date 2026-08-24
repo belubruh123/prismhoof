@@ -51,7 +51,10 @@ export function runDebugWarmUp() {
     if (options.get('level') === 'edit') {
         const edited = localStorage.getItem('prismhoof.editorLevel');
         if (edited) {
-            LEVELS.push(JSON.parse(edited));
+            // The editor writes the authored shape (name/rows); the game reads
+            // the build's shape, so convert at the boundary.
+            const authored = JSON.parse(edited);
+            LEVELS.push({ levelTitle: authored.name, signs: authored.signs, tileRows: authored.rows });
             resetScreens(new GameplayScreen(LEVELS.length - 1));
         }
     }
@@ -132,7 +135,7 @@ export function renderDebugOverlay(elapsedSeconds) {
 
     if (screen?.level) {
         parts.push(
-            screen.level.name,
+            screen.level.levelTitle,
             `gloom ${screen.world.entitiesOfCategory('gloom').length}/${screen.level.gloomTotal}`,
             `ribbons ${screen.world.entitiesOfCategory('ribbon').length}`,
             `deaths ${screen.deaths}`,

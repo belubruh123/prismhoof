@@ -37,8 +37,8 @@ const BLOOM_AT = LINES.length * LINE_SECONDS;
 const STILL_CAMERA = { x: 0, y: 0 };
 
 export class StoryScreen extends Screen {
-    update(elapsedSeconds) {
-        super.update(elapsedSeconds);
+    updateStep(elapsedSeconds) {
+        super.updateStep(elapsedSeconds);
 
         if (this.age > BLOOM_AT + 2.6 || wasKeyPressed(CONFIRM_KEYS) || wasKeyPressed(BACK_KEYS)) {
             resetScreens(new GameplayScreen(0));
@@ -54,24 +54,24 @@ export class StoryScreen extends Screen {
 
         LINES.forEach((line, index) => {
             drawText(line, CANVAS_WIDTH / 2, 214 + index * 66, {
-                size: 27,
-                weight: 700,
-                spacing: 1.5,
-                color: TEXT_BRIGHT,
+                typeSize: 27,
+                typeWeight: 700,
+                typeSpacing: 1.5,
+                inkColor: TEXT_BRIGHT,
                 alpha: clamp((this.age - index * LINE_SECONDS) * 1.5, 0, 1),
             });
         });
 
         // The title only arrives once the colour has, which is the point of it.
         drawRainbowText('PRISMHOOF', CANVAS_WIDTH / 2, 120, {
-            size: 64,
-            weight: 900,
-            spacing: 10,
+            typeSize: 64,
+            typeWeight: 900,
+            typeSpacing: 10,
             alpha: clamp((this.age - BLOOM_AT) * 1.2, 0, 1),
         });
 
         drawText('ENTER to begin', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 64, {
-            size: 15, weight: 600, spacing: 2, color: TEXT_DIM,
+            typeSize: 15, typeWeight: 600, typeSpacing: 2, inkColor: TEXT_DIM,
         });
     }
 }

@@ -19,12 +19,12 @@ export class PauseScreen extends MenuScreen {
         super();
         this.gameplayScreen = gameplayScreen;
 
-        this.items = [
-            { label: 'RESUME', onSelect: () => popScreen() },
-            { label: 'RETRY LEVEL', onSelect: () => this.retry() },
-            { label: 'HOW TO PLAY', onSelect: () => pushScreen(new HowToPlayScreen()) },
-            { label: 'SETTINGS', onSelect: () => pushScreen(new SettingsScreen()) },
-            { label: 'ABANDON RUN', onSelect: () => resetScreens(new TitleScreen()) },
+        this.menuItems = [
+            { menuLabel: 'RESUME', onSelect: () => popScreen() },
+            { menuLabel: 'RETRY LEVEL', onSelect: () => this.retry() },
+            { menuLabel: 'HOW TO PLAY', onSelect: () => pushScreen(new HowToPlayScreen()) },
+            { menuLabel: 'SETTINGS', onSelect: () => pushScreen(new SettingsScreen()) },
+            { menuLabel: 'ABANDON RUN', onSelect: () => resetScreens(new TitleScreen()) },
         ];
     }
 
@@ -43,18 +43,18 @@ export class PauseScreen extends MenuScreen {
         drawScreenDim(0.62);
         drawPanel(CANVAS_WIDTH / 2 - 280, 128, 560, 424);
 
-        drawRainbowText('PAUSED', CANVAS_WIDTH / 2, 190, { size: 44, weight: 900, spacing: 7 });
+        drawRainbowText('PAUSED', CANVAS_WIDTH / 2, 190, { typeSize: 44, typeWeight: 900, typeSpacing: 7 });
 
         drawText(
-            `${this.gameplayScreen.level.name}   -   ${formatTime(this.gameplayScreen.runSeconds)}`,
+            `${this.gameplayScreen.level.levelTitle}   -   ${formatTime(this.gameplayScreen.runSeconds)}`,
             CANVAS_WIDTH / 2, 240,
-            { size: 16, weight: 700, spacing: 2, color: TEXT_DIM },
+            { typeSize: 16, typeWeight: 700, typeSpacing: 2, inkColor: TEXT_DIM },
         );
 
-        drawMenu(this.items, this.selectedIndex, CANVAS_WIDTH / 2, 306, {
+        drawMenu(this.menuItems, this.chosenIndex, CANVAS_WIDTH / 2, 306, {
             time: this.age,
             width: 430,
-            size: 24,
+            typeSize: 24,
             lineHeight: 48,
         });
     }

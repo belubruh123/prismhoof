@@ -148,38 +148,41 @@ function drawBody(context, pose) {
  * a flat side view any sense of depth.
  */
 function drawLegPair(context, pose, isFarSide) {
-    const color = isFarSide ? UNICORN_SHADE : UNICORN_COAT;
+    const inkColor = isFarSide ? UNICORN_SHADE : UNICORN_COAT;
     const hoofColor = isFarSide ? UNICORN_SHADE : UNICORN_HOOF;
     const thicknessScale = isFarSide ? 0.86 : 1;
     const legs = isFarSide ? [pose.legs[1], pose.legs[3]] : [pose.legs[0], pose.legs[2]];
 
-    for (const leg of legs) drawLeg(context, leg, color, hoofColor, thicknessScale);
+    for (const leg of legs) drawLeg(context, leg, inkColor, hoofColor, thicknessScale);
 }
 
-function drawLeg(context, leg, color, hoofColor, thicknessScale) {
-    context.strokeStyle = color;
+/**
+ * Strokes one round-capped segment: the shape every bone in this character is
+ * made of. Four call sites collapse into this, which is the only reason the
+ * leg and neck code below reads as short as it does.
+ */
+function bone(context, width, fromX, fromY, toX, toY) {
+    context.lineWidth = width;
+    context.beginPath();
+    context.moveTo(fromX, fromY);
+    context.lineTo(toX, toY);
+    context.stroke();
+}
+
+function drawLeg(context, leg, inkColor, hoofColor, thicknessScale) {
+    context.strokeStyle = inkColor;
     context.lineCap = 'round';
 
-    context.lineWidth = UPPER_LEG_THICKNESS * thicknessScale;
-    context.beginPath();
-    context.moveTo(leg.hipX, HIP_Y);
-    context.lineTo(leg.kneeX, leg.kneeY);
-    context.stroke();
-
-    context.lineWidth = LOWER_LEG_THICKNESS * thicknessScale;
-    context.beginPath();
-    context.moveTo(leg.kneeX, leg.kneeY);
-    context.lineTo(leg.ankleX, leg.ankleY);
-    context.stroke();
+    // Thigh, then shin.
+    bone(context, UPPER_LEG_THICKNESS * thicknessScale, leg.hipX, HIP_Y, leg.kneeX, leg.kneeY);
+    bone(context, LOWER_LEG_THICKNESS * thicknessScale, leg.kneeX, leg.kneeY, leg.ankleX, leg.ankleY);
 
     // The hoof is a short stub carrying on in the direction of the shin.
     const shinAngle = atan2(leg.ankleY - leg.kneeY, leg.ankleX - leg.kneeX);
     context.strokeStyle = hoofColor;
-    context.lineWidth = LOWER_LEG_THICKNESS * 1.3 * thicknessScale;
-    context.beginPath();
-    context.moveTo(leg.ankleX, leg.ankleY);
-    context.lineTo(leg.ankleX + cos(shinAngle) * HOOF_LENGTH, leg.ankleY + sin(shinAngle) * HOOF_LENGTH);
-    context.stroke();
+    bone(context, LOWER_LEG_THICKNESS * 1.3 * thicknessScale,
+        leg.ankleX, leg.ankleY,
+        leg.ankleX + cos(shinAngle) * HOOF_LENGTH, leg.ankleY + sin(shinAngle) * HOOF_LENGTH);
 }
 
 // --- neck, head, horn ------------------------------------------------------
@@ -191,11 +194,7 @@ function drawNeckAndHead(context, unicorn, pose) {
 
     context.strokeStyle = UNICORN_COAT;
     context.lineCap = 'round';
-    context.lineWidth = NECK_THICKNESS;
-    context.beginPath();
-    context.moveTo(NECK_ROOT_X, NECK_ROOT_Y);
-    context.lineTo(headX, headY);
-    context.stroke();
+    bone(context, NECK_THICKNESS, NECK_ROOT_X, NECK_ROOT_Y, headX, headY);
 
     wrap(() => {
         context.translate(headX, headY);
@@ -395,7 +394,7 @@ export function hornTipPosition(unicorn, pose) {
  * read as one piece: this function is the entire character performance.
  */
 export function buildUnicornPose(unicorn) {
-    const { age, velocityX, velocityY, isOnGround, runSpeed, idleAmount } = unicorn;
+    const { age, velocityAcross, velocityDown, isOnGround, runSpeed, idleAmount } = unicorn;
 
     // Breathing and the idle weight-shift only show when standing still.
     const breathe = sin(age * 2.1) * 0.03 * idleAmount;
@@ -403,14 +402,14 @@ export function buildUnicornPose(unicorn) {
 
     // A trot lands two hooves per cycle, so the body bobs at twice the gait rate.
     const gaitBob = -abs(sin(unicorn.runPhase * TAU)) * 2.4 * runSpeed;
-    const airborneRise = isOnGround ? 0 : clamp(velocityY / 900, -1, 1) * 2;
+    const airborneRise = isOnGround ? 0 : clamp(velocityDown / 900, -1, 1) * 2;
 
     const legs = LEG_DEFINITIONS.map((definition, index) => buildLegPose(unicorn, definition, index));
 
     // Leaning into acceleration, and tipping nose-down when diving.
     const bodyLean = idleSway
-        + (velocityX / 900) * 0.28 * unicorn.facing
-        + (isOnGround ? 0 : clamp(velocityY / 1400, -0.35, 0.4));
+        + (velocityAcross / 900) * 0.28 * unicorn.facing
+        + (isOnGround ? 0 : clamp(velocityDown / 1400, -0.35, 0.4));
 
     // Charging the horn lowers it to aim, which is what puts the stream at a
     // height where it can hit something standing on the ground.
@@ -418,13 +417,13 @@ export function buildUnicornPose(unicorn) {
 
     const neckAngle = -PI / 2.35
         + sin(age * 1.7) * 0.05 * idleAmount
-        - clamp(velocityY / 1600, -0.25, 0.3)
+        - clamp(velocityDown / 1600, -0.25, 0.3)
         + AIM_NECK_DIP * aim;
 
     const headAngle = 0.35
         + sin(age * 1.9 + 0.7) * 0.07 * idleAmount
         + runSpeed * sin(unicorn.runPhase * TAU) * 0.06
-        - clamp(velocityY / 2200, -0.2, 0.2)
+        - clamp(velocityDown / 2200, -0.2, 0.2)
         + AIM_HEAD_DIP * aim;
 
     return {
@@ -452,17 +451,17 @@ export function buildUnicornPose(unicorn) {
  */
 function buildLegPose(unicorn, definition, index) {
     const { hipX, isFront, bendSign } = definition;
-    const target = buildHoofTarget(unicorn, definition, index);
+    const followTarget = buildHoofTarget(unicorn, definition, index);
 
-    const knee = solveKnee(hipX, HIP_Y, target.x, target.y, UPPER_LEG_LENGTH, LOWER_LEG_LENGTH, bendSign);
+    const knee = solveKnee(hipX, HIP_Y, followTarget.x, followTarget.y, UPPER_LEG_LENGTH, LOWER_LEG_LENGTH, bendSign);
 
     return {
         hipX,
         isFront,
         kneeX: knee.x,
         kneeY: knee.y,
-        ankleX: target.x,
-        ankleY: target.y,
+        ankleX: followTarget.x,
+        ankleY: followTarget.y,
     };
 }
 

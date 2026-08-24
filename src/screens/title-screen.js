@@ -35,8 +35,8 @@ import { MenuScreen, pushScreen, resetScreens } from './screen.js';
  * what allows the unicorn to be placed off to one side, clear of the menu.
  */
 const TITLE_SCENE = {
-    name: 'TITLE',
-    rows: [
+    levelTitle: 'TITLE',
+    tileRows: [
         '..............................P.............',
         '############################################',
         '############################################',
@@ -54,20 +54,20 @@ export class TitleScreen extends MenuScreen {
         this.completedRun = completedRun;
 
         this.scene = buildLevelWorld(TITLE_SCENE);
-        this.scene.world.camera.target = null;
+        this.scene.world.camera.followTarget = null;
         this.scene.world.camera.snapTo(this.scene.unicorn.x - TITLE_CAMERA_OFFSET, this.scene.unicorn.y - 60);
 
-        this.items = [
+        this.menuItems = [
             {
-                label: completedRun ? 'RUN IT AGAIN' : saveData.furthestLevelIndex ? 'CONTINUE' : 'PLAY',
+                menuLabel: completedRun ? 'RUN IT AGAIN' : saveData.furthestLevelIndex ? 'CONTINUE' : 'PLAY',
                 // The opening is for a save file that has never played. Anyone
                 // coming back drops straight into the meadow.
                 onSelect: () => resetScreens(
                     saveData.furthestLevelIndex ? new GameplayScreen(0) : new StoryScreen(),
                 ),
             },
-            { label: 'HOW TO PLAY', onSelect: () => pushScreen(new HowToPlayScreen()) },
-            { label: 'SETTINGS', onSelect: () => pushScreen(new SettingsScreen()) },
+            { menuLabel: 'HOW TO PLAY', onSelect: () => pushScreen(new HowToPlayScreen()) },
+            { menuLabel: 'SETTINGS', onSelect: () => pushScreen(new SettingsScreen()) },
         ];
     }
 
@@ -75,13 +75,13 @@ export class TitleScreen extends MenuScreen {
         startMusic(false);
     }
 
-    update(elapsedSeconds) {
-        super.update(elapsedSeconds);
+    updateStep(elapsedSeconds) {
+        super.updateStep(elapsedSeconds);
 
         // The title meadow is already saved, so it shows in full colour.
         setColorRestoration(1);
         refreshPalette();
-        this.scene.world.update(elapsedSeconds);
+        this.scene.world.updateStep(elapsedSeconds);
 
         // A steady drizzle of celebration off the mane, but only after a win.
         if (this.completedRun && this.age % 0.4 < elapsedSeconds) this.scene.unicorn.emitManeSparkles(3);
@@ -95,39 +95,39 @@ export class TitleScreen extends MenuScreen {
         this.scene.world.render();
 
         const titleY = 150 + sin(this.age * 1.2) * 4;
-        drawRainbowText('PRISMHOOF', CANVAS_WIDTH / 2, titleY, { size: 92, weight: 900, spacing: 12 });
+        drawRainbowText('PRISMHOOF', CANVAS_WIDTH / 2, titleY, { typeSize: 92, typeWeight: 900, typeSpacing: 12 });
 
         if (this.completedRun) this.renderResult(titleY + 70);
         else {
             drawText('THE GLOOM TOOK THE COLOUR. TAKE IT BACK.', CANVAS_WIDTH / 2, titleY + 62, {
-                size: 19,
-                weight: 600,
-                spacing: 4,
-                color: TEXT_BRIGHT,
+                typeSize: 19,
+                typeWeight: 600,
+                typeSpacing: 4,
+                inkColor: TEXT_BRIGHT,
             });
         }
 
-        drawMenu(this.items, this.selectedIndex, CANVAS_WIDTH / 2, this.completedRun ? 468 : 372, {
+        drawMenu(this.menuItems, this.chosenIndex, CANVAS_WIDTH / 2, this.completedRun ? 468 : 372, {
             time: this.age,
             width: 420,
         });
 
         if (saveData.bestRunSeconds && !this.completedRun) {
             drawText(`BEST RUN  ${formatTime(saveData.bestRunSeconds)}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 96, {
-                size: 17,
-                weight: 700,
-                spacing: 2.5,
-                color: TEXT_DIM,
+                typeSize: 17,
+                typeWeight: 700,
+                typeSpacing: 2.5,
+                inkColor: TEXT_DIM,
             });
         }
 
         // One string, not two draws: the copyright rides along on the line that
         // was already here, so it costs characters rather than a call site.
         drawText('js13kGames 2026 - UNICORNS AND RAINBOWS - (C) 2026, ALL RIGHTS RESERVED', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30, {
-            size: 14,
-            weight: 600,
-            spacing: 2,
-            color: TEXT_DIM,
+            typeSize: 14,
+            typeWeight: 600,
+            typeSpacing: 2,
+            inkColor: TEXT_DIM,
         });
     }
 
@@ -135,24 +135,24 @@ export class TitleScreen extends MenuScreen {
         const { seconds, deaths, isBest } = this.completedRun;
 
         drawText(`THE MEADOW IS BRIGHT AGAIN - ALL ${LEVELS.length} LEVELS CLEARED`, CANVAS_WIDTH / 2, y, {
-            size: 18,
-            weight: 700,
-            spacing: 3,
-            color: TEXT_BRIGHT,
+            typeSize: 18,
+            typeWeight: 700,
+            typeSpacing: 3,
+            inkColor: TEXT_BRIGHT,
         });
 
         drawText(formatTime(seconds), CANVAS_WIDTH / 2, y + 74, {
-            size: 68,
-            weight: 900,
-            spacing: 3,
-            color: TEXT_BRIGHT,
+            typeSize: 68,
+            typeWeight: 900,
+            typeSpacing: 3,
+            inkColor: TEXT_BRIGHT,
         });
 
         drawText(
             `${isBest ? 'NEW BEST RUN' : `BEST ${formatTime(saveData.bestRunSeconds)}`}`
             + `   -   ${deaths} ${deaths === 1 ? 'fall' : 'falls'}`,
             CANVAS_WIDTH / 2, y + 126,
-            { size: 16, weight: 800, spacing: 2.5, color: isBest ? TEXT_BRIGHT : TEXT_DIM },
+            { typeSize: 16, typeWeight: 800, typeSpacing: 2.5, inkColor: isBest ? TEXT_BRIGHT : TEXT_DIM },
         );
     }
 }

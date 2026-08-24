@@ -81,8 +81,8 @@ export class Unicorn extends Entity {
     halfWidth = UNICORN_HALF_WIDTH;
     halfHeight = UNICORN_HALF_HEIGHT;
 
-    velocityX = 0;
-    velocityY = 0;
+    velocityAcross = 0;
+    velocityDown = 0;
     facing = 1;
 
     isOnGround = false;
@@ -153,8 +153,8 @@ export class Unicorn extends Entity {
     get maneBaseAngle() { return this.facing > 0 ? MANE_REST_ANGLE : PI - MANE_REST_ANGLE; }
     get tailBaseAngle() { return this.facing > 0 ? TAIL_REST_ANGLE : PI - TAIL_REST_ANGLE; }
 
-    update(elapsedSeconds) {
-        super.update(elapsedSeconds);
+    updateStep(elapsedSeconds) {
+        super.updateStep(elapsedSeconds);
 
         // Decided before anything else, because the aiming pose has to be in
         // place on the very first frame of a stroke: the stream's whole
@@ -169,9 +169,9 @@ export class Unicorn extends Entity {
             this.applyInput(elapsedSeconds);
             this.applyMovement(elapsedSeconds);
         } else {
-            this.velocityY = min(this.velocityY + GRAVITY * elapsedSeconds, MAX_FALL_SPEED);
-            this.x += this.velocityX * elapsedSeconds;
-            this.y += this.velocityY * elapsedSeconds;
+            this.velocityDown = min(this.velocityDown + GRAVITY * elapsedSeconds, MAX_FALL_SPEED);
+            this.x += this.velocityAcross * elapsedSeconds;
+            this.y += this.velocityDown * elapsedSeconds;
         }
 
         // Touching the lava is fatal, and it is what is under every hole in
@@ -199,7 +199,7 @@ export class Unicorn extends Entity {
         // A dash owns the frame it runs in: no gravity, no steering, no jump.
         if (this.applyDash(elapsedSeconds)) return;
 
-        const isTurning = moveInput && sign(moveInput) !== sign(this.velocityX);
+        const isTurning = moveInput && sign(moveInput) !== sign(this.velocityAcross);
         const acceleration = !moveInput
             ? (this.isOnGround ? GROUND_FRICTION : AIR_FRICTION)
             : isTurning
@@ -207,11 +207,11 @@ export class Unicorn extends Entity {
                 : (this.isOnGround ? RUN_ACCELERATION_GROUND : RUN_ACCELERATION_AIR);
 
         const targetVelocityX = moveInput * RUN_MAX_SPEED;
-        this.velocityX = approach(this.velocityX, targetVelocityX, acceleration * elapsedSeconds);
+        this.velocityAcross = approach(this.velocityAcross, targetVelocityX, acceleration * elapsedSeconds);
 
-        this.velocityY = min(this.velocityY + GRAVITY * elapsedSeconds, MAX_FALL_SPEED);
+        this.velocityDown = min(this.velocityDown + GRAVITY * elapsedSeconds, MAX_FALL_SPEED);
         if (isDiving && !this.isOnGround) {
-            this.velocityY = min(this.velocityY + DIVE_ACCELERATION * elapsedSeconds, MAX_FALL_SPEED);
+            this.velocityDown = min(this.velocityDown + DIVE_ACCELERATION * elapsedSeconds, MAX_FALL_SPEED);
         }
 
         this.applyJump(elapsedSeconds);
@@ -241,13 +241,13 @@ export class Unicorn extends Entity {
         if (wasKeyPressed(DASH_KEYS) && this.hasDash && !this.isOnGround) this.startDash();
 
         if (this.dashTimer > 0) {
-            this.velocityX = DASH_SPEED * this.facing;
+            this.velocityAcross = DASH_SPEED * this.facing;
             return true;
         }
 
         // Bleed off on the frame the burst runs out rather than letting the
         // unicorn keep sprinting out of it.
-        if (wasDashing) this.velocityX = DASH_END_SPEED * this.facing;
+        if (wasDashing) this.velocityAcross = DASH_END_SPEED * this.facing;
 
         return false;
     }
@@ -255,8 +255,8 @@ export class Unicorn extends Entity {
     startDash() {
         this.dashTimer = DASH_SECONDS;
         this.hasDash = false;
-        this.velocityX = DASH_SPEED * this.facing;
-        this.velocityY = 0;
+        this.velocityAcross = DASH_SPEED * this.facing;
+        this.velocityDown = 0;
         this.squash = 0.25;
 
         this.emitManeSparkles(6);
@@ -275,14 +275,14 @@ export class Unicorn extends Entity {
 
         // Releasing early cuts the rise short, which is what makes the jump variable.
         if (this.isJumpRising && !isKeyDown(JUMP_KEYS)) {
-            this.velocityY *= JUMP_RELEASE_DAMPING;
+            this.velocityDown *= JUMP_RELEASE_DAMPING;
             this.isJumpRising = false;
         }
-        if (this.velocityY >= 0) this.isJumpRising = false;
+        if (this.velocityDown >= 0) this.isJumpRising = false;
     }
 
     jump() {
-        this.velocityY = JUMP_VELOCITY;
+        this.velocityDown = JUMP_VELOCITY;
         this.isJumpRising = true;
         this.jumpBufferTimer = 0;
         this.coyoteTimer = 0;
@@ -298,9 +298,9 @@ export class Unicorn extends Entity {
         const wasOnGround = this.isOnGround;
 
         // Captured before the collision resolves, which sets velocityY to zero.
-        this.impactSpeed = this.velocityY;
+        this.impactSpeed = this.velocityDown;
 
-        terrain.moveWithCollision(this, this.velocityX * elapsedSeconds, this.velocityY * elapsedSeconds);
+        terrain.moveWithCollision(this, this.velocityAcross * elapsedSeconds, this.velocityDown * elapsedSeconds);
 
         // Ribbons act as one-way floors, checked after the terrain so solid
         // ground always wins a tie.
@@ -319,7 +319,7 @@ export class Unicorn extends Entity {
      * back down.
      */
     landOnRibbons() {
-        if (this.isOnGround || this.velocityY < 0) {
+        if (this.isOnGround || this.velocityDown < 0) {
             this.ribbonUnderfoot = null;
             return;
         }
@@ -363,7 +363,7 @@ export class Unicorn extends Entity {
     standOnRibbon(ribbon, surfaceY) {
         this.ribbonUnderfoot = ribbon;
         this.y = surfaceY - this.halfHeight;
-        this.velocityY = 0;
+        this.velocityDown = 0;
         this.isOnGround = true;
     }
 
@@ -384,13 +384,13 @@ export class Unicorn extends Entity {
             particles.spawn({
                 x: this.x + randomBetween(-this.halfWidth, this.halfWidth),
                 y: this.y + this.halfHeight,
-                velocityX: randomBetween(-110, 110) + this.velocityX * 0.25,
-                velocityY: randomBetween(-90, -20),
+                velocityAcross: randomBetween(-110, 110) + this.velocityAcross * 0.25,
+                velocityDown: randomBetween(-90, -20),
                 gravity: 420,
-                size: randomBetween(2, 4.5),
+                typeSize: randomBetween(2, 4.5),
                 endSize: 0,
                 lifetime: randomBetween(0.25, 0.5),
-                color: UNICORN_COAT,
+                inkColor: UNICORN_COAT,
             });
         }
     }
@@ -398,7 +398,7 @@ export class Unicorn extends Entity {
     // --- animation ----------------------------------------------------------
 
     updateAnimation(elapsedSeconds) {
-        const speed = abs(this.velocityX);
+        const speed = abs(this.velocityAcross);
 
         this.runSpeed = damp(this.runSpeed, this.isOnGround ? clamp(speed / RUN_MAX_SPEED, 0, 1) : 0, 14, elapsedSeconds);
         this.idleAmount = damp(this.idleAmount, this.isOnGround && speed < IDLE_SPEED_THRESHOLD ? 1 : 0, 6, elapsedSeconds);
@@ -439,14 +439,14 @@ export class Unicorn extends Entity {
      * streams backwards at speed and settles when standing.
      */
     updateHair(elapsedSeconds) {
-        const dragX = -this.velocityX * 0.85;
-        const dragY = -this.velocityY * 0.55 + 260;
+        const dragX = -this.velocityAcross * 0.85;
+        const dragY = -this.velocityDown * 0.55 + 260;
 
         for (const strand of this.maneStrands) {
-            strand.update(elapsedSeconds, this.maneBaseAngle, this.facing, dragX, dragY);
+            strand.updateStep(elapsedSeconds, this.maneBaseAngle, this.facing, dragX, dragY);
         }
         for (const strand of this.tailStrands) {
-            strand.update(elapsedSeconds, this.tailBaseAngle, this.facing, dragX, dragY * 0.8);
+            strand.updateStep(elapsedSeconds, this.tailBaseAngle, this.facing, dragX, dragY * 0.8);
         }
     }
 
@@ -461,9 +461,9 @@ export class Unicorn extends Entity {
             // hold a climb. Firing from the ground is unaffected, so the stream
             // stays a weapon down there and becomes a way to move up here.
             if (!this.isOnGround) {
-                this.velocityY = min(
-                    this.velocityY,
-                    max(this.velocityY - PAINT_RECOIL * elapsedSeconds, PAINT_RECOIL_TOP_SPEED),
+                this.velocityDown = min(
+                    this.velocityDown,
+                    max(this.velocityDown - PAINT_RECOIL * elapsedSeconds, PAINT_RECOIL_TOP_SPEED),
                 );
             }
 
@@ -506,8 +506,8 @@ export class Unicorn extends Entity {
         this.activeRibbon = this.world.addEntity(new RainbowRibbon(
             hornTip.x,
             hornTip.y,
-            this.facing * PAINT_HEAD_SPEED + this.velocityX * PAINT_HEAD_INHERITANCE_X,
-            PAINT_HEAD_LIFT + this.velocityY * PAINT_HEAD_INHERITANCE_Y,
+            this.facing * PAINT_HEAD_SPEED + this.velocityAcross * PAINT_HEAD_INHERITANCE_X,
+            PAINT_HEAD_LIFT + this.velocityDown * PAINT_HEAD_INHERITANCE_Y,
         ));
 
         this.hornColorIndex = (this.hornColorIndex + 1) % RAINBOW_COLORS.length;
@@ -526,13 +526,13 @@ export class Unicorn extends Entity {
         particles.spawn({
             x,
             y,
-            velocityX: randomBetween(-45, 45),
-            velocityY: randomBetween(-55, 15),
+            velocityAcross: randomBetween(-45, 45),
+            velocityDown: randomBetween(-55, 15),
             gravity: 90,
-            size: randomBetween(2.5, 5),
+            typeSize: randomBetween(2.5, 5),
             endSize: 0,
             lifetime: randomBetween(0.3, 0.7),
-            color: RAINBOW_COLORS[this.hornColorIndex],
+            inkColor: RAINBOW_COLORS[this.hornColorIndex],
             shape: PARTICLE_STAR,
             spin: randomBetween(-7, 7),
         });
@@ -550,8 +550,8 @@ export class Unicorn extends Entity {
         this.isDead = true;
         this.deathCause = cause;
 
-        this.velocityX = -this.facing * 150;
-        this.velocityY = -420;
+        this.velocityAcross = -this.facing * 150;
+        this.velocityDown = -420;
 
         if (this.activeRibbon) this.endRibbon();
         this.world.camera.shake(14, 0.5);

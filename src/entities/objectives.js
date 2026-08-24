@@ -39,8 +39,8 @@ export class RainbowGate extends Entity {
         return this.world.entitiesOfCategory('gloom').length === 0;
     }
 
-    update(elapsedSeconds) {
-        super.update(elapsedSeconds);
+    updateStep(elapsedSeconds) {
+        super.updateStep(elapsedSeconds);
 
         this.openness = clamp(this.openness + (this.isOpen ? elapsedSeconds * 1.6 : -elapsedSeconds * 4), 0, 1);
 
@@ -105,17 +105,17 @@ export class LevelSign extends Entity {
     render() {
         const y = this.y + sin(this.age * 1.5) * 3;
         const width = drawText(this.text, this.x, y, {
-            size: 21,
-            weight: 800,
-            spacing: 1.6,
-            color: TEXT_BRIGHT,
+            typeSize: 21,
+            typeWeight: 800,
+            typeSpacing: 1.6,
+            inkColor: TEXT_BRIGHT,
         });
 
         // A rainbow rule the width of the line. It costs almost nothing and it
         // is what stops the words reading as HUD that drifted into the world.
         const bandWidth = width / RAINBOW_COLORS.length;
-        RAINBOW_COLORS.forEach((color, index) => {
-            canvasContext.fillStyle = color;
+        RAINBOW_COLORS.forEach((inkColor, index) => {
+            canvasContext.fillStyle = inkColor;
             canvasContext.fillRect(this.x - width / 2 + index * bandWidth, y + 16, bandWidth + 1, 3);
         });
     }

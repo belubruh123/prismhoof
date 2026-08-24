@@ -89,7 +89,7 @@ reachable from the title screen and from the pause menu.
 Requires Node 20+.
 
 ```sh
-make install     # npm install (4 dev dependencies)
+make install     # npm install (5 dev dependencies)
 make dev         # watch + serve the debug build and the editor on port 8013
 make verify      # fully squeezed but with DEBUG on -> build/verify.html
 make build       # minified, Roadroller-packed build/index.html
@@ -148,16 +148,27 @@ size — full descriptive identifiers, one concept per file, no abbreviations.
 
 1. **esbuild** bundles the ES modules into one IIFE, with `DEBUG` as a compile-time
    constant so every debug branch — and the entire `src/debug.js` module — is eliminated
-   rather than shipped.
-2. **terser** compresses and mangles, including our own property names.
-3. **Roadroller** packs the result into a self-extracting payload, five times over, keeping
+   rather than shipped. A plugin swaps the level pictures for a run-length encoding on the
+   way past: 5,820 characters of rows become 1,887, expanded again at load.
+2. **Google Closure Compiler** in ADVANCED mode does the whole-program pass terser
+   structurally cannot — inlining across module boundaries, collapsing namespaces, dropping
+   unreachable code. On its own it packs *worse* than terser (17,833 against 17,792); run
+   before terser it is worth **243 bytes**, because the two do different jobs.
+3. **terser** compresses and mangles, including our own property names.
+4. **Roadroller** packs the result into a self-extracting payload, five times over, keeping
    the smallest. Its optimiser searches randomly, so identical source packs to results about
    30 bytes apart; taking the best of five is worth real bytes and, more usefully, makes a 20
    byte experiment anywhere else in the source measurable at all. It runs with `allowFreeVars`
    (Roadroller's `--dirty`), which lets the decoder keep its working variables on the global
    object instead of declaring them — worth 50 bytes of packed payload, and safe because the
    page holds one script and one element.
-4. The packed script and the minified CSS are inlined into `src/index.html`.
+5. The packed script and the minified CSS are inlined into `src/index.html`.
+
+Property names in `src/` avoid anything a browser API also calls itself — `inkColor` rather
+than `color`, `typeSize` rather than `size`, `velocityAcross` rather than `velocityX`. The
+mangler protects every name it recognises from a JS or DOM API, and that list is long enough
+to catch a dozen of ours by accident: `velocityX` is shielded because IE's `MSGestureEvent`
+had one. Naming around it costs nothing to read and is worth 74 bytes of the zip.
 
 The build also writes `build/packme.js`, the exact bytes handed to Roadroller, so the same
 input can be dropped into [the Roadroller page](https://lifthrasiir.github.io/roadroller/) to
@@ -205,8 +216,7 @@ Yes. I build this with [Claude Code](https://claude.com/claude-code). I make the
 direction and gameplay calls, and Claude Code writes and refactors the code against them.
 
 **Is it really under 13kB?**
-Yes — **13,293 of 13,312 bytes**, and that is the worst of several builds rather than the
-luckiest. The whole game is one `index.html`, zipped, everything included, checked by
+Yes — **13,282 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
 `make zip` on every build. No network requests, no external assets,
 nothing streamed in at runtime.
 
@@ -243,7 +253,7 @@ Thirteen kilobytes.
 ## Credits
 
 Everything — art, music, sound synthesis, engine, levels — is original to this entry. No
-libraries ship in the build; the four dev dependencies are build tooling only.
+libraries ship in the build; the five dev dependencies are build tooling only.
 
 Structure and build approach are indebted to [CLAWSTRIKE](https://github.com/remvst/clawstrike)
 by Rémi Vansteelandt, the js13kGames 2025 winner, whose source is a great read.

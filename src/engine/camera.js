@@ -24,7 +24,7 @@ export class Camera {
     zoom = 1;
 
     /** The entity being followed. */
-    target = null;
+    followTarget = null;
 
     lookAheadX = 0;
 
@@ -51,9 +51,9 @@ export class Camera {
         this.shakeSeconds = max(this.shakeSeconds, seconds);
     }
 
-    update(elapsedSeconds, world) {
-        if (this.target) {
-            const desiredLookAhead = clamp(this.target.velocityX / RUN_MAX_SPEED, -1, 1) * CAMERA_LOOK_AHEAD;
+    updateStep(elapsedSeconds, world) {
+        if (this.followTarget) {
+            const desiredLookAhead = clamp(this.followTarget.velocityAcross / RUN_MAX_SPEED, -1, 1) * CAMERA_LOOK_AHEAD;
             this.lookAheadX = damp(this.lookAheadX, desiredLookAhead, CAMERA_LOOK_AHEAD_STIFFNESS, elapsedSeconds);
 
             // Vertically the view chases a resting height rather than the
@@ -62,14 +62,14 @@ export class Camera {
             // long fall in frame. A camera welded to the player's y instead
             // pumps up and down through every single jump, which is the most
             // obvious tell there is that nobody tuned the camera.
-            if (this.target.isOnGround) this.focusY = this.target.y;
+            if (this.followTarget.isOnGround) this.focusY = this.followTarget.y;
             this.focusY = clamp(
                 this.focusY,
-                this.target.y - CAMERA_VERTICAL_SLACK,
-                this.target.y + CAMERA_VERTICAL_SLACK,
+                this.followTarget.y - CAMERA_VERTICAL_SLACK,
+                this.followTarget.y + CAMERA_VERTICAL_SLACK,
             );
 
-            this.x = damp(this.x, this.target.x + this.lookAheadX, CAMERA_FOLLOW_STIFFNESS, elapsedSeconds);
+            this.x = damp(this.x, this.followTarget.x + this.lookAheadX, CAMERA_FOLLOW_STIFFNESS, elapsedSeconds);
             this.y = damp(this.y, this.focusY - CAMERA_HEIGHT_OFFSET, CAMERA_VERTICAL_STIFFNESS, elapsedSeconds);
         }
 

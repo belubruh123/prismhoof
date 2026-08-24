@@ -23,7 +23,7 @@ export class Screen {
     /** When true, the screen below this one keeps updating as well. */
     updatesBelow = false;
 
-    update(elapsedSeconds) {
+    updateStep(elapsedSeconds) {
         this.age += elapsedSeconds;
     }
 
@@ -64,7 +64,7 @@ export function updateScreens(elapsedSeconds) {
     const active = stack.slice();
 
     for (let index = active.length - 1; index >= 0; index--) {
-        active[index].update(elapsedSeconds);
+        active[index].updateStep(elapsedSeconds);
         if (!active[index].updatesBelow) break;
     }
 }
@@ -81,16 +81,16 @@ export function renderScreens() {
  * settings sliders work without needing a second widget type.
  */
 export class MenuScreen extends Screen {
-    items = [];
-    selectedIndex = 0;
+    menuItems = [];
+    chosenIndex = 0;
 
-    update(elapsedSeconds) {
-        super.update(elapsedSeconds);
+    updateStep(elapsedSeconds) {
+        super.updateStep(elapsedSeconds);
 
         if (wasKeyPressed(MENU_UP_KEYS)) this.moveSelection(-1);
         if (wasKeyPressed(MENU_DOWN_KEYS)) this.moveSelection(1);
 
-        const item = this.items[this.selectedIndex];
+        const item = this.menuItems[this.chosenIndex];
 
         if (item?.onAdjust) {
             if (wasKeyPressed(['ArrowLeft', 'KeyA'])) this.adjust(item, -1);
@@ -109,7 +109,7 @@ export class MenuScreen extends Screen {
     }
 
     moveSelection(direction) {
-        this.selectedIndex = (this.selectedIndex + direction + this.items.length) % this.items.length;
+        this.chosenIndex = (this.chosenIndex + direction + this.menuItems.length) % this.menuItems.length;
         playMenuMoveSound();
     }
 

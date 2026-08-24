@@ -23,9 +23,10 @@ debug:
 verify:
 	npm run build:verify
 
-# Minified, packed release build -> build/index.html.
-# Packs five times and keeps the smallest, because Roadroller's optimiser is
-# randomised and a single unlucky pack is worth more than the margin.
+# Minified, packed release build -> build/index.html. Takes a few minutes.
+# Roadroller runs its thorough search (--opt=2) twice and keeps the smaller of
+# the two. That is not a luxury: the margin is 25 bytes, and the quick search
+# lands over the limit about as often as under it.
 build:
 	npm run build
 

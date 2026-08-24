@@ -35,37 +35,37 @@ export class SettingsScreen extends MenuScreen {
         // through a key string would read more compactly, but the release build
         // mangles property names and cannot see through a string, so the
         // setting would be written to one field and read from another.
-        this.items = [
+        this.menuItems = [
             {
-                label: 'MUSIC',
+                menuLabel: 'MUSIC',
                 onSelect: () => this.toggleMusic(),
                 onAdjust: () => this.toggleMusic(),
             },
             {
-                label: 'MUSIC VOLUME',
+                menuLabel: 'MUSIC VOLUME',
                 onAdjust: (direction) => {
                     saveData.musicVolume = stepVolume(saveData.musicVolume, direction);
                     this.commit();
                 },
             },
             {
-                label: 'SOUND',
+                menuLabel: 'SOUND',
                 onSelect: () => this.toggleSound(),
                 onAdjust: () => this.toggleSound(),
             },
             {
-                label: 'SOUND VOLUME',
+                menuLabel: 'SOUND VOLUME',
                 onAdjust: (direction) => {
                     saveData.soundVolume = stepVolume(saveData.soundVolume, direction);
                     this.commit();
                 },
             },
             {
-                label: 'SCREEN SHAKE',
+                menuLabel: 'SCREEN SHAKE',
                 onSelect: () => this.toggleScreenShake(),
                 onAdjust: () => this.toggleScreenShake(),
             },
-            { label: 'BACK', onSelect: () => popScreen() },
+            { menuLabel: 'BACK', onSelect: () => popScreen() },
         ];
     }
 
@@ -101,27 +101,27 @@ export class SettingsScreen extends MenuScreen {
         drawScreenDim(0.72);
         drawPanel(CANVAS_WIDTH / 2 - 330, 110, 660, 470);
 
-        drawRainbowText('SETTINGS', CANVAS_WIDTH / 2, 168, { size: 40, weight: 900, spacing: 6 });
+        drawRainbowText('SETTINGS', CANVAS_WIDTH / 2, 168, { typeSize: 40, typeWeight: 900, typeSpacing: 6 });
 
         const onOff = (value) => (value ? 'ON' : 'OFF');
-        this.items[0].detail = onOff(saveData.musicEnabled);
-        this.items[1].detail = volumeBar(saveData.musicVolume);
-        this.items[2].detail = onOff(saveData.soundEnabled);
-        this.items[3].detail = volumeBar(saveData.soundVolume);
-        this.items[4].detail = onOff(saveData.screenShakeEnabled);
+        this.menuItems[0].subLabel = onOff(saveData.musicEnabled);
+        this.menuItems[1].subLabel = volumeBar(saveData.musicVolume);
+        this.menuItems[2].subLabel = onOff(saveData.soundEnabled);
+        this.menuItems[3].subLabel = volumeBar(saveData.soundVolume);
+        this.menuItems[4].subLabel = onOff(saveData.screenShakeEnabled);
 
-        drawMenu(this.items, this.selectedIndex, CANVAS_WIDTH / 2, 250, {
+        drawMenu(this.menuItems, this.chosenIndex, CANVAS_WIDTH / 2, 250, {
             time: this.age,
             width: 560,
-            size: 22,
+            typeSize: 22,
             lineHeight: 46,
         });
 
         drawText('LEFT / RIGHT to change - ESC to go back', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 88, {
-            size: 15,
-            weight: 600,
-            spacing: 2,
-            color: TEXT_DIM,
+            typeSize: 15,
+            typeWeight: 600,
+            typeSpacing: 2,
+            inkColor: TEXT_DIM,
         });
     }
 }

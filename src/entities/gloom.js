@@ -37,8 +37,8 @@ class Gloom extends Entity {
     categories = ['gloom'];
     layer = LAYER_GLOOM;
 
-    velocityX = 0;
-    velocityY = 0;
+    velocityAcross = 0;
+    velocityDown = 0;
 
     /** Randomised so a row of identical Gloom does not pulse in lockstep. */
     wobbleSeed = randomBetween(0, TAU);
@@ -49,8 +49,8 @@ class Gloom extends Entity {
         this.y = y;
     }
 
-    update(elapsedSeconds) {
-        super.update(elapsedSeconds);
+    updateStep(elapsedSeconds) {
+        super.updateStep(elapsedSeconds);
         this.move(elapsedSeconds);
 
         if (this.checkPurification()) return;
@@ -100,15 +100,15 @@ class Gloom extends Entity {
     }
 
     /** Two glowing eyes with a dark slit, drawn in whatever local space is current. */
-    drawEyes(context, spacing, radius) {
+    drawEyes(context, typeSpacing, radius) {
         for (const side of [-1, 1]) {
             context.fillStyle = palette.gloomEye;
             context.beginPath();
-            context.ellipse(side * spacing, 0, radius, radius * 1.25, 0, 0, TAU);
+            context.ellipse(side * typeSpacing, 0, radius, radius * 1.25, 0, 0, TAU);
             context.fill();
 
             context.fillStyle = palette.gloomBody;
-            context.fillRect(side * spacing - radius, -radius * 0.28, radius * 2, radius * 0.55);
+            context.fillRect(side * typeSpacing - radius, -radius * 0.28, radius * 2, radius * 0.55);
         }
     }
 }
@@ -126,11 +126,11 @@ export class GloomMurk extends Gloom {
     move(elapsedSeconds) {
         const terrain = this.world.firstOfCategory('terrain');
 
-        this.velocityY = min(this.velocityY + GRAVITY * elapsedSeconds, MAX_FALL_SPEED);
+        this.velocityDown = min(this.velocityDown + GRAVITY * elapsedSeconds, MAX_FALL_SPEED);
         terrain.moveWithCollision(
             this,
             this.direction * MURK_SPEED * elapsedSeconds,
-            this.velocityY * elapsedSeconds,
+            this.velocityDown * elapsedSeconds,
         );
 
         if (this.wallDirection) {
@@ -179,13 +179,13 @@ export class GloomWisp extends Gloom {
             const toUnicornY = unicorn.y - this.y;
             const distance = hypot(toUnicornX, toUnicornY) || 1;
 
-            this.velocityX = damp(this.velocityX, (toUnicornX / distance) * WISP_SPEED, 1.6, elapsedSeconds);
-            this.velocityY = damp(this.velocityY, (toUnicornY / distance) * WISP_SPEED, 1.6, elapsedSeconds);
+            this.velocityAcross = damp(this.velocityAcross, (toUnicornX / distance) * WISP_SPEED, 1.6, elapsedSeconds);
+            this.velocityDown = damp(this.velocityDown, (toUnicornY / distance) * WISP_SPEED, 1.6, elapsedSeconds);
         }
 
-        this.x += this.velocityX * elapsedSeconds;
+        this.x += this.velocityAcross * elapsedSeconds;
         // A gentle bob on top of the chase, so it never moves in a dead straight line.
-        this.y += (this.velocityY + sin(this.age * 2.6 + this.wobbleSeed) * 34) * elapsedSeconds;
+        this.y += (this.velocityDown + sin(this.age * 2.6 + this.wobbleSeed) * 34) * elapsedSeconds;
 
         this.drinkRibbons();
     }

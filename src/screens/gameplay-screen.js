@@ -80,8 +80,8 @@ export class GameplayScreen extends Screen {
         startMusic(true);
     }
 
-    update(elapsedSeconds) {
-        super.update(elapsedSeconds);
+    updateStep(elapsedSeconds) {
+        super.updateStep(elapsedSeconds);
 
         if (wasKeyPressed(BACK_KEYS) || wasKeyPressed(['KeyP'])) {
             pushScreen(new PauseScreen(this));
@@ -106,7 +106,7 @@ export class GameplayScreen extends Screen {
         );
 
         this.updateRestoration(elapsedSeconds);
-        this.world.update(elapsedSeconds);
+        this.world.updateStep(elapsedSeconds);
 
         if (this.clearedCountdown > 0) {
             this.clearedCountdown -= elapsedSeconds;
@@ -123,9 +123,9 @@ export class GameplayScreen extends Screen {
     /** Colour returns as the Gloom is purified, eased so each kill is a bloom. */
     updateRestoration(elapsedSeconds) {
         const remaining = this.world.entitiesOfCategory('gloom').length;
-        const target = this.level.gloomTotal ? 1 - remaining / this.level.gloomTotal : 1;
+        const followTarget = this.level.gloomTotal ? 1 - remaining / this.level.gloomTotal : 1;
 
-        this.colorRestoration = damp(this.colorRestoration, target, 3, elapsedSeconds);
+        this.colorRestoration = damp(this.colorRestoration, followTarget, 3, elapsedSeconds);
         setColorRestoration(clamp(this.colorRestoration, MINIMUM_RESTORATION, 1));
         refreshPalette();
     }
@@ -166,9 +166,9 @@ export class GameplayScreen extends Screen {
         const bandHeight = CANVAS_HEIGHT / RAINBOW_COLORS.length;
         const closing = this.clearedCountdown > 0;
 
-        RAINBOW_COLORS.forEach((color, index) => {
+        RAINBOW_COLORS.forEach((inkColor, index) => {
             const width = CANVAS_WIDTH * clamp(this.wipe * 1.5 - index * 0.08, 0, 1);
-            canvasContext.fillStyle = color;
+            canvasContext.fillStyle = inkColor;
             canvasContext.fillRect(closing ? 0 : CANVAS_WIDTH - width, index * bandHeight, width, bandHeight + 1);
         });
     }
@@ -176,40 +176,40 @@ export class GameplayScreen extends Screen {
     renderHud() {
         const context = canvasContext;
 
-        drawText(`${this.levelIndex + 1}/${LEVELS.length}  ${this.level.name}`, 26, 32, {
-            size: 19,
-            weight: 800,
-            spacing: 2,
-            align: 'left',
-            color: TEXT_BRIGHT,
+        drawText(`${this.levelIndex + 1}/${LEVELS.length}  ${this.level.levelTitle}`, 26, 32, {
+            typeSize: 19,
+            typeWeight: 800,
+            typeSpacing: 2,
+            alignment: 'left',
+            inkColor: TEXT_BRIGHT,
         });
 
         drawText(formatTime(this.runSeconds), CANVAS_WIDTH - 26, 32, {
-            size: 22,
-            weight: 800,
-            spacing: 1,
-            align: 'right',
-            color: TEXT_BRIGHT,
+            typeSize: 22,
+            typeWeight: 800,
+            typeSpacing: 1,
+            alignment: 'right',
+            inkColor: TEXT_BRIGHT,
         });
 
         // Paint meter, bottom left, where a glance costs the least attention.
         drawPaintMeter(26, CANVAS_HEIGHT - 42, 210, 15, this.unicorn.paintEnergy, this.meterFlash);
         drawText('PAINT', 26, CANVAS_HEIGHT - 58, {
-            size: 13,
-            weight: 700,
-            spacing: 2.5,
-            align: 'left',
-            color: TEXT_DIM,
+            typeSize: 13,
+            typeWeight: 700,
+            typeSpacing: 2.5,
+            alignment: 'left',
+            inkColor: TEXT_DIM,
         });
 
         const remaining = this.world.entitiesOfCategory('gloom').length;
         if (this.level.gloomTotal) {
             drawText(remaining ? `GLOOM  ${remaining}` : 'GATE OPEN', CANVAS_WIDTH - 26, CANVAS_HEIGHT - 44, {
-                size: 22,
-                weight: 800,
-                spacing: 2.5,
-                align: 'right',
-                color: remaining ? TEXT_BRIGHT : RAINBOW_COLORS[(this.age * 6 | 0) % 7],
+                typeSize: 22,
+                typeWeight: 800,
+                typeSpacing: 2.5,
+                alignment: 'right',
+                inkColor: remaining ? TEXT_BRIGHT : RAINBOW_COLORS[(this.age * 6 | 0) % 7],
             });
         }
 
@@ -219,18 +219,18 @@ export class GameplayScreen extends Screen {
     renderBanners() {
         if (this.clearedCountdown > 0) {
             drawRainbowText('LEVEL CLEARED', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30, {
-                size: 62,
-                weight: 900,
-                spacing: 5,
+                typeSize: 62,
+                typeWeight: 900,
+                typeSpacing: 5,
             });
         }
 
         if (this.restartCountdown > 0) {
             drawText(this.unicorn.deathCause, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20, {
-                size: 40,
-                weight: 900,
-                spacing: 4,
-                color: TEXT_BRIGHT,
+                typeSize: 40,
+                typeWeight: 900,
+                typeSpacing: 4,
+                inkColor: TEXT_BRIGHT,
                 alpha: clamp((RESTART_DELAY_SECONDS - this.restartCountdown) * 3, 0, 1),
             });
         }
