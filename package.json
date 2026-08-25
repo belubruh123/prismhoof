@@ -11,7 +11,8 @@
     "build": "node tools/build.mjs --opt=2 --repeat=2",
     "check": "node tools/check-editor.mjs && node tools/check-levels.mjs",
     "zip": "node tools/zip.mjs",
-    "release": "node tools/build.mjs --opt=2 --repeat=2 && node tools/zip.mjs"
+    "release": "node tools/build.mjs --opt=2 --repeat=2 && node tools/zip.mjs",
+    "pages": "node tools/build.mjs --pages"
   },
   "devDependencies": {
     "@gfx/zopfli": "^1.0.15",

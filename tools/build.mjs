@@ -16,6 +16,7 @@
  *   node tools/build.mjs --verify    both     -> build/verify.html
  *   node tools/build.mjs --opt=2     slower, thorough Roadroller search
  *   node tools/build.mjs --repeat=5  pack five times and keep the smallest
+ *   node tools/build.mjs --pages    director's cut -> docs/index.html, no size limit
  *
  * `--verify` is the safety net for property mangling: it applies the full
  * release squeeze but leaves DEBUG on, so the debug hooks can drive a mangled
@@ -49,6 +50,16 @@ const MANGLE_RESERVED = [];
 const commandLineArguments = process.argv.slice(2);
 const isDebugBuild = commandLineArguments.includes('--debug');
 const isVerifyBuild = commandLineArguments.includes('--verify');
+/**
+ * The director's cut: the same game with the 13kB ceiling lifted, built into
+ * `docs/` for GitHub Pages. js13kGames takes a URL for a post-compo version and
+ * shows it to nobody until voting closes, so this is where anything that did not
+ * fit can go afterwards.
+ *
+ * It skips Roadroller. Packing exists to buy bytes, and it costs a moment of
+ * decoding before the first frame; with no limit to meet that is a bad trade.
+ */
+const isPagesBuild = commandLineArguments.includes('--pages');
 const optimizeLevelArgument = commandLineArguments.find((argument) => argument.startsWith('--opt='));
 const roadrollerOptimizeLevel = optimizeLevelArgument ? Number(optimizeLevelArgument.split('=')[1]) : 1;
 const repeatArgument = commandLineArguments.find((argument) => argument.startsWith('--repeat='));
@@ -287,8 +298,8 @@ async function main() {
             await writeFile(resolve(projectRoot, 'build/packme.js'), compressed);
         }
 
-        scriptForPage = await packGameScript(compressed);
-        console.log(`  terser  ${compressed.length} -> packed ${scriptForPage.length} bytes`);
+        scriptForPage = isPagesBuild ? compressed : await packGameScript(compressed);
+        if (!isPagesBuild) console.log(`  terser  ${compressed.length} -> packed ${scriptForPage.length} bytes`);
 
         cssForPage = new CleanCSS({ level: 2 }).minify(rawCss).styles;
     }
@@ -306,15 +317,18 @@ async function main() {
 
     const outputPath = resolve(
         projectRoot,
-        isDebugBuild ? 'build/debug.html' : isVerifyBuild ? 'build/verify.html' : 'build/index.html',
+        isDebugBuild ? 'build/debug.html'
+            : isVerifyBuild ? 'build/verify.html'
+                : isPagesBuild ? 'docs/index.html'
+                    : 'build/index.html',
     );
     await mkdir(dirname(outputPath), { recursive: true });
     await writeFile(outputPath, html);
 
     const htmlBytes = Buffer.byteLength(html);
-    const buildName = isDebugBuild ? 'debug' : isVerifyBuild ? 'verify' : 'release';
+    const buildName = isDebugBuild ? 'debug' : isVerifyBuild ? 'verify' : isPagesBuild ? "director's cut" : 'release';
     console.log(`\n  ${buildName} html: ${htmlBytes} bytes` +
-        (isDebugBuild ? '' : `  (${(htmlBytes / SIZE_LIMIT * 100).toFixed(1)}% of the ${SIZE_LIMIT} byte limit, before zip)`));
+        (isDebugBuild || isPagesBuild ? '' : `  (${(htmlBytes / SIZE_LIMIT * 100).toFixed(1)}% of the ${SIZE_LIMIT} byte limit, before zip)`));
     console.log(`  written to ${outputPath.replace(projectRoot + '/', '')} in ${Date.now() - startedAt}ms\n`);
 }
 

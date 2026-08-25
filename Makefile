@@ -1,4 +1,4 @@
-.PHONY: all install dev debug verify build check zip clean
+.PHONY: all install dev debug verify build check zip pages clean
 
 all: build zip
 
@@ -33,6 +33,12 @@ build:
 # Zip the release build and check it against the 13312 byte limit
 zip:
 	npm run zip
+
+# Director's cut -> docs/index.html, served by GitHub Pages. No size limit, and
+# no Roadroller: packing buys bytes at the cost of a pause before the first
+# frame, which is a bad trade when there is no limit to meet.
+pages:
+	npm run pages
 
 clean:
 	rm -rf build

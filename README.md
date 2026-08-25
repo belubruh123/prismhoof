@@ -95,8 +95,20 @@ make verify      # fully squeezed but with DEBUG on -> build/verify.html
 make build       # minified, Roadroller-packed build/index.html
 make check       # prove the course editor round-trips every level unchanged
 make zip         # build/game.zip, checked against the 13312 byte limit
+make pages       # director's cut -> docs/index.html, no size limit
 make all         # build + zip
 ```
+
+## The director's cut
+
+js13kGames takes an optional URL for a post-compo version, shown to nobody until voting
+closes. `make pages` builds one into `docs/`, which GitHub Pages serves from the repository —
+no hosting to set up, nothing to keep running.
+
+It is the same game with the ceiling lifted, and it skips Roadroller: packing exists to buy
+bytes and charges a moment of decoding before the first frame, which is a bad trade once
+there is no limit to meet. It builds in four seconds rather than two minutes, so it is also
+the sane place to put anything that would not fit in 13kB.
 
 ## The course editor
 
