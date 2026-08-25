@@ -174,17 +174,20 @@ export const RIBBON_MAX_LANDABLE_SLOPE = 2.2;
 // ---------------------------------------------------------------------------
 
 /**
- * How far in the view sits.
+ * How far in the focused view sits.
  *
- * The chamber no longer has to fit on the screen, so this is chosen for the
- * character rather than for the level: at 1.4 the unicorn is about sixty pixels
- * tall, which is enough for the gait, the blink and the mane to read, and the
- * view still shows fourteen tiles ahead - two more than the longest rainbow can
- * reach. Any tighter and you would be pouring bridges into ground you cannot
- * see yet, which is the one thing a chasing camera must never do to a game
- * whose whole verb is building ahead of yourself.
+ * Half again the whole-course framing rather than double it. That is enough for
+ * the gait, the blink and the mane to read - the unicorn is about fifty pixels
+ * tall - while still showing nearly seventeen tiles ahead against a rainbow that
+ * reaches twelve.
+ *
+ * Sight range is the constraint that sets this number, not the character. The
+ * one verb is a commitment: you spend paint deciding where to go and you cannot
+ * take it back, so pouring a bridge into ground you cannot see yet is the worst
+ * thing a chasing camera can do to this particular game. A closer view made the
+ * unicorn look better and the game play worse.
  */
-export const CAMERA_ZOOM = 1.4;
+export const CAMERA_ZOOM = 1.15;
 
 /**
  * The window the unicorn is free to move around inside before the view starts
@@ -238,6 +241,23 @@ export const CAMERA_LAG_DRAG = 9;
 export const CAMERA_HEIGHT_OFFSET = 34;
 /** How far past the level floor the view may drop, so the lava stays in shot. */
 export const CAMERA_FLOOR_REACH = 60;
+
+/**
+ * The establishing shot: how long a new level is held at the whole-course
+ * framing before the view moves in, and how fast it moves once it does.
+ *
+ * A player who has seen the shape of a chamber can plan a route through it. A
+ * player dropped straight into a close view has to discover the same chamber a
+ * screen at a time, and the rainbow is a commitment - you spend paint deciding
+ * where to go, and you cannot take it back. The hold is what makes that a
+ * decision rather than a guess.
+ *
+ * The move in is exponential, so it leaves the wide shot briskly and arrives
+ * slowly. That is the right way round: the interesting part of the shot is the
+ * end of it, where the unicorn becomes the subject.
+ */
+export const CAMERA_ESTABLISH_SECONDS = 1.1;
+export const CAMERA_ZOOM_STIFFNESS = 1.3;
 /** How far the camera leads the unicorn at full gallop. */
 export const CAMERA_LOOK_AHEAD = 110;
 export const CAMERA_LOOK_AHEAD_STIFFNESS = 2.4;

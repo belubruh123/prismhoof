@@ -51,7 +51,6 @@ const SOIL_DEPTH = 22;
 export const LAVA_SURFACE_DEPTH = 24;
 const LAVA_DEEP = '#8c1c10';
 const LAVA_BRIGHT = '#ff6a24';
-const LAVA_GLOW = '#ffc247';
 
 export class Terrain extends Entity {
     categories = ['terrain'];
@@ -311,19 +310,20 @@ export class Terrain extends Entity {
         context.fillStyle = LAVA_DEEP;
         context.fillRect(-reach, top, width + reach * 2, reach);
 
-        for (const [inkColor, height, phase] of [[LAVA_BRIGHT, 12, 0], [LAVA_GLOW, 4, 1.7]]) {
-            context.fillStyle = inkColor;
-            context.beginPath();
-            context.moveTo(-reach, top + height * 3);
+        // One crest, built from two offset waves so it never repeats on a beat
+        // you can count. A second, paler crest used to ride on top of it; at the
+        // size the lava sits on screen it was not worth the bytes.
+        context.fillStyle = LAVA_BRIGHT;
+        context.beginPath();
+        context.moveTo(-reach, top + 36);
 
-            for (let x = -reach; x <= width + reach; x += 30) {
-                const wave = sin(x * 0.012 + this.age * 1.9 + phase) + sin(x * 0.031 - this.age * 1.3);
-                context.lineTo(x, top + wave * 5 - height / 2);
-            }
-
-            context.lineTo(width + reach, top + height * 3);
-            context.fill();
+        for (let x = -reach; x <= width + reach; x += 30) {
+            const wave = sin(x * 0.012 + this.age * 1.9) + sin(x * 0.031 - this.age * 1.3);
+            context.lineTo(x, top + wave * 5 - 6);
         }
+
+        context.lineTo(width + reach, top + 36);
+        context.fill();
     }
 
 
@@ -353,9 +353,7 @@ export class Terrain extends Entity {
             context.fill();
 
             context.fillStyle = palette.terrainGrassLight;
-            context.beginPath();
-            context.roundRect(run.x, run.y, run.runWidth, 3, 1.5);
-            context.fill();
+            context.fillRect(run.x, run.y, run.runWidth, 3);
         }
     }
 }

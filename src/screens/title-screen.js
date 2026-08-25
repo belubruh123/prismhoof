@@ -48,8 +48,8 @@ const TITLE_SCENE = {
  * to the right of the menu; up keeps the lava under the meadow out of shot,
  * where the copyright line goes.
  */
-const TITLE_CAMERA_OFFSET = 185;
-const TITLE_CAMERA_LIFT = 120;
+const TITLE_CAMERA_OFFSET = 230;
+const TITLE_CAMERA_LIFT = 175;
 
 export class TitleScreen extends MenuScreen {
     /** `completedRun` is `{ seconds, deaths, isBest }` after a finished run. */

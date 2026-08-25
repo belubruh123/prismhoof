@@ -49,6 +49,7 @@ const CONTROLS = [
     ['S', 'DIVE'],
     ['K  or  X', 'AIR DASH  (once per jump)'],
     ['SHIFT', 'POUR RAINBOW  (hold)'],
+    ['C', 'WHOLE COURSE VIEW'],
     ['R', 'RETRY LEVEL'],
     ['ESC', 'PAUSE'],
 ];

@@ -131,11 +131,8 @@ function scheduleStep(step, startTime) {
 
     const melodyNote = MELODY[step % MELODY.length];
     if (melodyNote) {
-        const length = SECONDS_PER_STEP * melodyNoteLength(step) * 0.95;
-        // Two oscillators a whisker apart. The beating between them is what
-        // turns one thin triangle wave into something with a bit of width.
-        playVoice(melodyNote, startTime, length, 'triangle', 0.12, 0.02, 2600);
-        playVoice(melodyNote + 0.06, startTime, length, 'triangle', 0.07, 0.03, 2000);
+        playVoice(melodyNote, startTime, SECONDS_PER_STEP * melodyNoteLength(step) * 0.95,
+            'triangle', 0.14, 0.02, 2600);
     }
 
     if (!arrangement) return;

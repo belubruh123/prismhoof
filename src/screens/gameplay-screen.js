@@ -8,7 +8,7 @@
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
-import { BACK_KEYS, wasKeyPressed } from '../core/input.js';
+import { BACK_KEYS, VIEW_KEYS, wasKeyPressed } from '../core/input.js';
 import { clamp, damp } from '../core/math.js';
 import { saveData, persistSaveData } from '../core/storage.js';
 import { refreshPalette, setColorRestoration, RAINBOW_COLORS } from '../graphics/palette.js';
@@ -49,10 +49,14 @@ export class GameplayScreen extends Screen {
         this.levelIndex = levelIndex;
         this.runSeconds = runSeconds;
         this.deaths = deaths;
-        this.loadLevel();
+        this.loadLevel(true);
     }
 
-    loadLevel() {
+    /**
+     * `isNewCourse` is false for a retry, which is what keeps the establishing
+     * shot from replaying every single death in a game built around dying.
+     */
+    loadLevel(isNewCourse) {
         // The run clock never resets, so a level's own time is the difference
         // between where it started and where the clock is now.
         this.levelStartSeconds = this.runSeconds;
@@ -76,6 +80,9 @@ export class GameplayScreen extends Screen {
             this.clearedCountdown = CLEARED_DELAY_SECONDS;
         };
 
+        // A course is shown whole before the view moves in on it.
+        if (isNewCourse) this.world.camera.establish();
+
         saveData.furthestLevelIndex = Math.max(saveData.furthestLevelIndex, this.levelIndex);
         persistSaveData();
     }
@@ -90,6 +97,15 @@ export class GameplayScreen extends Screen {
         if (wasKeyPressed(BACK_KEYS) || wasKeyPressed(['KeyP'])) {
             pushScreen(new PauseScreen(this));
             return;
+        }
+
+        // The view is the player's to set. Taking hold of it also cuts the
+        // establishing shot short, because someone reaching for the camera key
+        // is not waiting to be shown the course.
+        if (wasKeyPressed(VIEW_KEYS)) {
+            saveData.isViewFocused = !saveData.isViewFocused;
+            this.world.camera.establishSeconds = 0;
+            persistSaveData();
         }
 
         // Retry on demand, so a doomed attempt never has to be waited out.
@@ -146,7 +162,7 @@ export class GameplayScreen extends Screen {
         }
 
         this.levelIndex++;
-        this.loadLevel();
+        this.loadLevel(true);
     }
 
     render() {
@@ -242,7 +258,7 @@ export class GameplayScreen extends Screen {
 
         const remaining = this.world.entitiesOfCategory('gloom').length;
 
-        drawText(remaining ? `GLOOM  ${remaining}` : 'GATE OPEN', CANVAS_WIDTH - 26, CANVAS_HEIGHT - 44, {
+        drawText(remaining ? `${remaining} GLOOM LEFT` : 'GATE OPEN', CANVAS_WIDTH - 26, CANVAS_HEIGHT - 44, {
             typeSize: 22,
             typeWeight: 800,
             typeSpacing: 2.5,

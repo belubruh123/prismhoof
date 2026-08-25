@@ -17,6 +17,8 @@ export const JUMP_KEYS = ['Space', 'ArrowUp', 'KeyW'];
 export const DIVE_KEYS = ['ArrowDown', 'KeyS'];
 export const DASH_KEYS = ['KeyK', 'KeyX'];
 export const PAINT_KEYS = ['ShiftLeft', 'ShiftRight', 'KeyJ'];
+/** Toggles between chasing the unicorn and framing the whole course. */
+export const VIEW_KEYS = ['KeyC'];
 export const CONFIRM_KEYS = ['Enter', 'Space', 'KeyE'];
 export const BACK_KEYS = ['Escape', 'Backspace'];
 export const MENU_UP_KEYS = ['ArrowUp', 'KeyW'];

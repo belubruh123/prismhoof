@@ -115,7 +115,6 @@ export class Unicorn extends Entity {
     hornGlow = 0;
     hornColorIndex = 0;
 
-    isPainting = false;
     isDead = false;
 
     /** Paint left in the horn, 0..1. Also what the HUD meter reads. */
@@ -481,9 +480,7 @@ export class Unicorn extends Entity {
             this.endRibbon();
         }
 
-        this.isPainting = Boolean(this.activeRibbon);
-
-        if (!this.isPainting) {
+        if (!this.activeRibbon) {
             this.secondsSincePainting += elapsedSeconds;
 
             // Refilling only on solid footing is what forces a choice about

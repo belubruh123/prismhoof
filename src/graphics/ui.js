@@ -36,7 +36,7 @@ export function drawPanel(x, y, width, height, radius = 18) {
 }
 
 /** A dark wash over the whole screen, for pause and menu overlays. */
-export function drawScreenDim(alpha = 0.55) {
+export function drawScreenDim(alpha) {
     const context = canvasContext;
     context.globalAlpha = alpha;
     context.fillStyle = INK_BLACK;
@@ -52,7 +52,7 @@ export function drawMenu(menuItems, chosenIndex, centreX, startY, {
     lineHeight = 52,
     typeSize = 27,
     width = 520,
-    time = 0,
+    time,
 } = {}) {
     menuItems.forEach((item, index) => {
         const y = startY + index * lineHeight;

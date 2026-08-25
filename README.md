@@ -49,8 +49,19 @@ the sky inside the chamber.
 
 ## The camera
 
-The view chases the unicorn around the chamber. Two things stop it feeling like a bracket
-bolted to the character's back.
+**Every level opens on the whole course.** The view holds the entire chamber in frame for a
+beat, then moves in on the unicorn. That is not a flourish: the one verb is a commitment —
+you spend paint deciding where to go and you cannot take it back — so a player who has seen
+the shape of a chamber is making a decision, and a player discovering it a screen at a time
+is guessing. **`C` toggles between the two framings** at any point, and the choice is
+remembered, so anyone who wants the whole course all the time can have it.
+
+The establishing shot plays when a course is *reached*, never on a retry. In a game built
+around dying, replaying a wide hold on every death would be the single most irritating thing
+in it.
+
+Once it has moved in, the view chases the unicorn. Two things stop that feeling like a
+bracket bolted to the character's back.
 
 **It only pulls once you leave a window in the middle of the frame.** Inside that window
 the pull is exactly zero, so hops, turns and landings move the unicorn *across the picture*
@@ -67,12 +78,11 @@ arrives, so it can never swing past its own mark — at any damping value whatso
 zone and an overshoot cannot live on the same spring. The first version had no wobble at
 all and no amount of tuning was ever going to produce one.
 
-The zoom is chosen for the character rather than for the level: the unicorn is about sixty
-pixels tall, so the gait, the blink, the mane and the horn all read. The view still shows
-fourteen tiles ahead — two more than the longest rainbow can reach, which is the constraint
-that sets it. Any tighter and you would be pouring bridges into ground you cannot see yet,
-which is the one thing a chasing camera must never do to a game whose entire verb is
-building ahead of yourself.
+**Sight range sets the zoom, not the character.** The focused view is half again the
+whole-course framing rather than double it: enough for the gait, the blink and the mane to
+read, while still showing nearly seventeen tiles ahead against a rainbow that reaches twelve.
+A closer view made the unicorn look better and the game play worse, which is the wrong trade
+in a game where pouring a bridge into ground you cannot see is the mistake that kills you.
 
 The story is told in a short opening rather than buried in a menu, and the colour floods
 back into the sky as the last line lands — the screen states the premise and demonstrates
@@ -123,7 +133,8 @@ nothing else, so the whole interface letterboxes, scales and screenshots with th
 looks identical in every browser.
 
 The rule the HUD follows is that **a number is a fact, and a fact is not the same as
-knowing what to do**. So the Gloom count carries its instruction underneath it, the clock
+knowing what to do**. So the Gloom count reads `8 GLOOM LEFT` rather than `GLOOM 8` and
+carries its instruction underneath it, the clock
 carries the price of dying beside it, and the air dash — the one piece of the unicorn's
 state that is invisible on the character itself — gets a word rather than an icon nobody
 can decode. Clearing a level reports what that level cost, because a single running clock
@@ -138,6 +149,7 @@ is unreadable without splits: it is the only way to know which chamber is worth 
 | `↓` / `S` | Dive |
 | `K` / `X` | Air dash (once per jump) |
 | `Shift` (hold) | Pour rainbow |
+| `C` | Whole-course view (toggle) |
 | `R` | Retry level |
 | `P` / `Esc` | Pause |
 
@@ -285,6 +297,7 @@ several ideas that sounded certain turned out to be worth nothing at all.
 | **Golfing the stylesheet, which Roadroller never sees** | **64** |
 | Dropping the wrapper element, unquoted HTML attributes | 40 |
 | Dropping the text drop-shadow, and one darkest ink instead of three | ~55 |
+| **Deleting `drawRadialGlow` — a whole gradient built per frame for one caller** | **~95** |
 | Roadroller `allowFreeVars` (its `--dirty` mode) | ~35 |
 | Best-of-N packing | ~16 |
 | Roadroller `--opt=2` | 10 |
@@ -349,7 +362,11 @@ number. Three consecutive measurements, all on the same payload:
 | One duplicated hex string, and one ten-line branch that drew a shut eye | −113 | **−39** |
 
 The third change removed the *least* code and saved the most, because a hex string that
-appears nowhere else in the payload is information the compressor has never seen. The
+appears nowhere else in the payload is information the compressor has never seen. The same
+rule caught the biggest single cut of the lot from the other direction: deleting
+`drawRadialGlow`, one soft halo behind the horn, was worth around 95 bytes — a radial
+gradient built from scratch every frame is nothing like anything else in the payload, so
+every byte of it was being paid for in full. The
 practical rule that falls out: before cutting anything for size, ask whether the payload
 already contains something very like it. If it does, cutting it is free of charge to the
 compressor and free of benefit to you. The same logic explains the level data: run-length
@@ -405,7 +422,7 @@ is a `Map`, and the settings screen names every field it writes.
 src/
   core/       canvas, loop, input, storage, maths, geometry   (no game knowledge)
   engine/     entity, world, camera, particles                (no game knowledge)
-  graphics/   palette, textures, sky, hair, typography, ui
+  graphics/   palette, sky, hair, typography, ui
   entities/   unicorn, unicorn art, rainbow ribbon, terrain, lava, gloom, gate, signs
   screens/    opening, title, how to play, settings, gameplay, pause
   levels/     level format, level builder, level data

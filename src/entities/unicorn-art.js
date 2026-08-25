@@ -15,7 +15,6 @@ import { UNICORN_HALF_HEIGHT } from '../config.js';
 import { canvasContext, wrap } from '../core/canvas.js';
 import { abs, acos, atan2, clamp, cos, hypot, lerp, max, PI, sin, TAU } from '../core/math.js';
 import { HORN_COLOR, RAINBOW_COLORS, UNICORN_COAT, UNICORN_INK, UNICORN_SHADE } from '../graphics/palette.js';
-import { drawRadialGlow } from '../graphics/textures.js';
 
 // --- proportions -----------------------------------------------------------
 
@@ -232,13 +231,6 @@ function drawEar(context, pose) {
         context.quadraticCurveTo(-2, -8, 3, -7);
         context.quadraticCurveTo(3, -1, 3, 1);
         context.fill();
-
-        context.fillStyle = UNICORN_SHADE;
-        context.beginPath();
-        context.moveTo(-1, 0);
-        context.quadraticCurveTo(-0.5, -5.5, 1.8, -5);
-        context.quadraticCurveTo(1.8, -1, 1.8, 0);
-        context.fill();
     });
 }
 
@@ -269,10 +261,6 @@ function drawHorn(context, unicorn, pose) {
         context.translate(4, -CRANIUM_RADIUS + 1.5);
         context.rotate(HORN_TILT);
 
-        if (glow > 0.01) {
-            drawRadialGlow(context, 0, -HORN_LENGTH * 0.6, 26 * glow, RAINBOW_COLORS[pose.hornColorIndex], glow * 0.75);
-        }
-
         context.fillStyle = HORN_COLOR;
         context.beginPath();
         context.moveTo(-HORN_BASE_WIDTH / 2, 0);
@@ -297,7 +285,7 @@ function drawHorn(context, unicorn, pose) {
             context.fillStyle = RAINBOW_COLORS[pose.hornColorIndex];
             context.globalAlpha = glow;
             context.beginPath();
-            context.arc(0, -HORN_LENGTH, 3 + glow * 2, 0, TAU);
+            context.arc(0, -HORN_LENGTH, 3 + glow * 5, 0, TAU);
             context.fill();
         }
     });
@@ -443,14 +431,13 @@ export function buildUnicornPose(unicorn) {
  * over it, instead of swinging in an arc that lifts it off the ground.
  */
 function buildLegPose(unicorn, definition, index) {
-    const { hipX, isFront, bendSign } = definition;
+    const { hipX, bendSign } = definition;
     const followTarget = buildHoofTarget(unicorn, definition, index);
 
     const knee = solveKnee(hipX, HIP_Y, followTarget.x, followTarget.y, UPPER_LEG_LENGTH, LOWER_LEG_LENGTH, bendSign);
 
     return {
         hipX,
-        isFront,
         kneeX: knee.x,
         kneeY: knee.y,
         ankleX: followTarget.x,

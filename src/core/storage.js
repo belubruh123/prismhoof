@@ -18,6 +18,12 @@ const DEFAULT_SAVE_DATA = {
     musicVolume: 0.6,
     soundVolume: 0.7,
     screenShakeEnabled: true,
+    /**
+     * Whether the view chases the unicorn or frames the whole course. Persisted
+     * rather than kept on the screen, so it survives a level change - and so a
+     * player who prefers one of them only has to say so once.
+     */
+    isViewFocused: true,
 };
 
 function loadSaveData() {

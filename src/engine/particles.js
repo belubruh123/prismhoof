@@ -130,9 +130,7 @@ export class ParticleField extends Entity {
  */
 export function burstRainbow(particles, x, y, count, {
     speed = 240,
-    spread = 0.7,
     gravity = 260,
-    minSize = 3,
     maxSize = 7,
     lifetime = 0.8,
 } = {}) {
@@ -140,7 +138,7 @@ export function burstRainbow(particles, x, y, count, {
 
     for (let index = 0; index < count; index++) {
         const angle = randomBetween(0, TAU);
-        const magnitude = randomBetween(speed * (1 - spread), speed);
+        const magnitude = randomBetween(speed * 0.3, speed);
 
         particles.spawn({
             x,
@@ -148,7 +146,7 @@ export function burstRainbow(particles, x, y, count, {
             velocityAcross: cos(angle) * magnitude,
             velocityDown: sin(angle) * magnitude,
             gravity,
-            typeSize: randomBetween(minSize, maxSize),
+            typeSize: randomBetween(3, maxSize),
             endSize: 0,
             lifetime: randomBetween(lifetime * 0.6, lifetime),
             inkColor: RAINBOW_COLORS[index % RAINBOW_COLORS.length],
