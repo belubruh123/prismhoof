@@ -309,7 +309,8 @@ a compromise here, it *is* the compressed form of the music. Same reason every p
 from code rather than stored.
 
 **Can I use the code?**
-No — see the copyright below.
+Yes, all of it, for anything. It is CC0 — public domain, no attribution required. If any of
+it is useful to you, that is the best outcome I could ask for.
 
 **Mobile? Gamepad?**
 Desktop, keyboard only, on purpose. The whole game is aimed at precision on a keyboard.
@@ -325,9 +326,15 @@ libraries ship in the build; the five dev dependencies are build tooling only.
 Structure and build approach are indebted to [CLAWSTRIKE](https://github.com/remvst/clawstrike)
 by Rémi Vansteelandt, the js13kGames 2025 winner, whose source is a great read.
 
-## Copyright
+## License
 
-Copyright (c) 2026
+**[CC0 1.0 Universal](LICENSE) — public domain. No copyright, free to use.**
 
-All rights reserved. It is not allowed to take the code or game and publish it anywhere. I
-reserve all rights.
+Take it. Read it, copy it, learn from it, ship a game built on it, sell that game — no
+permission needed, no attribution required, no strings. Everything here is original to this
+entry, so there is nothing in it I am not free to give away.
+
+That is on purpose. Working this out in the open is the point: the byte-by-byte notes in
+[Squeezing it into 13kB](#squeezing-it-into-13kb) are worth more to somebody else if the
+code they describe can actually be used, and js13kGames mirrors every entry's repository as
+a learning resource anyway.

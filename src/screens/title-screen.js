@@ -121,9 +121,9 @@ export class TitleScreen extends MenuScreen {
             });
         }
 
-        // One string, not two draws: the copyright rides along on the line that
+        // One string, not two draws: the licence line rides along on the line that
         // was already here, so it costs characters rather than a call site.
-        drawText('js13kGames 2026 - UNICORNS AND RAINBOWS - (C) 2026, ALL RIGHTS RESERVED', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30, {
+        drawText('js13kGames 2026 - UNICORNS AND RAINBOWS - CC0 PUBLIC DOMAIN', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30, {
             typeSize: 14,
             typeWeight: 600,
             typeSpacing: 2,
