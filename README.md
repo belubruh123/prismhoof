@@ -107,9 +107,20 @@ input and captured on a chosen frame — the rainbow in it is a real ribbon, pou
 physics, not a curve drawn to look like one.
 
 Serve the project root and open `/tools/cover.html` (the page imports from `../src/`, which a
-`file://` page may not do). Re-render, tick the guide to see the square js13kGames cuts its
-160x160 thumbnail from, and download the PNG. The composition is built square-first for
-exactly that reason: anything that only reads at full width is wasted in the listing.
+`file://` page may not do). `#steps=22&zoom=6.1` picks the captured frame and the framing, and
+the guide checkbox draws the square js13kGames cuts its 160x160 thumbnail from.
+
+It is a poster, not a screenshot, and that was a correction. The first version was the game
+photographed — a wide landscape with a small unicorn in it, which is pretty at full size and
+mush at 160 pixels. The entries that win the listing are posters: one subject, filling the
+frame, three or four flat colours, a silhouette that survives being shrunk. So the sky, the
+clouds and the terrain are stripped out, the camera is pushed to eight times what the game
+ever uses, and what is left is the character, the glow at the horn, and the name.
+
+The poured ribbon was in the composition for a long time and kept losing. The paint head
+outruns the unicorn within a few frames, so on any frame where the arc is long enough to read
+it has already fallen far below and the two stop looking connected. A thumbnail has room for
+one subject. The rainbow is still there — it is the mane, the tail and the lettering.
 
 Output lives in `docs/`: `cover.png` (1024 square), `cover-wide.png` (1920x1080) and
 `cover-thumb160.png`, which is what the listing will actually show.

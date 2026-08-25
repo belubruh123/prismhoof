@@ -90,8 +90,20 @@
         ],
     };
 
-    /** Keys held while the scene is stepped, as the game's own input sees them. */
-    const HELD = ['ArrowRight', 'ShiftLeft'];
+    /** Keys held for the whole run-up. */
+    const HELD = ['ArrowRight'];
+
+    /**
+     * Keys pressed at given steps, exactly as a player would.
+     *
+     * Jump first, then pour on the way up: that is the game's "ramp" - the
+     * stream inherits the lift and climbs instead of falling. It is also the
+     * only pour that draws a rising diagonal, which is the shape a poster wants.
+     */
+    const SEQUENCE = [
+        { code: 'Space', step: 4, type: 'keydown' },
+        { code: 'ShiftLeft', step: 6, type: 'keydown' },
+    ];
 
     /**
      * How far in to push the camera.
@@ -101,10 +113,10 @@
      * cover wants the opposite, and going past the fit also carries the chamber's
      * bright border off the edges, so the art stops looking like a screenshot.
      */
-    const ZOOM = 1.55;
+    const ZOOM = 6.1;
 
     /** Fixed-timestep steps before the frame is captured. */
-    const WARM_UP_STEPS = 40;
+    const WARM_UP_STEPS = 22;
 
     /**
      * Where the camera sits relative to the unicorn on the captured frame.
@@ -114,8 +126,18 @@
      * Nudging the view down and right lifts the unicorn into the upper third and
      * brings the landing back into shot.
      */
-    const CAMERA_OFFSET_X = 55;
-    const CAMERA_OFFSET_Y = 30;
+    const CAMERA_OFFSET_X = 6;
+    const CAMERA_OFFSET_Y = 4;
+
+    /**
+     * The flat ground the whole thing sits on.
+     *
+     * The sky, the clouds and the terrain are gone from the cover on purpose. A
+     * thumbnail is 160 pixels of poster, not a landscape: what has to survive
+     * that is one silhouette, one bold shape and a name. Everything else is
+     * detail nobody will ever see, competing with the things they will.
+     */
+    const BACKDROP = '#150f2b';
 
     function press(code, type) {
         dispatchEvent(new KeyboardEvent(type, { code }));
@@ -127,33 +149,49 @@
         refreshPalette();
 
         const scene = buildLevelWorld(SCENE);
-        scene.world.camera.zoom = ZOOM;
+        scene.world.camera.zoom = zoomOverride || ZOOM;
         for (const code of HELD) press(code, 'keydown');
 
-        for (let step = 0; step < WARM_UP_STEPS; step++) {
+        const steps = stepsOverride || WARM_UP_STEPS;
+        for (let step = 0; step < steps; step++) {
+            for (const key of SEQUENCE) if (key.step === step) press(key.code, key.type);
             scene.world.updateStep(1 / 60);
             clearFrameInput();
         }
 
         scene.world.camera.snapTo(scene.unicorn.x + CAMERA_OFFSET_X, scene.unicorn.y + CAMERA_OFFSET_Y);
 
+        // Strip the scene back to the unicorn alone.
+        //
+        // The poured ribbon was in here for a long time and kept losing: the
+        // paint head outruns the unicorn within a few frames, so by any frame
+        // where the arc is long enough to read, it has fallen far below and the
+        // two no longer look connected. A thumbnail has room for one subject.
+        // The rainbow is still here - it is the mane, the tail and the name.
+        for (const entity of scene.world.entities.slice()) {
+            if (entity !== scene.unicorn) scene.world.removeEntity(entity);
+        }
+
         beginFrame();
-        renderSky(scene.world.camera, 3.1);
+        canvasContext.fillStyle = BACKDROP;
+        canvasContext.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         scene.world.render();
 
         for (const code of HELD) press(code, 'keyup');
+        for (const key of SEQUENCE) press(key.code, 'keyup');
 
         // The lettering is the game's own, so the cover and the title screen are
         // unmistakably the same piece of work.
         // Sized to sit inside the centre square, because that is all the js13k
         // thumbnail will keep. Anything wider is only there for the wide crop.
-        drawRainbowText('PRISMHOOF', CANVAS_WIDTH / 2, 132, { typeSize: 76, typeWeight: 900, typeSpacing: 9 });
-        drawText('ONE VERB. FOUR USES. THIRTEEN KILOBYTES.', CANVAS_WIDTH / 2, 182, {
-            typeSize: 19, typeWeight: 700, typeSpacing: 3, inkColor: '#fff',
+        // Title along the bottom, the way a poster carries it.
+        drawRainbowText('PRISMHOOF', CANVAS_WIDTH / 2, 596, { typeSize: 92, typeWeight: 900, typeSpacing: 10 });
+        drawText('ONE VERB. FOUR USES.', CANVAS_WIDTH / 2, 656, {
+            typeSize: 22, typeWeight: 800, typeSpacing: 6, inkColor: '#fff',
         });
 
         document.getElementById('status').textContent =
-            `${canvas.width}x${canvas.height} — square crop ${canvas.height}x${canvas.height}`;
+            `${canvas.width}x${canvas.height} — kept: ${scene.world.entities.map((e) => e.categories.join('/')).join(', ') || 'nothing'}`;
     }
 
     function placeGuide() {
@@ -164,6 +202,12 @@
         frame.style.top = `${box.top + scrollY}px`;
         frame.style.width = frame.style.height = `${side}px`;
     }
+
+    // #steps=44 and #zoom=2.6 make the capture frame and the framing tunable
+    // from the URL, which is how the composition below was found.
+    const options = new URLSearchParams(location.hash.replace('#', '').replace(/shot&?/, ''));
+    const stepsOverride = parseInt(options.get('steps'));
+    const zoomOverride = parseFloat(options.get('zoom'));
 
     if (location.hash.includes('shot')) document.body.classList.add('shot');
 
