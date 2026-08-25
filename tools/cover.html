@@ -1,0 +1,205 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>PRISMHOOF cover</title>
+
+<!--
+  Renders the cover art for the game out of the game.
+
+  Nothing here is drawn by hand or pasted in from elsewhere: the unicorn, the
+  rainbow, the sky, the clouds, the lava and the lettering are the same code the
+  game runs, driven by the same keyboard input, and captured on a chosen frame.
+  A cover made any other way would be a picture *of* something else.
+
+  The composition is built for a square crop, because js13kGames shows entries
+  as 160x160 thumbnails generated from whatever you upload. Anything that only
+  reads at full width is wasted there.
+
+  Serve the project root and open /tools/cover.html - the page imports from
+  ../src/, which a file:// page is not allowed to do. `#shot` hides the controls
+  so a headless screenshot gets nothing but the art.
+-->
+
+<style>
+    html, body { margin: 0; background: #14101f; color: #ddd; font: 13px system-ui, sans-serif; }
+    #game { display: block; }
+    #bar { padding: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    button, label { font: inherit; }
+    button { padding: 5px 9px; border: 1px solid #666; background: #1e1830; color: #eee; cursor: pointer; }
+    body.shot #bar { display: none; }
+    /* The square the js13k thumbnail will be cut from, drawn over the art. */
+    #frame { position: absolute; border: 1px dashed rgba(255,255,255,.55); pointer-events: none; display: none; }
+    body.guides #frame { display: block; }
+</style>
+
+<div id="bar">
+    <button id="again">Re-render</button>
+    <button id="save">Download PNG</button>
+    <label><input type="checkbox" id="guides"> show the square the thumbnail is cut from</label>
+    <span id="status"></span>
+</div>
+
+<canvas id="game"></canvas>
+<div id="frame"></div>
+
+<script>
+    // The game reads DEBUG as a constant the bundler substitutes. This page loads
+    // the modules raw, so it has to exist before any of them evaluate - which is
+    // why this is a classic script and not part of the module below.
+    var DEBUG = false;
+</script>
+
+<script type="module">
+    import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../src/config.js';
+    import { beginFrame, canvas, canvasContext, initialiseCanvas } from '../src/core/canvas.js';
+    import { clearFrameInput, initialiseInput } from '../src/core/input.js';
+    import { buildLevelWorld } from '../src/levels/build-level.js';
+    import { renderSky } from '../src/graphics/sky.js';
+    import { drawRainbowText, drawText } from '../src/graphics/typography.js';
+    import { refreshPalette, setColorRestoration } from '../src/graphics/palette.js';
+
+    /**
+     * The scene, written in the same picture format as a level.
+     *
+     * A ledge on the left to pour from, a long drop, and a landing on the right:
+     * the shape of the whole game in one screen. The unicorn starts at the lip
+     * so the rainbow leaves the horn immediately and arcs across the middle,
+     * which is the part that has to survive being shrunk to a thumbnail.
+     */
+    const SCENE = {
+        levelTitle: 'COVER',
+        tileRows: [
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '..............P',
+            '.........###########',
+            '.........###########',
+            '.........###########',
+            '',
+            '',
+            '........................M',
+            '.....................############',
+            '.....................############',
+            '.....................############',
+        ],
+    };
+
+    /** Keys held while the scene is stepped, as the game's own input sees them. */
+    const HELD = ['ArrowRight', 'ShiftLeft'];
+
+    /**
+     * How far in to push the camera.
+     *
+     * A level's camera fits the whole chamber and is capped at 1:1, which frames
+     * a cover the way it frames a puzzle - everything visible, nothing close. A
+     * cover wants the opposite, and going past the fit also carries the chamber's
+     * bright border off the edges, so the art stops looking like a screenshot.
+     */
+    const ZOOM = 1.55;
+
+    /** Fixed-timestep steps before the frame is captured. */
+    const WARM_UP_STEPS = 40;
+
+    /**
+     * Where the camera sits relative to the unicorn on the captured frame.
+     *
+     * Following the unicorn puts it dead centre, which wastes the bottom of the
+     * frame on empty sky and pushes the end of the arc out of the square crop.
+     * Nudging the view down and right lifts the unicorn into the upper third and
+     * brings the landing back into shot.
+     */
+    const CAMERA_OFFSET_X = 55;
+    const CAMERA_OFFSET_Y = 30;
+
+    function press(code, type) {
+        dispatchEvent(new KeyboardEvent(type, { code }));
+    }
+
+    function render() {
+        // Full colour: the cover is the meadow already saved, not the Gloom.
+        setColorRestoration(1);
+        refreshPalette();
+
+        const scene = buildLevelWorld(SCENE);
+        scene.world.camera.zoom = ZOOM;
+        for (const code of HELD) press(code, 'keydown');
+
+        for (let step = 0; step < WARM_UP_STEPS; step++) {
+            scene.world.updateStep(1 / 60);
+            clearFrameInput();
+        }
+
+        scene.world.camera.snapTo(scene.unicorn.x + CAMERA_OFFSET_X, scene.unicorn.y + CAMERA_OFFSET_Y);
+
+        beginFrame();
+        renderSky(scene.world.camera, 3.1);
+        scene.world.render();
+
+        for (const code of HELD) press(code, 'keyup');
+
+        // The lettering is the game's own, so the cover and the title screen are
+        // unmistakably the same piece of work.
+        // Sized to sit inside the centre square, because that is all the js13k
+        // thumbnail will keep. Anything wider is only there for the wide crop.
+        drawRainbowText('PRISMHOOF', CANVAS_WIDTH / 2, 132, { typeSize: 76, typeWeight: 900, typeSpacing: 9 });
+        drawText('ONE VERB. FOUR USES. THIRTEEN KILOBYTES.', CANVAS_WIDTH / 2, 182, {
+            typeSize: 19, typeWeight: 700, typeSpacing: 3, inkColor: '#fff',
+        });
+
+        document.getElementById('status').textContent =
+            `${canvas.width}x${canvas.height} — square crop ${canvas.height}x${canvas.height}`;
+    }
+
+    function placeGuide() {
+        const box = canvas.getBoundingClientRect();
+        const side = box.height;
+        const frame = document.getElementById('frame');
+        frame.style.left = `${box.left + (box.width - side) / 2}px`;
+        frame.style.top = `${box.top + scrollY}px`;
+        frame.style.width = frame.style.height = `${side}px`;
+    }
+
+    if (location.hash.includes('shot')) document.body.classList.add('shot');
+
+    initialiseCanvas();
+    // Without this the game never hears the keys this page dispatches.
+    initialiseInput();
+
+    /**
+     * Draws, and redraws whenever the canvas is resized.
+     *
+     * The game sizes its backing store on every resize, and assigning
+     * `canvas.width` wipes what is on it - so a single render at start-up is
+     * blank the moment anything changes the window, which is exactly what a
+     * headless screenshot does when it applies a device scale factor.
+     */
+    function paint() {
+        // The letterbox sizing follows the window; the cover wants the whole canvas.
+        canvas.style.width = CANVAS_WIDTH + 'px';
+        canvas.style.height = CANVAS_HEIGHT + 'px';
+        render();
+        placeGuide();
+    }
+
+    addEventListener('resize', () => requestAnimationFrame(paint));
+    paint();
+    requestAnimationFrame(paint);
+
+    document.getElementById('again').onclick = paint;
+    document.getElementById('guides').onchange = (event) => {
+        document.body.classList.toggle('guides', event.target.checked);
+        placeGuide();
+    };
+    document.getElementById('save').onclick = () => {
+        const link = document.createElement('a');
+        link.download = 'prismhoof-cover.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+</script>

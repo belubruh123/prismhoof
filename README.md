@@ -99,6 +99,21 @@ make pages       # director's cut -> docs/index.html, no size limit
 make all         # build + zip
 ```
 
+## The cover
+
+`tools/cover.html` renders the cover art out of the game. The unicorn, the rainbow, the sky,
+the clouds and the lettering are the same code the game runs, driven by the same keyboard
+input and captured on a chosen frame — the rainbow in it is a real ribbon, poured by the real
+physics, not a curve drawn to look like one.
+
+Serve the project root and open `/tools/cover.html` (the page imports from `../src/`, which a
+`file://` page may not do). Re-render, tick the guide to see the square js13kGames cuts its
+160x160 thumbnail from, and download the PNG. The composition is built square-first for
+exactly that reason: anything that only reads at full width is wasted in the listing.
+
+Output lives in `docs/`: `cover.png` (1024 square), `cover-wide.png` (1920x1080) and
+`cover-thumb160.png`, which is what the listing will actually show.
+
 ## The director's cut
 
 js13kGames takes an optional URL for a post-compo version, shown to nobody until voting
