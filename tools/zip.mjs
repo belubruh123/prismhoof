@@ -2,15 +2,24 @@
  * Packages build/index.html into build/game.zip and checks it against the
  * js13kGames 13312 byte limit.
  *
- * The zip is written by hand with zlib rather than pulled from a dependency, so
- * that the compression level is fully under our control and the toolchain stays
- * at four dev dependencies. If `advzip` or `ect` happen to be installed, the
- * archive is recompressed with them (they use Zopfli, which reliably beats
- * zlib level 9 by a few hundred bytes at this size).
+ * The zip is written by hand rather than pulled from a dependency, so the
+ * compression is fully under our control - which matters, because the entry only
+ * fits at Zopfli's compression ratio, not zlib's. On this payload zlib level 9
+ * gives 13,290 bytes of deflate stream and Zopfli gives 13,152: a 138 byte gap,
+ * three times the whole remaining margin.
+ *
+ * Zopfli therefore ships as a dev dependency and runs on every build. It used to
+ * be an optional pass with `advzip`, which meant the game fit on a machine that
+ * happened to have advancecomp installed and blew the limit by 247 bytes on one
+ * that did not. A size limit you only meet on your own laptop is not met.
+ *
+ * `advzip` and `ect` are still tried afterwards if they happen to be installed,
+ * but they have nothing left to find - measured at 0 to 2 bytes over Zopfli here.
  */
 
 import { execFileSync } from 'node:child_process';
 import { crc32, deflateRawSync } from 'node:zlib';
+import { deflate as zopfliDeflate } from '@gfx/zopfli';
 import { readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,10 +27,29 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SIZE_LIMIT = 13312;
 
+/**
+ * Squeezes the payload into a raw DEFLATE stream with Zopfli, falling back to
+ * zlib if it is somehow unavailable - which costs 138 bytes and will not fit.
+ *
+ * 256 iterations is where this payload stops improving: 15 gives 13,154 bytes,
+ * 256 gives 13,152, and 1000 gives the same 13,152 for three seconds more work.
+ */
+async function compressPayload(contents) {
+    try {
+        return await new Promise((resolvePromise, rejectPromise) => {
+            zopfliDeflate(contents, { numiterations: 256 }, (error, result) =>
+                error ? rejectPromise(error) : resolvePromise(result));
+        });
+    } catch (error) {
+        console.warn(`  warning: Zopfli unavailable (${error.message}), falling back to zlib`);
+        return deflateRawSync(contents, { level: 9, memLevel: 9, windowBits: 15 });
+    }
+}
+
 /** Builds a single-entry ZIP archive with no extra fields and no timestamps. */
-function createZipArchive(fileName, fileContents) {
+async function createZipArchive(fileName, fileContents) {
     const nameBytes = Buffer.from(fileName, 'utf8');
-    const deflated = deflateRawSync(fileContents, { level: 9, memLevel: 9, windowBits: 15 });
+    const deflated = await compressPayload(fileContents);
     const checksum = crc32(fileContents);
 
     const localHeader = Buffer.alloc(30);
@@ -72,7 +100,11 @@ function createZipArchive(fileName, fileContents) {
     return Buffer.concat([localHeader, nameBytes, deflated, centralHeader, nameBytes, endRecord]);
 }
 
-/** Recompresses the archive in place with whichever Zopfli-based tool is installed. */
+/**
+ * Hands the finished archive to advzip or ECT if either is installed. Zopfli has
+ * already done this job, so this is only here to catch the odd byte; it is not
+ * what the entry depends on to fit.
+ */
 function recompressIfPossible(zipPath) {
     const attempts = [
         { command: 'advzip', args: ['-4', '-z', '-i', '256', zipPath] },
@@ -95,7 +127,7 @@ async function main() {
     const zipPath = resolve(projectRoot, 'build/game.zip');
 
     const html = await readFile(htmlPath);
-    await writeFile(zipPath, createZipArchive('index.html', html));
+    await writeFile(zipPath, await createZipArchive('index.html', html));
 
     const usedTool = recompressIfPossible(zipPath);
     const zipBytes = (await stat(zipPath)).size;
@@ -103,9 +135,7 @@ async function main() {
 
     console.log(`\n  index.html  ${html.length} bytes`);
     console.log(`  game.zip    ${zipBytes} bytes  (${percentage.toFixed(1)}% of ${SIZE_LIMIT})`);
-    console.log(usedTool
-        ? `  recompressed with ${usedTool}`
-        : '  note: install advancecomp (advzip) or ECT to squeeze a few hundred more bytes');
+    console.log(usedTool ? `  zopfli, then ${usedTool}` : '  zopfli');
 
     if (zipBytes > SIZE_LIMIT) {
         console.error(`\n  OVER BUDGET by ${zipBytes - SIZE_LIMIT} bytes\n`);

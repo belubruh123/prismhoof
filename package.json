@@ -14,6 +14,7 @@
     "release": "node tools/build.mjs --opt=2 --repeat=2 && node tools/zip.mjs"
   },
   "devDependencies": {
+    "@gfx/zopfli": "^1.0.15",
     "clean-css": "^5.3.3",
     "esbuild": "^0.28.2",
     "google-closure-compiler": "^20260819.0.0",

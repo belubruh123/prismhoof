@@ -89,7 +89,7 @@ reachable from the title screen and from the pause menu.
 Requires Node 20+.
 
 ```sh
-make install     # npm install (5 dev dependencies)
+make install     # npm install (6 dev dependencies)
 make dev         # watch + serve the debug build and the editor on port 8013
 make verify      # fully squeezed but with DEBUG on -> build/verify.html
 make build       # minified, Roadroller-packed build/index.html
@@ -134,9 +134,13 @@ out through the editor's own formatter, and fails unless the result is byte-for-
 already in the file. Without that, the first course opened in the editor would come back
 quietly reformatted.
 
-`make zip` will use [advancecomp](https://github.com/amadvance/advancecomp)'s `advzip` or
-[ECT](https://github.com/fhanau/Efficient-Compression-Tool) to recompress the archive if
-either is installed, and says so if neither is.
+`make zip` needs nothing installed beyond `npm install`. It compresses with **Zopfli**, which
+ships as a dev dependency, because the entry only fits at Zopfli's ratio: zlib level 9 gives
+13,290 bytes of deflate stream against Zopfli's 13,152, and the whole remaining margin is 42.
+This used to be an optional pass with [advzip](https://github.com/amadvance/advancecomp) if
+you happened to have it, which meant the game fit on one machine and blew the limit by 247
+bytes on another. If `advzip` or [ECT](https://github.com/fhanau/Efficient-Compression-Tool)
+are installed they still get a turn afterwards, but they find nothing Zopfli missed.
 
 ## Squeezing it into 13kB
 
@@ -157,7 +161,8 @@ several ideas that sounded certain turned out to be worth nothing at all.
    names.
 4. **Roadroller**, packing the result into a self-extracting payload.
 5. The packed script and the minified CSS are inlined into `src/index.html`, which is zipped
-   by hand and recompressed with **advzip**'s Zopfli.
+   by hand — the deflate stream compressed with **Zopfli**, worth 138 bytes over zlib level 9
+   and therefore the difference between fitting and not.
 
 ### What each step is worth
 
@@ -198,8 +203,8 @@ Worth as much as the list above, because each of these looks like it should work
 | Deduplicating similar code into shared helpers | **6 bytes** for 112 minified bytes removed |
 | A shared dictionary of repeated level rows | 7 bytes — less than its own decoder costs |
 | Splitting entities out of the terrain grid | **168 bytes worse** |
-| ECT instead of advzip | 2 bytes |
-| advzip beyond `-i 256` | nothing, tested to 4000 |
+| ECT or advzip *after* Zopfli | 0–2 bytes — Zopfli already found it |
+| Zopfli beyond 256 iterations | nothing, tested to 1000 |
 | Roadroller `precision` and `recipLearningRate` sweeps | nothing — its optimiser already tunes both |
 | `maxMemoryMB` above 320 | nothing, and the player's browser has to allocate it |
 | Closure's `assume_function_wrapper`, `use_types_for_optimization` | nothing |
@@ -321,7 +326,7 @@ Thirteen kilobytes.
 ## Credits
 
 Everything — art, music, sound synthesis, engine, levels — is original to this entry. No
-libraries ship in the build; the five dev dependencies are build tooling only.
+libraries ship in the build; the six dev dependencies are build tooling only.
 
 Structure and build approach are indebted to [CLAWSTRIKE](https://github.com/remvst/clawstrike)
 by Rémi Vansteelandt, the js13kGames 2025 winner, whose source is a great read.
