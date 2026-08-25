@@ -53,9 +53,9 @@
     import { beginFrame, canvas, canvasContext, initialiseCanvas } from '../src/core/canvas.js';
     import { clearFrameInput, initialiseInput } from '../src/core/input.js';
     import { buildLevelWorld } from '../src/levels/build-level.js';
+    import { buildUnicornPose, hornTipPosition } from '../src/entities/unicorn-art.js';
     import { renderSky } from '../src/graphics/sky.js';
-    import { drawRainbowText, drawText } from '../src/graphics/typography.js';
-    import { refreshPalette, setColorRestoration } from '../src/graphics/palette.js';
+    import { RAINBOW_COLORS, refreshPalette, setColorRestoration } from '../src/graphics/palette.js';
 
     /**
      * The scene, written in the same picture format as a level.
@@ -137,14 +137,152 @@
      * that is one silhouette, one bold shape and a name. Everything else is
      * detail nobody will ever see, competing with the things they will.
      */
-    const BACKDROP = '#150f2b';
+    const BACKDROP = '#2a0b4d';
 
+    /**
+     * Everything below is poster, not game: hard-edged shapes in the game's own
+     * seven rainbow colours, built to read as one graphic at 160 pixels.
+     *
+     * No soft gradients anywhere. A glow blurred across half the frame looks
+     * like filler at full size and like dirt at thumbnail size; wedges, dots and
+     * streaks with hard edges keep their shape all the way down.
+     */
+
+    /**
+     * Everything below is illustration, not game.
+     *
+     * Cover art is allowed to show things the game never does - box art puts a
+     * castle on the front without promising you can walk into it. What it owes
+     * the player is the feeling and the character, so the unicorn is the real
+     * one, posed by the real physics, and the world around it is built to sell
+     * what the game is about: a rainbow you can stand on.
+     *
+     * Hard edges throughout. Flat bands, discs and dots keep their shape at 160
+     * pixels; a soft gradient at that size is just haze.
+     */
+
+    /** Flat sky bands, hard-edged, darkest at the top. */
+    function drawSky(context) {
+        const bands = ['#2d0a52', '#4a0f6b', '#7a1580', '#b3208a', '#e0357f', '#ff5f6d', '#ff9248'];
+        const height = CANVAS_HEIGHT / bands.length;
+        bands.forEach((color, index) => {
+            context.fillStyle = color;
+            context.fillRect(0, index * height, CANVAS_WIDTH, height + 1);
+        });
+    }
+
+    /** The big disc behind everything, with rays coming off it. */
+    function drawSun(context, x, y, radius) {
+        context.save();
+        context.fillStyle = '#ffd93d';
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.fill();
+
+        context.fillStyle = '#ffe98a';
+        context.beginPath();
+        context.arc(x, y, radius * 0.72, 0, Math.PI * 2);
+        context.fill();
+
+        // Rays, alternating on and off so the disc reads as burning.
+        context.translate(x, y);
+        context.fillStyle = 'rgba(255,217,61,0.5)';
+        for (let index = 0; index < 16; index++) {
+            const angle = (index / 16) * Math.PI * 2;
+            context.beginPath();
+            context.moveTo(0, 0);
+            context.arc(0, 0, 1600, angle, angle + 0.09);
+            context.closePath();
+            context.fill();
+        }
+        context.restore();
+    }
+
+    /** Comic halftone, densest at the top of the band. */
+    function drawHalftone(context, fromY, toY, spacing, maxRadius) {
+        context.save();
+        context.fillStyle = 'rgba(20,0,40,0.30)';
+        for (let y = fromY; y < toY; y += spacing) {
+            const fade = 1 - (y - fromY) / (toY - fromY);
+            const radius = maxRadius * fade;
+            if (radius <= 0.35) continue;
+            for (let x = -spacing; x < CANVAS_WIDTH + spacing; x += spacing) {
+                context.beginPath();
+                context.arc(x + (Math.floor(y / spacing) % 2 ? spacing / 2 : 0), y, radius, 0, Math.PI * 2);
+                context.fill();
+            }
+        }
+        context.restore();
+    }
+
+    /** A fat rainbow band, dark-edged like a sticker, arcing across the frame. */
+    function drawRainbowArc(context, x, y, radius, fromAngle, toAngle, bandWidth) {
+        const total = bandWidth * RAINBOW_COLORS.length;
+
+        context.save();
+        context.lineCap = 'butt';
+
+        context.strokeStyle = '#1b0733';
+        context.lineWidth = total + 18;
+        context.beginPath();
+        context.arc(x, y, radius, fromAngle, toAngle);
+        context.stroke();
+
+        RAINBOW_COLORS.forEach((color, index) => {
+            context.strokeStyle = color;
+            context.lineWidth = bandWidth + 0.5;
+            context.beginPath();
+            context.arc(x, y, radius + total / 2 - bandWidth * (index + 0.5), fromAngle, toAngle);
+            context.stroke();
+        });
+        context.restore();
+    }
+
+    /** Flat cloud: overlapping discs with a dark underside, no blur. */
+    function drawCloud(context, x, y, scale) {
+        const puffs = [[-46, 6, 26], [-16, -10, 34], [18, -2, 29], [46, 10, 22]];
+        context.save();
+        context.translate(x, y);
+        context.scale(scale, scale);
+
+        context.fillStyle = '#2a0b4d';
+        puffs.forEach(([px, py, r]) => {
+            context.beginPath();
+            context.arc(px, py + 7, r, 0, Math.PI * 2);
+            context.fill();
+        });
+
+        context.fillStyle = '#ffe9fb';
+        puffs.forEach(([px, py, r]) => {
+            context.beginPath();
+            context.arc(px, py, r, 0, Math.PI * 2);
+            context.fill();
+        });
+        context.restore();
+    }
+
+    /** Four-point sparkles, the cheap trick that makes anything feel magic. */
+    function drawSparkle(context, x, y, size, color) {
+        context.save();
+        context.translate(x, y);
+        context.fillStyle = color;
+        context.beginPath();
+        context.moveTo(0, -size);
+        context.quadraticCurveTo(size * 0.18, -size * 0.18, size, 0);
+        context.quadraticCurveTo(size * 0.18, size * 0.18, 0, size);
+        context.quadraticCurveTo(-size * 0.18, size * 0.18, -size, 0);
+        context.quadraticCurveTo(-size * 0.18, -size * 0.18, 0, -size);
+        context.fill();
+        context.restore();
+    }
+
+    /** Sends a key to the game exactly as a keyboard would. */
     function press(code, type) {
         dispatchEvent(new KeyboardEvent(type, { code }));
     }
 
     function render() {
-        // Full colour: the cover is the meadow already saved, not the Gloom.
+        // Full colour: this is the meadow already saved, not the Gloom.
         setColorRestoration(1);
         refreshPalette();
 
@@ -161,37 +299,107 @@
 
         scene.world.camera.snapTo(scene.unicorn.x + CAMERA_OFFSET_X, scene.unicorn.y + CAMERA_OFFSET_Y);
 
-        // Strip the scene back to the unicorn alone.
-        //
-        // The poured ribbon was in here for a long time and kept losing: the
-        // paint head outruns the unicorn within a few frames, so by any frame
-        // where the arc is long enough to read, it has fallen far below and the
-        // two no longer look connected. A thumbnail has room for one subject.
-        // The rainbow is still here - it is the mane, the tail and the name.
+        // Everything but the unicorn goes: the world on this cover is drawn
+        // below, not taken from a level.
         for (const entity of scene.world.entities.slice()) {
             if (entity !== scene.unicorn) scene.world.removeEntity(entity);
         }
 
-        beginFrame();
-        canvasContext.fillStyle = BACKDROP;
-        canvasContext.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-        scene.world.render();
-
         for (const code of HELD) press(code, 'keyup');
         for (const key of SEQUENCE) press(key.code, 'keyup');
 
-        // The lettering is the game's own, so the cover and the title screen are
-        // unmistakably the same piece of work.
-        // Sized to sit inside the centre square, because that is all the js13k
-        // thumbnail will keep. Anything wider is only there for the wide crop.
-        // Title along the bottom, the way a poster carries it.
-        drawRainbowText('PRISMHOOF', CANVAS_WIDTH / 2, 596, { typeSize: 92, typeWeight: 900, typeSpacing: 10 });
-        drawText('ONE VERB. FOUR USES.', CANVAS_WIDTH / 2, 656, {
-            typeSize: 22, typeWeight: 800, typeSpacing: 6, inkColor: '#fff',
-        });
+        // The soft glow is switched off before anything is drawn; a hard burst
+        // takes its place once the unicorn is down.
+        const pose = buildUnicornPose(scene.unicorn);
+        const tip = hornTipPosition(scene.unicorn, pose);
+        const camera = scene.world.camera;
+        const tipX = (tip.x - camera.x) * camera.zoom + CANVAS_WIDTH / 2;
+        const tipY = (tip.y - camera.y) * camera.zoom + CANVAS_HEIGHT / 2;
+        // The pose is built during the update and cached, so clearing the glow
+        // on the unicorn alone changes nothing - it has to be cleared on the
+        // pose the renderer will actually read.
+        scene.unicorn.hornGlow = 0;
+        if (scene.unicorn.pose) scene.unicorn.pose.hornGlow = 0;
+
+        const context = canvasContext;
+        beginFrame();
+
+        drawSky(context);
+        drawSun(context, 640, 306, 208);
+        drawHalftone(context, 0, 340, 16, 4.4);
+
+        drawCloud(context, 322, 148, 1.35);
+        drawCloud(context, 988, 236, 1.05);
+        drawCloud(context, 214, 336, 0.85);
+
+        // The arc the whole game is about, big enough to be the composition.
+        drawRainbowArc(context, 640, 1090, 566, Math.PI * 1.17, Math.PI * 1.83, 15);
+
+        drawSparkle(context, 905, 126, 26, '#fff6b0');
+        drawSparkle(context, 402, 94, 17, '#ffffff');
+        drawSparkle(context, 1044, 372, 20, '#ffd93d');
+        drawSparkle(context, 302, 470, 14, '#ffffff');
+
+        // A sticker outline: the same unicorn drawn black in a ring around
+        // itself, which is what lifts a white character off a bright sky.
+        // `brightness(0)` keeps the silhouette and throws the colour away, so
+        // the outline can never drift from the art it is outlining.
+        context.save();
+        context.filter = 'brightness(0)';
+        const RING = 15;
+        for (let index = 0; index < 14; index++) {
+            const angle = (index / 14) * Math.PI * 2;
+            context.save();
+            context.translate(Math.cos(angle) * RING, Math.sin(angle) * RING);
+            scene.world.render();
+            context.restore();
+        }
+        context.restore();
+
+        scene.world.render();
+        drawHornBurst(context, tipX, tipY);
 
         document.getElementById('status').textContent =
-            `${canvas.width}x${canvas.height} — kept: ${scene.world.entities.map((e) => e.categories.join('/')).join(', ') || 'nothing'}`;
+            `${canvas.width}x${canvas.height} — square crop is the middle ${canvas.height}`;
+    }
+
+    /**
+     * A hard-edged burst where the horn's glow would be.
+     *
+     * The game draws that glow as a soft radial gradient, which is right in
+     * motion and wrong here twice over: blurred light reads as haze at 160
+     * pixels, and the silhouette pass turns it into a black cloud the size of
+     * the unicorn's head. Spokes and a disc keep their shape at any size.
+     */
+    function drawHornBurst(context, x, y) {
+        context.save();
+        context.translate(x, y);
+
+        context.fillStyle = '#ffd93d';
+        for (let index = 0; index < 12; index++) {
+            const angle = (index / 12) * Math.PI * 2;
+            const length = index % 2 ? 46 : 88;
+            context.save();
+            context.rotate(angle);
+            context.beginPath();
+            context.moveTo(0, -9);
+            context.lineTo(length, 0);
+            context.lineTo(0, 9);
+            context.closePath();
+            context.fill();
+            context.restore();
+        }
+
+        context.fillStyle = '#fff6b0';
+        context.beginPath();
+        context.arc(0, 0, 26, 0, Math.PI * 2);
+        context.fill();
+
+        context.fillStyle = '#fff';
+        context.beginPath();
+        context.arc(0, 0, 13, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
     }
 
     function placeGuide() {
@@ -223,17 +431,34 @@
      * blank the moment anything changes the window, which is exactly what a
      * headless screenshot does when it applies a device scale factor.
      */
+    /**
+     * Draws once, and keeps a copy.
+     *
+     * The game re-sizes its backing store on every resize and assigning
+     * `canvas.width` wipes it, so the picture has to be put back. Re-rendering
+     * to do that is far too expensive - a full pass is fifteen draws of the
+     * character for the sticker outline alone - and doing it synchronously on
+     * resize livelocks the page badly enough that a headless capture times out
+     * with no screenshot at all. So the resize handler just blits the copy.
+     */
+    const snapshot = document.createElement('canvas');
+
     function paint() {
-        // The letterbox sizing follows the window; the cover wants the whole canvas.
-        canvas.style.width = CANVAS_WIDTH + 'px';
-        canvas.style.height = CANVAS_HEIGHT + 'px';
         render();
+        snapshot.width = canvas.width;
+        snapshot.height = canvas.height;
+        snapshot.getContext('2d').drawImage(canvas, 0, 0);
         placeGuide();
     }
 
-    addEventListener('resize', () => requestAnimationFrame(paint));
+    addEventListener('resize', () => {
+        if (!snapshot.width) return;
+        canvasContext.setTransform(1, 0, 0, 1, 0, 0);
+        canvasContext.drawImage(snapshot, 0, 0, canvas.width, canvas.height);
+        placeGuide();
+    });
+
     paint();
-    requestAnimationFrame(paint);
 
     document.getElementById('again').onclick = paint;
     document.getElementById('guides').onchange = (event) => {

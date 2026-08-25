@@ -101,29 +101,33 @@ make all         # build + zip
 
 ## The cover
 
-`tools/cover.html` renders the cover art out of the game. The unicorn, the rainbow, the sky,
-the clouds and the lettering are the same code the game runs, driven by the same keyboard
-input and captured on a chosen frame — the rainbow in it is a real ribbon, poured by the real
-physics, not a curve drawn to look like one.
+`tools/cover.html` draws it. Serve the project root and open `/tools/cover.html` — the page
+imports from `../src/`, which a `file://` page may not do.
 
-Serve the project root and open `/tools/cover.html` (the page imports from `../src/`, which a
-`file://` page may not do). `#steps=22&zoom=6.1` picks the captured frame and the framing, and
-the guide checkbox draws the square js13kGames cuts its 160x160 thumbnail from.
+It is a poster, and almost none of it is in the game. Cover art is allowed that: box art puts
+a castle on the front without promising you can walk into it. What it owes the player is the
+feeling and the character, so the unicorn is the real one — the game's vector art, posed
+mid-leap by the game's own physics — and the world around it is built to sell the one idea
+the game is about: a rainbow you can stand on.
 
-It is a poster, not a screenshot, and that was a correction. The first version was the game
-photographed — a wide landscape with a small unicorn in it, which is pretty at full size and
-mush at 160 pixels. The entries that win the listing are posters: one subject, filling the
-frame, three or four flat colours, a silhouette that survives being shrunk. So the sky, the
-clouds and the terrain are stripped out, the camera is pushed to eight times what the game
-ever uses, and what is left is the character, the glow at the horn, and the name.
+Everything else is illustration written for this page. Flat sky bands, a sun disc with rays,
+comic halftone, a fat rainbow arc, cloud discs, sparkles, and a burst where the horn fires.
 
-The poured ribbon was in the composition for a long time and kept losing. The paint head
-outruns the unicorn within a few frames, so on any frame where the arc is long enough to read
-it has already fallen far below and the two stop looking connected. A thumbnail has room for
-one subject. The rainbow is still there — it is the mane, the tail and the lettering.
+Three rules it is built to:
 
-Output lives in `docs/`: `cover.png` (1024 square), `cover-wide.png` (1920x1080) and
-`cover-thumb160.png`, which is what the listing will actually show.
+- **Hard edges, no gradients.** Flat bands, discs and dots hold their shape when the listing
+  shrinks the image to a 160x160 thumbnail. Soft light at that size is just haze — the game's
+  own soft horn glow had to be switched off and replaced with a hard burst for exactly that
+  reason.
+- **A sticker outline.** The unicorn is drawn black in a ring around itself before it is drawn
+  properly, which is what lifts a white character off a bright sky. The outline comes from the
+  same art through a `brightness(0)` filter, so it can never drift from the thing it outlines.
+- **No text.** The listing prints the name beside the thumbnail already, and a title inside the
+  image is 160 pixels of space that could have been picture.
+
+`#steps=22&zoom=6.1` in the URL picks the frame and the framing. Output: `docs/cover.png`
+(1024 square, the one to upload), `cover-wide.png` (1920x1080) and `cover-thumb160.png`,
+which is what the listing will actually show.
 
 ## The director's cut
 
