@@ -25,14 +25,14 @@ const LOOP_STEPS = STEPS_PER_BAR * 8;
  * somewhere to go and does not wear through in thirty seconds.
  */
 const CHORDS = [
-    { root: 50, intervals: [0, 4, 7] },  // D
-    { root: 45, intervals: [0, 4, 7] },  // A
-    { root: 47, intervals: [0, 3, 7] },  // B minor
-    { root: 43, intervals: [0, 4, 7] },  // G
-    { root: 47, intervals: [0, 3, 7] },  // B minor
-    { root: 45, intervals: [0, 3, 7] },  // A minor
-    { root: 43, intervals: [0, 4, 7] },  // G
-    { root: 45, intervals: [0, 4, 7] },  // A
+    { chordRoot: 50, intervals: [0, 4, 7] },  // D
+    { chordRoot: 45, intervals: [0, 4, 7] },  // A
+    { chordRoot: 47, intervals: [0, 3, 7] },  // B minor
+    { chordRoot: 43, intervals: [0, 4, 7] },  // G
+    { chordRoot: 47, intervals: [0, 3, 7] },  // B minor
+    { chordRoot: 45, intervals: [0, 3, 7] },  // A minor
+    { chordRoot: 43, intervals: [0, 4, 7] },  // G
+    { chordRoot: 45, intervals: [0, 4, 7] },  // A
 ];
 
 /**
@@ -125,7 +125,7 @@ function scheduleStep(step, startTime) {
     // Pad: the whole chord, once a bar, breathing underneath everything.
     if (stepInBar === 0) {
         for (const interval of chord.intervals) {
-            playVoice(chord.root + 12 + interval, startTime, SECONDS_PER_STEP * 15, 'triangle', 0.075, 0.4, 900);
+            playVoice(chord.chordRoot + 12 + interval, startTime, SECONDS_PER_STEP * 15, 'triangle', 0.075, 0.4, 900);
         }
     }
 
@@ -144,7 +144,7 @@ function scheduleStep(step, startTime) {
     if (KICK_STEPS.includes(stepInBar)) playKick(startTime);
 
     if (BASS_STEPS.includes(stepInBar)) {
-        playVoice(chord.root - 12, startTime, SECONDS_PER_STEP * 2.6, 'sawtooth', 0.1, 0.01, 420);
+        playVoice(chord.chordRoot - 12, startTime, SECONDS_PER_STEP * 2.6, 'sawtooth', 0.1, 0.01, 420);
     }
 
     // Arpeggio: chord tones climbing through two octaves on every other step.
@@ -152,7 +152,7 @@ function scheduleStep(step, startTime) {
         const toneIndex = (step / 2) % (chord.intervals.length * 2);
         const octave = toneIndex >= chord.intervals.length ? 12 : 0;
         const interval = chord.intervals[toneIndex % chord.intervals.length];
-        playVoice(chord.root + 24 + octave + interval, startTime, SECONDS_PER_STEP * 1.6, 'square', 0.032, 0.005, 3200);
+        playVoice(chord.chordRoot + 24 + octave + interval, startTime, SECONDS_PER_STEP * 1.6, 'square', 0.032, 0.005, 3200);
     }
 }
 

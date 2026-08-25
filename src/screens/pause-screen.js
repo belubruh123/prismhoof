@@ -21,7 +21,7 @@ export class PauseScreen extends MenuScreen {
 
         this.menuItems = [
             { menuLabel: 'RESUME', onSelect: () => popScreen() },
-            { menuLabel: 'RETRY LEVEL', onSelect: () => this.retry() },
+            { menuLabel: 'RETRY LEVEL', onSelect: () => this.retryLevel() },
             { menuLabel: 'HOW TO PLAY', onSelect: () => pushScreen(new HowToPlayScreen()) },
             { menuLabel: 'SETTINGS', onSelect: () => pushScreen(new SettingsScreen()) },
             { menuLabel: 'ABANDON RUN', onSelect: () => resetScreens(new TitleScreen()) },
@@ -32,7 +32,7 @@ export class PauseScreen extends MenuScreen {
         popScreen();
     }
 
-    retry() {
+    retryLevel() {
         this.gameplayScreen.deaths++;
         this.gameplayScreen.loadLevel();
         popScreen();
@@ -46,7 +46,7 @@ export class PauseScreen extends MenuScreen {
         drawRainbowText('PAUSED', CANVAS_WIDTH / 2, 190, { typeSize: 44, typeWeight: 900, typeSpacing: 7 });
 
         drawText(
-            `${this.gameplayScreen.level.levelTitle}   -   ${formatTime(this.gameplayScreen.runSeconds)}`,
+            `${this.gameplayScreen.activeLevel.levelTitle}   -   ${formatTime(this.gameplayScreen.runSeconds)}`,
             CANVAS_WIDTH / 2, 240,
             { typeSize: 16, typeWeight: 700, typeSpacing: 2, inkColor: TEXT_DIM },
         );

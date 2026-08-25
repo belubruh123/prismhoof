@@ -14,8 +14,22 @@ import { RAINBOW_COLORS } from '../graphics/palette.js';
 import { Entity } from './entity.js';
 
 export const PARTICLE_STAR = 1;
+/** An expanding hoop, for shockwaves. Stroked rather than filled. */
+export const PARTICLE_RING = 2;
 
 const POOL_CAPACITY = 280;
+
+/** Everything a spawn may leave out. `typeSize` and `inkColor` never are. */
+const PARTICLE_DEFAULTS = {
+    velocityAcross: 0,
+    velocityDown: 0,
+    gravity: 0,
+    drag: 1.4,
+    endSize: 0,
+    lifetime: 0.5,
+    particleShape: 0,
+    spin: 0,
+};
 
 export class ParticleField extends Entity {
     categories = ['particles'];
@@ -32,40 +46,21 @@ export class ParticleField extends Entity {
     }
 
     /**
-     * Claims the next pool slot and fills it in.
-     * Anything omitted falls back to the defaults below.
+     * Claims the next pool slot and fills it in. Anything omitted falls back to
+     * the defaults above.
+     *
+     * One Object.assign rather than a named parameter for every field and an
+     * assignment to go with it: those were sixty-odd tokens saying nothing the
+     * defaults object does not already say. It is safe under the release build's
+     * property mangling because both the defaults and every call site are object
+     * literals, so the mangler renames the keys and the reads together.
      */
-    spawn({
-        x,
-        y,
-        velocityAcross = 0,
-        velocityDown = 0,
-        gravity = 0,
-        drag = 1.4,
-        typeSize,
-        endSize = 0,
-        inkColor,
-        lifetime = 0.5,
-        shape = 0,
-        spin = 0,
-    }) {
-        const particle = this.particles[this.nextSlot];
+    spawn(options) {
+        const particle = Object.assign(this.particles[this.nextSlot], PARTICLE_DEFAULTS, options);
         this.nextSlot = (this.nextSlot + 1) % POOL_CAPACITY;
 
-        particle.x = x;
-        particle.y = y;
-        particle.velocityAcross = velocityAcross;
-        particle.velocityDown = velocityDown;
-        particle.gravity = gravity;
-        particle.drag = drag;
-        particle.typeSize = typeSize;
-        particle.endSize = endSize;
-        particle.inkColor = inkColor;
         particle.age = 0;
-        particle.lifetime = lifetime;
-        particle.shape = shape;
         particle.rotation = randomBetween(0, TAU);
-        particle.spin = spin;
 
         return particle;
     }
@@ -102,11 +97,22 @@ export class ParticleField extends Entity {
             context.globalAlpha = progress > 0.7 ? (1 - progress) / 0.3 : 1;
             context.fillStyle = particle.inkColor;
 
-            if (particle.shape) {
+            if (particle.particleShape === PARTICLE_STAR) {
                 drawFourPointStar(context, particle.x, particle.y, typeSize, particle.rotation);
+                continue;
+            }
+
+            // One circle serves both remaining shapes: filled it is a mote,
+            // stroked it is a shockwave. Thinning as it grows is what makes the
+            // ring read as travelling outwards rather than as inflating.
+            context.beginPath();
+            context.arc(particle.x, particle.y, typeSize, 0, TAU);
+
+            if (particle.particleShape) {
+                context.strokeStyle = particle.inkColor;
+                context.lineWidth = (1 - progress) * 6;
+                context.stroke();
             } else {
-                context.beginPath();
-                context.arc(particle.x, particle.y, typeSize, 0, TAU);
                 context.fill();
             }
         }
@@ -146,7 +152,7 @@ export function burstRainbow(particles, x, y, count, {
             endSize: 0,
             lifetime: randomBetween(lifetime * 0.6, lifetime),
             inkColor: RAINBOW_COLORS[index % RAINBOW_COLORS.length],
-            shape: PARTICLE_STAR,
+            particleShape: PARTICLE_STAR,
             spin: randomBetween(-9, 9),
         });
     }

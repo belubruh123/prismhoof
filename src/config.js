@@ -173,26 +173,71 @@ export const RIBBON_MAX_LANDABLE_SLOPE = 2.2;
 // Camera
 // ---------------------------------------------------------------------------
 
-export const CAMERA_FOLLOW_STIFFNESS = 7.5;
 /**
- * The vertical follow is deliberately slower than the horizontal one. Height
- * changes in a platformer are sudden and constant, and matching them exactly is
- * what makes a camera feel welded to the player rather than watching them.
+ * How far in the view sits.
+ *
+ * The chamber no longer has to fit on the screen, so this is chosen for the
+ * character rather than for the level: at 1.4 the unicorn is about sixty pixels
+ * tall, which is enough for the gait, the blink and the mane to read, and the
+ * view still shows fourteen tiles ahead - two more than the longest rainbow can
+ * reach. Any tighter and you would be pouring bridges into ground you cannot
+ * see yet, which is the one thing a chasing camera must never do to a game
+ * whose whole verb is building ahead of yourself.
  */
-export const CAMERA_VERTICAL_STIFFNESS = 4;
+export const CAMERA_ZOOM = 1.4;
+
 /**
- * How far the unicorn may leave the camera's resting height before it starts
- * dragging the view along. A jump fits inside this, so the horizon holds still.
+ * The window the unicorn is free to move around inside before the view starts
+ * chasing it.
+ *
+ * This is the whole difference between a camera that watches and one that is
+ * bolted on. Inside the window the pull is exactly zero, so hops, turns and
+ * landings move the unicorn across the frame and leave the world still; only
+ * sustained travel drags the view along behind it.
  */
-export const CAMERA_VERTICAL_SLACK = 115;
-/** The unicorn sits this far below the middle of the frame, leaving room to paint. */
+export const CAMERA_WINDOW_HALF_WIDTH = 120;
+export const CAMERA_WINDOW_HALF_HEIGHT = 84;
+
+/**
+ * The chase is a spring rather than a smooth follow, and it is deliberately
+ * left under-damped.
+ *
+ * Critical damping - the fastest arrival with no overshoot - would be a drag of
+ * 2*sqrt(CAMERA_PULL), about 15.7. Running at 10 puts the damping ratio near
+ * 0.64, so the view arrives roughly eight percent past its mark and rocks back
+ * over about three quarters of a second. That leftover is the wobble: it is
+ * what a camera held in a hand does and what a lerp never does.
+ */
+export const CAMERA_PULL = 62;
+export const CAMERA_DRAG = 10;
+/**
+ * The vertical spring is softened rather than damped harder. Height changes in
+ * a platformer are sudden and constant, and a view that matches them exactly is
+ * the most obvious tell there is that nobody tuned the camera.
+ */
+export const CAMERA_VERTICAL_SOFTNESS = 0.62;
+
+/**
+ * The second stage: the picture is hung off the camera on its own soft spring
+ * rather than nailed to it.
+ *
+ * This is where the wobble actually comes from, and it has to be a separate
+ * stage. The chase above is only ever pulled from outside its window, so it
+ * switches off the instant it arrives and can never swing past its mark, whatever
+ * its damping - a dead zone and an overshoot are mutually exclusive on one spring.
+ *
+ * Hung here at a damping ratio near 0.43, so every start, stop and landing leans
+ * the whole frame into the movement by about forty pixels and rocks it back over
+ * roughly half a second. It is the difference between a view that is carried and
+ * one that is bolted on, and it is small enough to feel rather than to notice.
+ */
+export const CAMERA_LAG_PULL = 110;
+export const CAMERA_LAG_DRAG = 9;
+
+/** The window sits this far below the middle of the frame, leaving room to paint. */
 export const CAMERA_HEIGHT_OFFSET = 34;
-/**
- * A framed level is pushed this far up the screen rather than sitting dead
- * centre, which leaves the lava under it in shot and keeps the HUD off the
- * playfield.
- */
-export const CAMERA_FRAME_BIAS = 20;
+/** How far past the level floor the view may drop, so the lava stays in shot. */
+export const CAMERA_FLOOR_REACH = 60;
 /** How far the camera leads the unicorn at full gallop. */
 export const CAMERA_LOOK_AHEAD = 110;
 export const CAMERA_LOOK_AHEAD_STIFFNESS = 2.4;

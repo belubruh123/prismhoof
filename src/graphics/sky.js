@@ -13,7 +13,7 @@
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { createSeededRandom, sin, TAU } from '../core/math.js';
-import { getColorRestoration, palette } from './palette.js';
+import { palette } from './palette.js';
 
 /** Fixed cloud layout, generated once so the sky is stable across frames. */
 const CLOUDS = (() => {
@@ -21,35 +21,26 @@ const CLOUDS = (() => {
     return Array.from({ length: 14 }, () => ({
         x: random() * 2600,
         y: random() * 260 + 40,
-        scale: random() * 0.7 + 0.5,
+        cloudScale: random() * 0.7 + 0.5,
         driftSpeed: random() * 7 + 3,
         parallax: random() * 0.1 + 0.04,
         puffSeed: random() * 100,
     }));
 })();
 
-let skyGradient = null;
-let skyGradientRestoration = -1;
-
-function getSkyGradient(context) {
-    const restoration = getColorRestoration();
-    // The gradient only needs rebuilding when the restoration level actually moved.
-    if (skyGradient && Math.abs(restoration - skyGradientRestoration) < 0.004) return skyGradient;
-
-    skyGradientRestoration = restoration;
-    skyGradient = context.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-    skyGradient.addColorStop(0, palette.skyTop);
-    skyGradient.addColorStop(0.55, palette.skyMiddle);
-    skyGradient.addColorStop(1, palette.skyBottom);
-    return skyGradient;
-}
-
 export function renderSky(camera, timeSeconds) {
     const context = canvasContext;
 
-    context.fillStyle = getSkyGradient(context);
-    context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    // Rebuilt every frame rather than cached. The palette shifts continuously as
+    // the Gloom is purified, so a cached gradient needs an invalidation test,
+    // and that test costs more bytes than three addColorStop calls cost frames.
+    const gradient = context.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+    gradient.addColorStop(0, palette.skyTop);
+    gradient.addColorStop(0.55, palette.skyMiddle);
+    gradient.addColorStop(1, palette.skyBottom);
 
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     renderClouds(context, camera, timeSeconds);
 }
@@ -65,7 +56,7 @@ function renderClouds(context, camera, timeSeconds) {
 
         if (screenX < -280 || screenX > CANVAS_WIDTH + 280) continue;
 
-        drawCloud(context, screenX, screenY, cloud.scale, cloud.puffSeed);
+        drawCloud(context, screenX, screenY, cloud.cloudScale, cloud.puffSeed);
     }
 }
 

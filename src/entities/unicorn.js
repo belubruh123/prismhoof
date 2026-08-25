@@ -145,8 +145,8 @@ export class Unicorn extends Entity {
     }
 
     resetHair() {
-        for (const strand of this.maneStrands) strand.reset(this.maneBaseAngle, this.facing);
-        for (const strand of this.tailStrands) strand.reset(this.tailBaseAngle, this.facing);
+        for (const strand of this.maneStrands) strand.resetToRest(this.maneBaseAngle, this.facing);
+        for (const strand of this.tailStrands) strand.resetToRest(this.tailBaseAngle, this.facing);
     }
 
     /** Hair trails backwards, so the rest direction mirrors with `facing`. */
@@ -533,7 +533,7 @@ export class Unicorn extends Entity {
             endSize: 0,
             lifetime: randomBetween(0.3, 0.7),
             inkColor: RAINBOW_COLORS[this.hornColorIndex],
-            shape: PARTICLE_STAR,
+            particleShape: PARTICLE_STAR,
             spin: randomBetween(-7, 7),
         });
     }

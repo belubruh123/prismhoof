@@ -19,7 +19,6 @@ import { renderSky } from '../graphics/sky.js';
 import { drawRainbowText, drawText } from '../graphics/typography.js';
 import { TEXT_BRIGHT, TEXT_DIM, drawMenu, formatTime } from '../graphics/ui.js';
 import { buildLevelWorld } from '../levels/build-level.js';
-import { LEVELS } from '../levels/levels.js';
 import { startMusic } from '../audio/music.js';
 import { GameplayScreen } from './gameplay-screen.js';
 import { StoryScreen } from './story-screen.js';
@@ -30,9 +29,9 @@ import { MenuScreen, pushScreen, resetScreens } from './screen.js';
 /**
  * A quiet strip of restored meadow for the unicorn to idle on.
  *
- * Deliberately wider than the screen: the camera clamps itself inside the level
- * bounds and centres any level narrower than the view, so a scene this size is
- * what allows the unicorn to be placed off to one side, clear of the menu.
+ * Deliberately wider than the screen. The camera clamps itself inside the level
+ * bounds, so a scene this size is what lets the view sit off to one side of the
+ * unicorn and push it clear of the menu.
  */
 const TITLE_SCENE = {
     levelTitle: 'TITLE',
@@ -44,8 +43,13 @@ const TITLE_SCENE = {
     ],
 };
 
-/** How far left of the unicorn the camera sits, pushing it to the right. */
-const TITLE_CAMERA_OFFSET = 330;
+/**
+ * How far left of, and above, the unicorn the camera sits. Left pushes it out
+ * to the right of the menu; up keeps the lava under the meadow out of shot,
+ * where the copyright line goes.
+ */
+const TITLE_CAMERA_OFFSET = 185;
+const TITLE_CAMERA_LIFT = 120;
 
 export class TitleScreen extends MenuScreen {
     /** `completedRun` is `{ seconds, deaths, isBest }` after a finished run. */
@@ -55,7 +59,10 @@ export class TitleScreen extends MenuScreen {
 
         this.scene = buildLevelWorld(TITLE_SCENE);
         this.scene.world.camera.followTarget = null;
-        this.scene.world.camera.snapTo(this.scene.unicorn.x - TITLE_CAMERA_OFFSET, this.scene.unicorn.y - 60);
+        this.scene.world.camera.snapTo(
+            this.scene.unicorn.x - TITLE_CAMERA_OFFSET,
+            this.scene.unicorn.y - TITLE_CAMERA_LIFT,
+        );
 
         this.menuItems = [
             {
@@ -134,7 +141,7 @@ export class TitleScreen extends MenuScreen {
     renderResult(y) {
         const { seconds, deaths, isBest } = this.completedRun;
 
-        drawText(`THE MEADOW IS BRIGHT AGAIN - ALL ${LEVELS.length} LEVELS CLEARED`, CANVAS_WIDTH / 2, y, {
+        drawText('THE MEADOW IS BRIGHT AGAIN', CANVAS_WIDTH / 2, y, {
             typeSize: 18,
             typeWeight: 700,
             typeSpacing: 3,

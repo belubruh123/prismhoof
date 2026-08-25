@@ -45,10 +45,34 @@ meadow rather than a tutorial screen, and after that the geometry does the talki
 
 Each level is a **chamber cut out of the world** rather than a strip of ground under an
 open sky — beyond its edges is solid rock, below it is the lava, and the sky you can see is
-the sky inside the chamber. The whole chamber is scaled to fit the screen, so the view
-never moves: you can read the shape of a course and plan a route before you commit to it.
-That makes the unicorn small and costs some of the character animation up close, which is a
-trade made on purpose.
+the sky inside the chamber.
+
+## The camera
+
+The view chases the unicorn around the chamber. Two things stop it feeling like a bracket
+bolted to the character's back.
+
+**It only pulls once you leave a window in the middle of the frame.** Inside that window
+the pull is exactly zero, so hops, turns and landings move the unicorn *across the picture*
+and leave the world still; only real travel drags the view along behind you.
+
+**And what is drawn is not the camera's position.** It is a second, softer spring hung off
+it, deliberately left under-damped — about two thirds of the damping it would take to stop
+it overshooting. The frame leans into every start and stop by around forty pixels and rocks
+back over half a second. That is the wobble a camera held in a hand has.
+
+That second stage has to be a separate spring, and finding out why was the whole problem.
+A spring that is only ever pulled from *outside* a window switches off the instant it
+arrives, so it can never swing past its own mark — at any damping value whatsoever. A dead
+zone and an overshoot cannot live on the same spring. The first version had no wobble at
+all and no amount of tuning was ever going to produce one.
+
+The zoom is chosen for the character rather than for the level: the unicorn is about sixty
+pixels tall, so the gait, the blink, the mane and the horn all read. The view still shows
+fourteen tiles ahead — two more than the longest rainbow can reach, which is the constraint
+that sets it. Any tighter and you would be pouring bridges into ground you cannot see yet,
+which is the one thing a chasing camera must never do to a game whose entire verb is
+building ahead of yourself.
 
 The story is told in a short opening rather than buried in a menu, and the colour floods
 back into the sky as the last line lands — the screen states the premise and demonstrates
@@ -60,6 +84,50 @@ has never finished a level.
 > permanently above the hooves, so a unicorn could never land on an arc it painted during
 > the same jump and the core loop would never close. Testing the first version is what
 > surfaced this.
+
+## Making a hit land
+
+Purifying a Gloom is the thing the whole game is built around, so four things happen on the
+same frame:
+
+- the world **stops dead** for four frames, while the camera keeps shaking over the frozen
+  picture
+- a hard white **shockwave** snaps outwards, thinning as it grows
+- the colour the Gloom was hoarding **sprays out of it** in every direction
+- the view **kicks**
+
+The freeze is what makes the other three read as an impact. Without it the burst is only
+confetti arriving in a world that never noticed, which is the difference between a kill
+that lands and a kill that merely happens. It is assigned rather than added, so clearing
+three in one stroke freezes once instead of stuttering.
+
+## The gate
+
+The level exit is the one thing in a chamber you are trying to reach, so it is built to be
+read from across the level and out of the corner of an eye: two posts on the floor carrying
+an arch, a hole punched through the world between them, and a keystone over the top.
+
+Shut, the whole thing is dead violet stone and the doorway is black — it reads as masonry,
+not as a target. When the last Gloom goes, the hole fills **from the floor upwards** with
+rainbow, on a rippling edge, and the keystone lights at the same moment. A rising line says
+*go* at any size, which a door swinging open does not.
+
+The masonry is the colour of the unicorn's own horn, which ties the gate to the thing that
+opens it. Neither of its two colours comes from the palette: like the lava, the gate has to
+read identically in a fully drained chamber and a fully restored one.
+
+## Everything the game says
+
+There is not one HTML element anywhere in PRISMHOOF. The page is a `<canvas>` tag and
+nothing else, so the whole interface letterboxes, scales and screenshots with the game and
+looks identical in every browser.
+
+The rule the HUD follows is that **a number is a fact, and a fact is not the same as
+knowing what to do**. So the Gloom count carries its instruction underneath it, the clock
+carries the price of dying beside it, and the air dash — the one piece of the unicorn's
+state that is invisible on the character itself — gets a word rather than an icon nobody
+can decode. Clearing a level reports what that level cost, because a single running clock
+is unreadable without splits: it is the only way to know which chamber is worth practising.
 
 ## Controls
 
@@ -186,7 +254,7 @@ are installed they still get a turn afterwards, but they find nothing Zopfli mis
 
 ## Squeezing it into 13kB
 
-The game is 13,288 of 13,312 bytes, so nearly every technique below was worth the trouble.
+The game is 13,260 of 13,312 bytes, so nearly every technique below was worth the trouble.
 The numbers are all measured on the real zip, one change at a time — none are estimates, and
 several ideas that sounded certain turned out to be worth nothing at all.
 
@@ -213,8 +281,10 @@ several ideas that sounded certain turned out to be worth nothing at all.
 | Property mangling (terser, `builtins: false`) | ~1,830 packed, about 8% of the zip |
 | **Closure ADVANCED, run before terser** | **243** |
 | **Run-length encoding the level pictures** | **78** |
-| **Property names chosen to dodge the mangler's shield list** | **74** |
+| **Property names chosen to dodge the mangler's shield list** | **74 + 60** |
+| **Golfing the stylesheet, which Roadroller never sees** | **64** |
 | Dropping the wrapper element, unquoted HTML attributes | 40 |
+| Dropping the text drop-shadow, and one darkest ink instead of three | ~55 |
 | Roadroller `allowFreeVars` (its `--dirty` mode) | ~35 |
 | Best-of-N packing | ~16 |
 | Roadroller `--opt=2` | 10 |
@@ -236,6 +306,18 @@ is long enough to catch a dozen of ours by accident. `size`, `color`, `weight`, 
 `velocityX` is shielded because IE's `MSGestureEvent` had one. They were shipping in full,
 hundreds of times over.
 
+This is worth auditing rather than guessing at, and the audit is mechanical: pull every
+property name `src/` defines, pull every name that survived into `build/packme.js`, and
+intersect. A second pass found nine more — `zoom` and `columnCount` and `direction` are CSS
+properties, `commit` is on `IDBTransaction`, `remove` and `reset` and `text` and `type` and
+`scale` all belong to something — and renaming them was worth another 60 bytes.
+
+**The stylesheet is the one part of the entry Roadroller never sees.** It is inlined raw and
+only deflated, so a character there costs several times what a character of JavaScript does.
+Rewriting `top/left/transform` centring as `inset: 0; margin: auto` and dropping the
+redundant declarations took it from 193 characters to 91, and bought 64 bytes — four times
+what the same effort is worth anywhere else in the source.
+
 ### What was measured and thrown away
 
 Worth as much as the list above, because each of these looks like it should work:
@@ -252,10 +334,25 @@ Worth as much as the list above, because each of these looks like it should work
 | Closure's `assume_function_wrapper`, `use_types_for_optimization` | nothing |
 | Packing the CSS as a second Roadroller input | impossible — this version takes exactly one |
 | Disabling terser's toplevel mangling | inside the noise |
+| Roadroller `numAbbreviations` sweep, 0 to 128 | nothing — the default 64 is already the floor |
+| Sharing one path or one code branch between two draw calls | **0 bytes** for 201 minified bytes removed |
 
-The first line is the important one. **Roadroller's context mixing already compresses
-repeated call patterns almost perfectly**, so collapsing duplicate code buys nothing; only
-*distinct* content moves the number. The same logic explains the level data: run-length
+The first line is the important one, and this round produced the cleanest demonstration of
+it yet. **Roadroller's context mixing already compresses repeated call patterns almost
+perfectly**, so collapsing duplicate code buys nothing; only *distinct* content moves the
+number. Three consecutive measurements, all on the same payload:
+
+| Removed | Minified | Zip |
+| --- | --- | --- |
+| Structural dedup — one shared path, one merged branch, dead exports | −181 | **−28** |
+| More of the same — dead parameters, a spare curve, a spare fill | −201 | **0** |
+| One duplicated hex string, and one ten-line branch that drew a shut eye | −113 | **−39** |
+
+The third change removed the *least* code and saved the most, because a hex string that
+appears nowhere else in the payload is information the compressor has never seen. The
+practical rule that falls out: before cutting anything for size, ask whether the payload
+already contains something very like it. If it does, cutting it is free of charge to the
+compressor and free of benefit to you. The same logic explains the level data: run-length
 encoding removed 4,302 characters, 61% of it, and bought 78 bytes, because the compressor was
 already predicting those runs. Once a payload is at its entropy floor, re-encoding it — as
 rectangles, dictionaries, bit-packing — cannot help. The information has to actually go away.
@@ -266,7 +363,10 @@ Roadroller's optimiser searches randomly, so identical source packs to results a
 apart. A 20-byte experiment is invisible against that. `--repeat=N` packs N times and keeps
 the smallest, which is both a real saving and the instrument that makes everything else
 measurable. Release builds run the thorough search (`--opt=2`) twice and take a few minutes:
-the margin is 24 bytes, and the quick search lands over the limit about as often as under it.
+the margin is 52 bytes, and a single quick search swings by more than that on its own. The
+last round is a fair warning about trusting one pack: the same source measured 13,321 bytes
+at `--opt=1 --repeat=1` and 13,311 at `--opt=2 --repeat=4`, and a change that genuinely
+removed distinct content measured four bytes *worse* on a single quick pack.
 
 The build writes `build/packme.js`, the exact bytes handed to Roadroller, so the same input
 can be dropped into [the Roadroller page](https://lifthrasiir.github.io/roadroller/) and
@@ -293,7 +393,7 @@ Both bends are also checked rather than trusted:
 - `make verify` applies the full release squeeze with `DEBUG` still on, so a fully mangled,
   Closure-compiled, Roadroller-packed build can be driven by the debug hooks. A debug build
   cannot catch a mangling bug and a release build cannot be driven, so neither alone is
-  enough. It has caught three real ones.
+  enough. It has caught four real ones.
 
 Property mangling only stays safe because the source never reaches a property through a
 string built at runtime — the palette assigns its colours by name, the level character table
@@ -330,7 +430,7 @@ Yes. I build this with [Claude Code](https://claude.com/claude-code). I make the
 direction and gameplay calls, and Claude Code writes and refactors the code against them.
 
 **Is it really under 13kB?**
-Yes — **13,288 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
+Yes — **13,260 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
 `make zip` on every build. No network requests, no external assets,
 nothing streamed in at runtime.
 

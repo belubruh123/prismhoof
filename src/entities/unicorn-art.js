@@ -13,8 +13,8 @@
 
 import { UNICORN_HALF_HEIGHT } from '../config.js';
 import { canvasContext, wrap } from '../core/canvas.js';
-import { abs, acos, atan2, clamp, cos, hypot, lerp, PI, sin, TAU } from '../core/math.js';
-import { HORN_COLOR, RAINBOW_COLORS, UNICORN_COAT, UNICORN_EYE, UNICORN_HOOF, UNICORN_SHADE } from '../graphics/palette.js';
+import { abs, acos, atan2, clamp, cos, hypot, lerp, max, PI, sin, TAU } from '../core/math.js';
+import { HORN_COLOR, RAINBOW_COLORS, UNICORN_COAT, UNICORN_INK, UNICORN_SHADE } from '../graphics/palette.js';
 import { drawRadialGlow } from '../graphics/textures.js';
 
 // --- proportions -----------------------------------------------------------
@@ -149,7 +149,7 @@ function drawBody(context, pose) {
  */
 function drawLegPair(context, pose, isFarSide) {
     const inkColor = isFarSide ? UNICORN_SHADE : UNICORN_COAT;
-    const hoofColor = isFarSide ? UNICORN_SHADE : UNICORN_HOOF;
+    const hoofColor = isFarSide ? UNICORN_SHADE : UNICORN_INK;
     const thicknessScale = isFarSide ? 0.86 : 1;
     const legs = isFarSide ? [pose.legs[1], pose.legs[3]] : [pose.legs[0], pose.legs[2]];
 
@@ -245,28 +245,21 @@ function drawEar(context, pose) {
 function drawEye(context, pose) {
     const openness = pose.eyeOpenness;
 
-    context.fillStyle = UNICORN_EYE;
+    // The half-height is floored rather than allowed to reach zero, so a blink
+    // closes to a dark slit instead of to nothing. That is what a shut eye looks
+    // like anyway, and it saves drawing one as a separate lash line.
+    context.fillStyle = UNICORN_INK;
+    context.beginPath();
+    context.ellipse(3.6, -0.8, 2.1, max(0.4, 2.6 * openness), 0, 0, TAU);
+    context.fill();
 
-    if (openness < 0.2) {
-        // A closed eye is a short lash line, not a squashed circle.
-        context.lineWidth = 1.6;
-        context.strokeStyle = UNICORN_EYE;
-        context.lineCap = 'round';
+    // The catchlight goes out with the eye.
+    if (openness > 0.2) {
+        context.fillStyle = '#fff';
         context.beginPath();
-        context.moveTo(1.5, -0.5);
-        context.lineTo(5.5, -0.5);
-        context.stroke();
-        return;
+        context.arc(4.4, -1.8 * openness, 0.85, 0, TAU);
+        context.fill();
     }
-
-    context.beginPath();
-    context.ellipse(3.6, -0.8, 2.1, 2.6 * openness, 0, 0, TAU);
-    context.fill();
-
-    context.fillStyle = '#fff';
-    context.beginPath();
-    context.arc(4.4, -1.8 * openness, 0.85, 0, TAU);
-    context.fill();
 }
 
 function drawHorn(context, unicorn, pose) {

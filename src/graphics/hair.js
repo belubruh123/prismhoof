@@ -36,7 +36,7 @@ export class HairStrand {
     }
 
     /** Snaps every segment to its rest pose. Used when a level starts or restarts. */
-    reset(baseAngle, facing) {
+    resetToRest(baseAngle, facing) {
         for (let index = 0; index < this.segmentAngles.length; index++) {
             this.segmentAngles[index] = baseAngle + this.curl * facing * (index + 1);
         }

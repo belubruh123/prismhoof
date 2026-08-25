@@ -43,7 +43,7 @@ export class Entity {
     /** Only ever called in debug builds. */
     renderDebug() {}
 
-    remove() {
+    removeFromWorld() {
         this.world.removeEntity(this);
     }
 }

@@ -5,8 +5,7 @@
  * keeps both the level format and the gameplay screen ignorant of the cast.
  */
 
-import { CANVAS_HEIGHT, CANVAS_WIDTH, TILE_SIZE } from '../config.js';
-import { min } from '../core/math.js';
+import { TILE_SIZE } from '../config.js';
 import { GloomMurk, GloomWisp } from '../entities/gloom.js';
 import { LevelSign, RainbowGate } from '../entities/objectives.js';
 import { Terrain } from '../entities/terrain.js';
@@ -39,25 +38,24 @@ export function buildLevelWorld(definition) {
     let signIndex = 0;
 
     for (const spawn of level.spawns) {
-        if (spawn.type === 'player') {
+        if (spawn.spawnType === 'player') {
             // Nudged up so the unicorn starts standing on its tile, not inside it.
             unicorn = world.addEntity(new Unicorn(spawn.x, spawn.y - TILE_SIZE / 2 + 1));
             continue;
         }
-        if (spawn.type === 'sign') {
+        if (spawn.spawnType === 'sign') {
             world.addEntity(new LevelSign(spawn.x, spawn.y, level.signs[signIndex++]));
             continue;
         }
-        SPAWN_BUILDERS.get(spawn.type)?.(world, spawn);
+        SPAWN_BUILDERS.get(spawn.spawnType)?.(world, spawn);
     }
 
-    // The whole chamber is meant to sit on the screen at once, so the view is
-    // scaled to fit the level instead of following the unicorn around inside it.
-    // That makes the unicorn small and costs some of the character animation up
-    // close; what it buys is worth more - you can read the shape of a course and
-    // plan a route through it before you move, and the walls around it are
-    // visible, so a level looks like a place rather than a strip of ground.
-    world.camera.zoom = min(1, CANVAS_WIDTH / terrain.widthInPixels, CANVAS_HEIGHT / terrain.heightInPixels);
+    // The view chases the unicorn around the chamber at a fixed zoom rather
+    // than shrinking the chamber to fit the screen. That gives up seeing the
+    // whole course at a glance and buys back the character: at this range the
+    // gait, the blink, the mane and the horn all read, and the world moves when
+    // you move, which is what makes a place feel like somewhere you are in
+    // rather than a diagram you are being shown.
     world.camera.followTarget = unicorn;
     world.camera.snapTo(unicorn.x, unicorn.y);
 

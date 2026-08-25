@@ -29,6 +29,15 @@ export const TILE_PLATFORM = 2;
 const COLLISION_INSET = 0.5;
 
 const GRASS_CAP_HEIGHT = 9;
+/**
+ * Lit soil under the turf, before the rock below it.
+ *
+ * The camera sits close enough now that the ground fills a third of the screen,
+ * and one flat fill across all of it reads as a hole in the artwork. Two tones
+ * with a hard line between them is the cheapest thing that reads as depth -
+ * the same trick the clouds use for their undersides.
+ */
+const SOIL_DEPTH = 22;
 
 /**
  * The lake the chamber is suspended over. Its surface sits a little below the
@@ -51,14 +60,14 @@ export class Terrain extends Entity {
     constructor(tileGrid) {
         super();
         this.tileGrid = tileGrid;
-        this.rowCount = tileGrid.length;
-        this.columnCount = tileGrid[0].length;
+        this.rowTotal = tileGrid.length;
+        this.columnTotal = tileGrid[0].length;
 
         this.buildRenderGeometry();
     }
 
-    get widthInPixels() { return this.columnCount * TILE_SIZE; }
-    get heightInPixels() { return this.rowCount * TILE_SIZE; }
+    get widthInPixels() { return this.columnTotal * TILE_SIZE; }
+    get heightInPixels() { return this.rowTotal * TILE_SIZE; }
 
     // --- grid queries -------------------------------------------------------
 
@@ -69,8 +78,8 @@ export class Terrain extends Entity {
         // The left and right edges of a level are walls, so nothing can walk out
         // of the world sideways. Above and below stay open: the sky is where the
         // rainbows go, and falling out of the bottom is meant to be fatal.
-        if (column < 0 || column >= this.columnCount) return TILE_SOLID;
-        if (row < 0 || row >= this.rowCount) return TILE_EMPTY;
+        if (column < 0 || column >= this.columnTotal) return TILE_SOLID;
+        if (row < 0 || row >= this.rowTotal) return TILE_EMPTY;
         return this.tileGrid[row][column];
     }
 
@@ -174,26 +183,26 @@ export class Terrain extends Entity {
         this.surfaceRuns = [];
         this.platformRuns = [];
 
-        for (let row = 0; row < this.rowCount; row++) {
+        for (let row = 0; row < this.rowTotal; row++) {
             const top = row * TILE_SIZE;
 
             this.collectRuns(
                 row,
                 (column) => this.tileAt(column, row) === TILE_SOLID,
-                (x, width) => this.solidPath.rect(x, top, width, TILE_SIZE),
+                (x, runWidth) => this.solidPath.rect(x, top, runWidth, TILE_SIZE),
             );
 
             // A surface is a solid tile with open sky directly above it.
             this.collectRuns(
                 row,
                 (column) => this.tileAt(column, row) === TILE_SOLID && !this.tileAt(column, row - 1),
-                (x, width) => this.surfaceRuns.push({ x, y: top, width }),
+                (x, runWidth) => this.surfaceRuns.push({ x, y: top, runWidth }),
             );
 
             this.collectRuns(
                 row,
                 (column) => this.tileAt(column, row) === TILE_PLATFORM,
-                (x, width) => this.platformRuns.push({ x, y: top, width }),
+                (x, runWidth) => this.platformRuns.push({ x, y: top, runWidth }),
             );
         }
 
@@ -204,8 +213,8 @@ export class Terrain extends Entity {
     collectRuns(row, matches, emit) {
         let runStart = -1;
 
-        for (let column = 0; column <= this.columnCount; column++) {
-            if (column < this.columnCount && matches(column)) {
+        for (let column = 0; column <= this.columnTotal; column++) {
+            if (column < this.columnTotal && matches(column)) {
                 if (runStart < 0) runStart = column;
             } else if (runStart >= 0) {
                 emit(runStart * TILE_SIZE, (column - runStart) * TILE_SIZE);
@@ -229,7 +238,7 @@ export class Terrain extends Entity {
             run.backBlades = new Path2D();
             run.frontBlades = new Path2D();
 
-            for (let x = run.x + 3; x < run.x + run.width; x += 6) {
+            for (let x = run.x + 3; x < run.x + run.runWidth; x += 6) {
                 const isBack = random() < 0.5;
                 addBladeToPath(
                     isBack ? run.backBlades : run.frontBlades,
@@ -251,7 +260,11 @@ export class Terrain extends Entity {
         this.renderSurroundingRock(context);
         this.renderLava(context);
 
-        context.fillStyle = palette.terrainBody;
+        // The rock a chamber is cut out of, inside its floor and outside its
+        // walls alike, is all one dark mass. Only the lit soil and the turf on
+        // top of it - added by renderSurfaces below - say which parts of it you
+        // are allowed to stand on.
+        context.fillStyle = palette.terrainShade;
         context.fill(this.solidPath);
 
         this.renderSurfaces(context);
@@ -271,12 +284,15 @@ export class Terrain extends Entity {
         const height = this.heightInPixels;
         const reach = 2200;
 
-        // Nothing below: the camera never lifts its bottom edge off the floor
-        // of the level, so the only rock ever in shot is at the sides and above.
+        // A slab with the chamber punched out of it, rather than three separate
+        // rectangles fitted around it - one path, one fill, and no arithmetic to
+        // get wrong at the corners. It stops at the level's floor, because below
+        // that is lava and the camera never looks past it.
         context.fillStyle = palette.terrainShade;
-        context.fillRect(-reach, -reach, reach, height + reach);
-        context.fillRect(width, -reach, reach, height + reach);
-        context.fillRect(0, -reach, width, reach);
+        context.beginPath();
+        context.rect(-reach, -reach, width + reach * 2, height + reach);
+        context.rect(0, 0, width, height);
+        context.fill('evenodd');
 
         context.strokeStyle = palette.terrainGrassLight;
         context.lineWidth = 5;
@@ -316,11 +332,14 @@ export class Terrain extends Entity {
         for (const run of this.surfaceRuns) {
             context.fillStyle = palette.terrainGrass;
             context.fill(run.backBlades);
-            context.fillRect(run.x, run.y, run.width, GRASS_CAP_HEIGHT);
+            context.fillRect(run.x, run.y, run.runWidth, GRASS_CAP_HEIGHT);
+
+            context.fillStyle = palette.terrainBody;
+            context.fillRect(run.x, run.y + GRASS_CAP_HEIGHT, run.runWidth, SOIL_DEPTH);
 
             context.fillStyle = palette.terrainGrassLight;
             context.fill(run.frontBlades);
-            context.fillRect(run.x, run.y, run.width, 2.5);
+            context.fillRect(run.x, run.y, run.runWidth, 2.5);
         }
     }
 
@@ -330,12 +349,12 @@ export class Terrain extends Entity {
 
             context.fillStyle = palette.terrainBody;
             context.beginPath();
-            context.roundRect(run.x, run.y, run.width, height, height / 2);
+            context.roundRect(run.x, run.y, run.runWidth, height, height / 2);
             context.fill();
 
             context.fillStyle = palette.terrainGrassLight;
             context.beginPath();
-            context.roundRect(run.x, run.y, run.width, 3, 1.5);
+            context.roundRect(run.x, run.y, run.runWidth, 3, 1.5);
             context.fill();
         }
     }
@@ -345,6 +364,5 @@ export class Terrain extends Entity {
 function addBladeToPath(path, x, baseY, height, bend, halfWidth) {
     path.moveTo(x - halfWidth, baseY);
     path.quadraticCurveTo(x + bend * 0.35, baseY - height * 0.65, x + bend, baseY - height);
-    path.quadraticCurveTo(x + bend * 0.15, baseY - height * 0.5, x + halfWidth, baseY);
-    path.closePath();
+    path.lineTo(x + halfWidth, baseY);
 }

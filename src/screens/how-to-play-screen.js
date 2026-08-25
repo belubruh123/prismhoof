@@ -56,7 +56,9 @@ const CONTROLS = [
 const TIPS = [
     ['YOUR RAINBOWS FADE - KEEP MOVING', TEXT_BRIGHT, 800],
     ['Wisps drink any rainbow they reach.', TEXT_DIM, 500],
-    ['One hit is fatal, and the clock never stops.', TEXT_DIM, 500],
+    // Word for word what the screen says when you die, and in the same case, so
+    // the second copy is nearly free to pack as well as being the same lesson.
+    ['ONE HIT IS FATAL - THE CLOCK NEVER STOPS', TEXT_DIM, 500],
 ];
 
 export class HowToPlayScreen extends Screen {

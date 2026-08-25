@@ -122,7 +122,7 @@ export class RainbowRibbon extends Entity {
         if (this.isBeingPainted) return;
 
         this.settledSeconds += elapsedSeconds;
-        if (this.settledSeconds >= RIBBON_LIFE_SECONDS + RIBBON_FADE_SECONDS) this.remove();
+        if (this.settledSeconds >= RIBBON_LIFE_SECONDS + RIBBON_FADE_SECONDS) this.removeFromWorld();
     }
 
     // --- collision ----------------------------------------------------------

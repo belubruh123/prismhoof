@@ -9,13 +9,13 @@
  */
 
 import { canvasContext } from '../core/canvas.js';
-import { RAINBOW_COLORS } from './palette.js';
+import { INK_BLACK, RAINBOW_COLORS } from './palette.js';
 
 const FONT_STACK = `'Century Gothic',Futura,'Trebuchet MS',system-ui,sans-serif`;
 
 /** Thickness of the border drawn around every string, as a fraction of its size. */
 const OUTLINE_RATIO = 0.17;
-const OUTLINE_COLOR = '#22103f';
+const OUTLINE_COLOR = INK_BLACK;
 
 /** Applies a font to the context and returns the measured width of `text`. */
 function applyFont(text, typeSize, typeWeight, typeSpacing) {
@@ -41,33 +41,26 @@ export function drawText(text, x, y, {
     typeWeight = 700,
     typeSpacing = 0,
     alignment = 'center',
-    baseline = 'middle',
     inkColor = '#fff',
     alpha = 1,
-    outline = OUTLINE_RATIO,
 } = {}) {
     const context = canvasContext;
     context.save();
 
     const width = applyFont(text, typeSize, typeWeight, typeSpacing);
     context.textAlign = alignment;
-    context.textBaseline = baseline;
+    context.textBaseline = 'middle';
     context.globalAlpha = alpha;
 
-    // A dark border and a soft drop shadow on every string. Between them the
-    // text holds up over a bright sky, a rainbow and a wall of grass without
-    // needing a panel behind it, which is what lets the signs stand in the
-    // level itself rather than in a box at the top of the screen.
-    if (outline) {
-        context.lineWidth = typeSize * outline;
-        context.lineJoin = 'round';
-        context.strokeStyle = OUTLINE_COLOR;
-        context.shadowColor = 'rgba(14,5,32,0.45)';
-        context.shadowBlur = typeSize * 0.3;
-        context.shadowOffsetY = typeSize * 0.1;
-        context.strokeText(text, x, y);
-        context.shadowColor = 'transparent';
-    }
+    // A dark border around every string. It is what lets the signs stand in the
+    // level itself rather than in a box at the top of the screen: the words hold
+    // up over a bright sky, a rainbow and a wall of grass with no panel behind
+    // them. There used to be a soft drop shadow under it as well; the border was
+    // doing nearly all of the work and the shadow cost more than it earned.
+    context.lineWidth = typeSize * OUTLINE_RATIO;
+    context.lineJoin = 'round';
+    context.strokeStyle = OUTLINE_COLOR;
+    context.strokeText(text, x, y);
 
     context.fillStyle = inkColor;
     context.fillText(text, x, y);

@@ -56,15 +56,3 @@ export function wrap(drawCallback) {
     drawCallback();
     canvasContext.restore();
 }
-
-/**
- * Renders once into an offscreen canvas and hands it back for reuse.
- * Used for pre-rendered textures and pre-baked terrain, so per-frame work stays low.
- */
-export function createOffscreenCanvas(width, height, renderCallback) {
-    const offscreenCanvas = document.createElement('canvas');
-    offscreenCanvas.width = width;
-    offscreenCanvas.height = height;
-    renderCallback(offscreenCanvas.getContext('2d'), offscreenCanvas);
-    return offscreenCanvas;
-}

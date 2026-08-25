@@ -9,12 +9,13 @@
 import { canvasContext } from '../core/canvas.js';
 import { clamp, sin } from '../core/math.js';
 import { drawFourPointStar } from '../engine/particles.js';
-import { RAINBOW_COLORS } from './palette.js';
+import { INK_BLACK, RAINBOW_COLORS, UNICORN_COAT } from './palette.js';
 import { drawText } from './typography.js';
 
 const PANEL_BACKGROUND = 'rgba(18,10,34,0.82)';
 export const TEXT_DIM = 'rgba(233,220,255,0.62)';
-export const TEXT_BRIGHT = '#fdf7ff';
+/** The same white the unicorn's coat is, so the interface and the character agree. */
+export const TEXT_BRIGHT = UNICORN_COAT;
 
 /** A rounded panel with a rainbow bar along its top edge. */
 export function drawPanel(x, y, width, height, radius = 18) {
@@ -37,11 +38,10 @@ export function drawPanel(x, y, width, height, radius = 18) {
 /** A dark wash over the whole screen, for pause and menu overlays. */
 export function drawScreenDim(alpha = 0.55) {
     const context = canvasContext;
-    context.save();
     context.globalAlpha = alpha;
-    context.fillStyle = '#0d0620';
+    context.fillStyle = INK_BLACK;
     context.fillRect(0, 0, 4000, 4000);
-    context.restore();
+    context.globalAlpha = 1;
 }
 
 /**
@@ -87,11 +87,13 @@ function drawSelectionMarker(centreX, y, width, time) {
 
     context.save();
 
-    context.fillStyle = `rgba(255,255,255,${0.1 * pulse})`;
+    context.globalAlpha = 0.1 * pulse;
+    context.fillStyle = TEXT_BRIGHT;
     context.beginPath();
     context.roundRect(centreX - width / 2, y - 21, width, 42, 21);
     context.fill();
 
+    context.globalAlpha = 1;
     context.fillStyle = RAINBOW_COLORS[(time * 6 | 0) % RAINBOW_COLORS.length];
     drawFourPointStar(context, centreX - width / 2 - 6, y, 6 * pulse, time * 2);
 
@@ -106,12 +108,16 @@ export function drawPaintMeter(x, y, width, height, fillRatio, flashAmount = 0) 
     const context = canvasContext;
     const radius = height / 2;
 
+    // The trough outline is wanted three times - as the well, as the flash and
+    // as the rim - so it is built once as a path instead of being described from
+    // the same six numbers each time.
+    const trough = new Path2D();
+    trough.roundRect(x, y, width, height, radius);
+
     context.save();
 
-    context.fillStyle = 'rgba(12,6,26,0.66)';
-    context.beginPath();
-    context.roundRect(x, y, width, height, radius);
-    context.fill();
+    context.fillStyle = PANEL_BACKGROUND;
+    context.fill(trough);
 
     context.save();
     context.beginPath();
@@ -128,23 +134,23 @@ export function drawPaintMeter(x, y, width, height, fillRatio, flashAmount = 0) 
     if (flashAmount > 0) {
         context.globalAlpha = flashAmount * 0.7;
         context.fillStyle = '#fff';
-        context.beginPath();
-        context.roundRect(x, y, width, height, radius);
-        context.fill();
+        context.fill(trough);
         context.globalAlpha = 1;
     }
 
-    context.strokeStyle = 'rgba(255,255,255,0.28)';
+    context.strokeStyle = TEXT_DIM;
     context.lineWidth = 1.5;
-    context.beginPath();
-    context.roundRect(x, y, width, height, radius);
-    context.stroke();
+    context.stroke(trough);
 
     context.restore();
 }
 
-/** Formats seconds as m:ss.hh, the usual speedrun clock. */
+/**
+ * Formats seconds as m:ss.hh, the usual speedrun clock.
+ *
+ * Adding a hundred and cutting the leading '1' back off is the zero-padding: it
+ * costs a character and saves reaching for padStart.
+ */
 export function formatTime(totalSeconds) {
-    const seconds = (totalSeconds % 60).toFixed(2);
-    return `${totalSeconds / 60 | 0}:${seconds.padStart(5, '0')}`;
+    return `${totalSeconds / 60 | 0}:${(100 + totalSeconds % 60).toFixed(2).slice(1)}`;
 }

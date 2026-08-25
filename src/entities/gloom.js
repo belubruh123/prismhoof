@@ -15,7 +15,7 @@ import { canvasContext } from '../core/canvas.js';
 import { cos, damp, hypot, max, min, randomBetween, sin, TAU } from '../core/math.js';
 import { boxesOverlap } from '../core/rect.js';
 import { Entity } from '../engine/entity.js';
-import { burstRainbow } from '../engine/particles.js';
+import { burstRainbow, PARTICLE_RING } from '../engine/particles.js';
 import { palette } from '../graphics/palette.js';
 
 const MURK_SPEED = 78;
@@ -32,6 +32,15 @@ const PURIFY_AURA = 20;
 
 /** Segments in a blob outline. Enough to read as organic, few enough to be cheap. */
 const BLOB_STEPS = 18;
+
+/**
+ * How long the world holds still when a Gloom goes.
+ *
+ * Four frames at sixty. Long enough to feel like the game flinched, short
+ * enough that clearing three in one stroke does not read as a stutter - which
+ * is why it is assigned rather than added, so a chain of kills freezes once.
+ */
+const HIT_STOP_SECONDS = 0.06;
 
 class Gloom extends Entity {
     categories = ['gloom'];
@@ -51,7 +60,7 @@ class Gloom extends Entity {
 
     updateStep(elapsedSeconds) {
         super.updateStep(elapsedSeconds);
-        this.move(elapsedSeconds);
+        this.moveStep(elapsedSeconds);
 
         if (this.checkPurification()) return;
         this.checkUnicorn();
@@ -70,13 +79,43 @@ class Gloom extends Entity {
         return false;
     }
 
+    /**
+     * The moment the whole game is built around, so it is allowed to be loud.
+     *
+     * Four things land on the same frame: the world stops dead, a hard white
+     * shockwave snaps outwards, the colour the Gloom was hoarding sprays out of
+     * it, and the view kicks. The freeze is what makes the other three read as
+     * an impact - without it the burst is only confetti arriving in a world
+     * that never noticed, which is the difference between a kill that lands and
+     * a kill that merely happens.
+     */
     purify() {
-        this.remove();
+        this.removeFromWorld();
         playPurifySound();
-        this.world.camera.shake(6, 0.22);
 
-        // The Gloom bursts into the colour it was holding onto.
-        burstRainbow(this.world.firstOfCategory('particles'), this.x, this.y, 18, { speed: 320 });
+        this.world.hitStopSeconds = HIT_STOP_SECONDS;
+        this.world.camera.shake(13, 0.34);
+
+        const particles = this.world.firstOfCategory('particles');
+
+        // The shockwave: one hard white hoop, gone in a quarter of a second.
+        particles.spawn({
+            x: this.x,
+            y: this.y,
+            typeSize: 6,
+            endSize: 70,
+            inkColor: '#fff',
+            lifetime: 0.26,
+            particleShape: PARTICLE_RING,
+        });
+
+        // Then the colour it was holding onto, thrown in every direction.
+        burstRainbow(particles, this.x, this.y, 26, {
+            speed: 430,
+            gravity: 320,
+            maxSize: 9,
+            lifetime: 1,
+        });
     }
 
     checkUnicorn() {
@@ -121,24 +160,24 @@ export class GloomMurk extends Gloom {
     halfWidth = 16;
     halfHeight = 19;
 
-    direction = -1;
+    patrolDirection = -1;
 
-    move(elapsedSeconds) {
+    moveStep(elapsedSeconds) {
         const terrain = this.world.firstOfCategory('terrain');
 
         this.velocityDown = min(this.velocityDown + GRAVITY * elapsedSeconds, MAX_FALL_SPEED);
         terrain.moveWithCollision(
             this,
-            this.direction * MURK_SPEED * elapsedSeconds,
+            this.patrolDirection * MURK_SPEED * elapsedSeconds,
             this.velocityDown * elapsedSeconds,
         );
 
         if (this.wallDirection) {
-            this.direction = -this.direction;
+            this.patrolDirection = -this.patrolDirection;
         } else if (this.isOnGround) {
             // Look just past the leading edge; turn around if there is nothing there.
-            const aheadX = this.x + this.direction * (this.halfWidth + 4);
-            if (!terrain.hasGroundBelow(aheadX, this.y + this.halfHeight)) this.direction = -this.direction;
+            const aheadX = this.x + this.patrolDirection * (this.halfWidth + 4);
+            if (!terrain.hasGroundBelow(aheadX, this.y + this.halfHeight)) this.patrolDirection = -this.patrolDirection;
         }
     }
 
@@ -158,7 +197,7 @@ export class GloomMurk extends Gloom {
         this.traceBlob(context, this.halfWidth, this.halfHeight, 0.07, 3);
         context.fill();
 
-        context.translate(this.direction * 3, -3);
+        context.translate(this.patrolDirection * 3, -3);
         this.drawEyes(context, 5.5, 3.2);
     }
 }
@@ -171,7 +210,7 @@ export class GloomWisp extends Gloom {
     halfWidth = 13;
     halfHeight = 14;
 
-    move(elapsedSeconds) {
+    moveStep(elapsedSeconds) {
         const unicorn = this.world.firstOfCategory('unicorn');
 
         if (unicorn) {

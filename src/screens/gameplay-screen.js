@@ -53,9 +53,13 @@ export class GameplayScreen extends Screen {
     }
 
     loadLevel() {
-        this.level = buildLevelWorld(LEVELS[this.levelIndex]);
-        this.world = this.level.world;
-        this.unicorn = this.level.unicorn;
+        // The run clock never resets, so a level's own time is the difference
+        // between where it started and where the clock is now.
+        this.levelStartSeconds = this.runSeconds;
+
+        this.activeLevel = buildLevelWorld(LEVELS[this.levelIndex]);
+        this.world = this.activeLevel.world;
+        this.unicorn = this.activeLevel.unicorn;
 
         this.colorRestoration = 0;
         this.restartCountdown = 0;
@@ -123,7 +127,7 @@ export class GameplayScreen extends Screen {
     /** Colour returns as the Gloom is purified, eased so each kill is a bloom. */
     updateRestoration(elapsedSeconds) {
         const remaining = this.world.entitiesOfCategory('gloom').length;
-        const followTarget = this.level.gloomTotal ? 1 - remaining / this.level.gloomTotal : 1;
+        const followTarget = this.activeLevel.gloomTotal ? 1 - remaining / this.activeLevel.gloomTotal : 1;
 
         this.colorRestoration = damp(this.colorRestoration, followTarget, 3, elapsedSeconds);
         setColorRestoration(clamp(this.colorRestoration, MINIMUM_RESTORATION, 1));
@@ -149,6 +153,7 @@ export class GameplayScreen extends Screen {
         renderSky(this.world.camera, this.age);
         this.world.render();
         this.renderHud();
+        this.renderBanners();
         this.renderWipe();
     }
 
@@ -173,10 +178,22 @@ export class GameplayScreen extends Screen {
         });
     }
 
+    /**
+     * The HUD, which is every word the game says while you are playing.
+     *
+     * The rule it follows: a number on its own is a fact, and a fact is not the
+     * same as knowing what to do. So the Gloom count carries the instruction
+     * underneath it, the timer carries the price of dying next to it, and the
+     * dash - the one piece of the unicorn's state that is invisible on the
+     * character itself - gets a word rather than an icon nobody can decode.
+     *
+     * All of it is drawn on the canvas with the same typography as the rest of
+     * the game. There is not one HTML element anywhere in PRISMHOOF: the page is
+     * a single <canvas> tag, so the whole interface letterboxes, scales and
+     * screenshots with the game and looks identical in every browser.
+     */
     renderHud() {
-        const context = canvasContext;
-
-        drawText(`${this.levelIndex + 1}/${LEVELS.length}  ${this.level.levelTitle}`, 26, 32, {
+        drawText(`${this.levelIndex + 1}/${LEVELS.length}  ${this.activeLevel.levelTitle}`, 26, 32, {
             typeSize: 19,
             typeWeight: 800,
             typeSpacing: 2,
@@ -192,6 +209,18 @@ export class GameplayScreen extends Screen {
             inkColor: TEXT_BRIGHT,
         });
 
+        // Deaths cost time rather than lives, so the tally belongs beside the
+        // clock it is charged to. Hidden on a clean run, which is the reward.
+        if (this.deaths) {
+            drawText(`DEATHS  ${this.deaths}`, CANVAS_WIDTH - 26, 58, {
+                typeSize: 14,
+                typeWeight: 700,
+                typeSpacing: 2.5,
+                alignment: 'right',
+                inkColor: TEXT_DIM,
+            });
+        }
+
         // Paint meter, bottom left, where a glance costs the least attention.
         drawPaintMeter(26, CANVAS_HEIGHT - 42, 210, 15, this.unicorn.paintEnergy, this.meterFlash);
         drawText('PAINT', 26, CANVAS_HEIGHT - 58, {
@@ -202,20 +231,42 @@ export class GameplayScreen extends Screen {
             inkColor: TEXT_DIM,
         });
 
-        const remaining = this.world.entitiesOfCategory('gloom').length;
-        if (this.level.gloomTotal) {
-            drawText(remaining ? `GLOOM  ${remaining}` : 'GATE OPEN', CANVAS_WIDTH - 26, CANVAS_HEIGHT - 44, {
-                typeSize: 22,
-                typeWeight: 800,
-                typeSpacing: 2.5,
-                alignment: 'right',
-                inkColor: remaining ? TEXT_BRIGHT : RAINBOW_COLORS[(this.age * 6 | 0) % 7],
-            });
-        }
+        const hasDash = this.unicorn.hasDash;
+        drawText(hasDash ? 'DASH READY' : 'DASH SPENT - ONCE PER JUMP', 26, CANVAS_HEIGHT - 20, {
+            typeSize: 13,
+            typeWeight: 700,
+            typeSpacing: 2.5,
+            alignment: 'left',
+            inkColor: hasDash ? TEXT_BRIGHT : TEXT_DIM,
+        });
 
-        this.renderBanners(context);
+        const remaining = this.world.entitiesOfCategory('gloom').length;
+
+        drawText(remaining ? `GLOOM  ${remaining}` : 'GATE OPEN', CANVAS_WIDTH - 26, CANVAS_HEIGHT - 44, {
+            typeSize: 22,
+            typeWeight: 800,
+            typeSpacing: 2.5,
+            alignment: 'right',
+            inkColor: remaining ? TEXT_BRIGHT : RAINBOW_COLORS[(this.age * 6 | 0) % 7],
+        });
+
+        // The line that turns the count into an instruction.
+        drawText(remaining ? 'POUR A RAINBOW THROUGH THEM' : 'RUN THROUGH IT', CANVAS_WIDTH - 26, CANVAS_HEIGHT - 20, {
+            typeSize: 13,
+            typeWeight: 700,
+            typeSpacing: 2.5,
+            alignment: 'right',
+            inkColor: TEXT_DIM,
+        });
     }
 
+    /**
+     * The two things the game says between levels, and both of them are numbers
+     * the player can act on. Clearing tells you what that level cost, because a
+     * single running clock is unreadable without splits - it is the only way to
+     * know which chamber is the one to practise. Dying restates the rule that
+     * makes the whole game a run rather than a series of attempts.
+     */
     renderBanners() {
         if (this.clearedCountdown > 0) {
             drawRainbowText('LEVEL CLEARED', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30, {
@@ -223,15 +274,33 @@ export class GameplayScreen extends Screen {
                 typeWeight: 900,
                 typeSpacing: 5,
             });
+
+            drawText(`${this.activeLevel.levelTitle}  ${formatTime(this.runSeconds - this.levelStartSeconds)}`,
+                CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 32, {
+                    typeSize: 24,
+                    typeWeight: 800,
+                    typeSpacing: 3,
+                    inkColor: TEXT_BRIGHT,
+                });
         }
 
         if (this.restartCountdown > 0) {
+            const fadeIn = clamp((RESTART_DELAY_SECONDS - this.restartCountdown) * 3, 0, 1);
+
             drawText(this.unicorn.deathCause, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20, {
                 typeSize: 40,
                 typeWeight: 900,
                 typeSpacing: 4,
                 inkColor: TEXT_BRIGHT,
-                alpha: clamp((RESTART_DELAY_SECONDS - this.restartCountdown) * 3, 0, 1),
+                alpha: fadeIn,
+            });
+
+            drawText('THE CLOCK NEVER STOPS', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 26, {
+                typeSize: 18,
+                typeWeight: 700,
+                typeSpacing: 3,
+                inkColor: TEXT_DIM,
+                alpha: fadeIn,
             });
         }
     }

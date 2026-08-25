@@ -118,7 +118,7 @@ function countRibbonFrames() {
 function applyDebugZoom(zoom) {
     if (!zoom) return;
     const world = topScreen()?.world || topScreen()?.scene?.world;
-    if (world) world.camera.zoom = zoom;
+    if (world) world.camera.viewZoom = zoom;
 }
 
 /** A single line of state, top-left, over everything. */

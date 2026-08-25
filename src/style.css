@@ -1,24 +1,23 @@
-/* Desktop only, so there is no touch-action or mobile viewport handling here. */
-html,
+/*
+ * Desktop only, so there is no touch-action or mobile viewport handling here.
+ *
+ * This file is the one part of the entry Roadroller never sees - it is inlined
+ * raw and only deflated - so a character here costs several times what a
+ * character of JavaScript does, and it is written accordingly.
+ *
+ * The canvas keeps a fixed 16:9 aspect ratio and is letterboxed into the window.
+ * `inset: 0` with `margin: auto` centres it on both axes, which is what the
+ * older top/left/transform trio did in twice the characters. The resize code
+ * sets its CSS size in display pixels; auto margins take the leftover space.
+ */
 body {
     margin: 0;
-    width: 100%;
-    height: 100%;
     overflow: hidden;
     background: #07060f;
-    user-select: none;
 }
 
-/*
- * The canvas keeps a fixed 16:9 aspect ratio and is letterboxed into the window.
- * It centres itself rather than sitting inside a wrapper: the resize code sets
- * its CSS size in display pixels, which is the only thing the wrapper was ever
- * for, and one element fewer is one element fewer to ship.
- */
 #game {
-    display: block;
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    inset: 0;
+    margin: auto;
 }

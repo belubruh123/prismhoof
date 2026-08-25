@@ -59,21 +59,24 @@ export const RAINBOW_COLORS = [
     '#c46bff',
 ];
 
+/**
+ * The darkest ink in the game, used wherever something has to read as a hole
+ * rather than as a surface: the border around every string, and the doorway
+ * inside the rainbow gate.
+ */
+export const INK_BLACK = '#160c28';
+
 /** Colours that stay constant regardless of the Gloom. */
 export const UNICORN_COAT = '#fdf7ff';
 export const UNICORN_SHADE = '#d9cbe8';
-export const UNICORN_HOOF = '#2a2040';
-export const UNICORN_EYE = '#2a2040';
+/** Hooves and eyes are the same near-black; one colour, one name. */
+export const UNICORN_INK = '#2a2040';
 export const HORN_COLOR = '#ffe9a8';
 
 /** Filled in by `refreshPalette`, read directly by every renderer. */
 export const palette = {};
 
 let colorRestoration = 0;
-
-export function getColorRestoration() {
-    return colorRestoration;
-}
 
 export function setColorRestoration(value) {
     colorRestoration = clamp(value, 0, 1);
@@ -85,12 +88,13 @@ function mixHue(from, to, amount) {
     return from + difference * amount;
 }
 
-export function hsl(hue, saturation, lightness, alpha = 1) {
-    return `hsl(${hue} ${saturation * 100}% ${lightness * 100}%${alpha < 1 ? ` / ${alpha}` : ''})`;
-}
-
-/** Applies the current restoration level to one colour definition. */
-export function restoredColor([hue, saturation, lightness, gloomResistance = 0], alpha) {
+/**
+ * Applies the current restoration level to one colour definition.
+ *
+ * Nothing here ever asked for a translucent colour, so there is no alpha: every
+ * renderer that wants one sets `globalAlpha` around its own draw instead.
+ */
+function restoredColor([hue, saturation, lightness, gloomResistance = 0]) {
     const amount = lerp(colorRestoration, 1, gloomResistance);
 
     const mixedHue = mixHue(GLOOM_HUE, hue, amount);
@@ -101,7 +105,7 @@ export function restoredColor([hue, saturation, lightness, gloomResistance = 0],
     const gloomLightness = lerp(lightness, GLOOM_LIGHTNESS, GLOOM_FLATTENING) * GLOOM_DARKENING;
     const mixedLightness = lerp(gloomLightness, lightness, amount);
 
-    return hsl(mixedHue, mixedSaturation, mixedLightness, alpha);
+    return `hsl(${mixedHue} ${mixedSaturation * 100}% ${mixedLightness * 100}%)`;
 }
 
 /** Rebuilds every palette string. Called once per frame, never per draw call. */

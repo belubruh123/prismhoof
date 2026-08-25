@@ -16,6 +16,12 @@ export class World {
 
     camera = new Camera();
 
+    /**
+     * Seconds the whole simulation is held still for. Purifying a Gloom sets
+     * it; see `updateStep` for why a freeze is worth the bytes.
+     */
+    hitStopSeconds = 0;
+
     /** Level bounds in world units, used to clamp the camera and kill anything that falls out. */
     boundsLeft = 0;
     boundsTop = 0;
@@ -56,6 +62,18 @@ export class World {
     }
 
     updateStep(elapsedSeconds) {
+        // Hit stop. For a few frames after something is purified the world does
+        // not advance at all, while the camera keeps shaking over the frozen
+        // picture. It is the oldest trick there is for making a hit land, and it
+        // is what turns the burst from confetti appearing in an indifferent
+        // world into something the world visibly felt. Nothing is skipped here,
+        // only delayed - every entity resumes on the exact frame it left off.
+        if (this.hitStopSeconds > 0) {
+            this.hitStopSeconds -= elapsedSeconds;
+            this.camera.updateStep(elapsedSeconds, this);
+            return;
+        }
+
         // A copy, because entities routinely add or remove entities while updating.
         for (const entity of this.entities.slice()) {
             if (!entity.isRemoved) entity.updateStep(elapsedSeconds);

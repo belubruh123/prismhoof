@@ -75,7 +75,7 @@ export function parseLevel(definition) {
             const spawnType = SPAWN_CHARACTERS.get(character);
             if (spawnType) {
                 spawns.push({
-                    type: spawnType,
+                    spawnType,
                     x: (column + 0.5) * TILE_SIZE,
                     y: (row + 0.5) * TILE_SIZE,
                 });

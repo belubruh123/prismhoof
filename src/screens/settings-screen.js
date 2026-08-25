@@ -45,7 +45,7 @@ export class SettingsScreen extends MenuScreen {
                 menuLabel: 'MUSIC VOLUME',
                 onAdjust: (direction) => {
                     saveData.musicVolume = stepVolume(saveData.musicVolume, direction);
-                    this.commit();
+                    this.saveAndApply();
                 },
             },
             {
@@ -57,7 +57,7 @@ export class SettingsScreen extends MenuScreen {
                 menuLabel: 'SOUND VOLUME',
                 onAdjust: (direction) => {
                     saveData.soundVolume = stepVolume(saveData.soundVolume, direction);
-                    this.commit();
+                    this.saveAndApply();
                 },
             },
             {
@@ -73,7 +73,7 @@ export class SettingsScreen extends MenuScreen {
         popScreen();
     }
 
-    commit() {
+    saveAndApply() {
         persistSaveData();
         applyVolumeSettings();
     }
@@ -81,7 +81,7 @@ export class SettingsScreen extends MenuScreen {
     /** Muting stops the scheduler outright rather than just turning the bus down. */
     toggleMusic() {
         saveData.musicEnabled = !saveData.musicEnabled;
-        this.commit();
+        this.saveAndApply();
 
         if (saveData.musicEnabled) startMusic(false);
         else if (isMusicRunning()) stopMusic();
@@ -89,12 +89,12 @@ export class SettingsScreen extends MenuScreen {
 
     toggleSound() {
         saveData.soundEnabled = !saveData.soundEnabled;
-        this.commit();
+        this.saveAndApply();
     }
 
     toggleScreenShake() {
         saveData.screenShakeEnabled = !saveData.screenShakeEnabled;
-        this.commit();
+        this.saveAndApply();
     }
 
     render() {
@@ -117,7 +117,7 @@ export class SettingsScreen extends MenuScreen {
             lineHeight: 46,
         });
 
-        drawText('LEFT / RIGHT to change - ESC to go back', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 88, {
+        drawText('LEFT / RIGHT to change', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 88, {
             typeSize: 15,
             typeWeight: 600,
             typeSpacing: 2,
