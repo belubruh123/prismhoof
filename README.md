@@ -258,7 +258,7 @@ quietly reformatted.
 
 `make zip` needs nothing installed beyond `npm install`. It compresses with **Zopfli**, which
 ships as a dev dependency, because the entry only fits at Zopfli's ratio: zlib level 9 gives
-13,290 bytes of deflate stream against Zopfli's 13,152, and the whole remaining margin is 42.
+13,290 bytes of deflate stream against Zopfli's 13,152 - a gap larger than the whole budget's remaining margin.
 This used to be an optional pass with [advzip](https://github.com/amadvance/advancecomp) if
 you happened to have it, which meant the game fit on one machine and blew the limit by 247
 bytes on another. If `advzip` or [ECT](https://github.com/fhanau/Efficient-Compression-Tool)
@@ -266,7 +266,7 @@ are installed they still get a turn afterwards, but they find nothing Zopfli mis
 
 ## Squeezing it into 13kB
 
-The game is 13,260 of 13,312 bytes, so nearly every technique below was worth the trouble.
+The game is 13,217 of 13,312 bytes, so nearly every technique below was worth the trouble.
 The numbers are all measured on the real zip, one change at a time — none are estimates, and
 several ideas that sounded certain turned out to be worth nothing at all.
 
@@ -380,7 +380,7 @@ Roadroller's optimiser searches randomly, so identical source packs to results a
 apart. A 20-byte experiment is invisible against that. `--repeat=N` packs N times and keeps
 the smallest, which is both a real saving and the instrument that makes everything else
 measurable. Release builds run the thorough search (`--opt=2`) twice and take a few minutes:
-the margin is 52 bytes, and a single quick search swings by more than that on its own. The
+the margin is 95 bytes, and a single quick search swings by more than that on its own. The
 last round is a fair warning about trusting one pack: the same source measured 13,321 bytes
 at `--opt=1 --repeat=1` and 13,311 at `--opt=2 --repeat=4`, and a change that genuinely
 removed distinct content measured four bytes *worse* on a single quick pack.
@@ -447,7 +447,7 @@ Yes. I build this with [Claude Code](https://claude.com/claude-code). I make the
 direction and gameplay calls, and Claude Code writes and refactors the code against them.
 
 **Is it really under 13kB?**
-Yes — **13,260 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
+Yes — **13,217 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
 `make zip` on every build. No network requests, no external assets,
 nothing streamed in at runtime.
 
