@@ -8,9 +8,9 @@
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
-import { clamp, sin } from '../core/math.js';
+import { PI, TAU, clamp, sin } from '../core/math.js';
 import { drawFourPointStar } from '../engine/particles.js';
-import { INK_BLACK, RAINBOW_COLORS, UNICORN_COAT } from './palette.js';
+import { HORN_COLOR, INK_BLACK, RAINBOW_COLORS, UNICORN_COAT } from './palette.js';
 import { drawText } from './typography.js';
 
 // Eight-digit hex rather than rgba(): Closure inlines both of these at every
@@ -108,6 +108,10 @@ function drawSelectionMarker(centreX, y, width, time) {
 /**
  * The paint meter: a rounded trough filled with the rainbow, left to right.
  * The fill is clipped rather than scaled so the colours stay put as it drains.
+ *
+ * The air dash uses a short one of these beside it, full or empty. The dash is a
+ * charge the ground gives back, which is the rule the paint meter already draws,
+ * so saying it the same way costs nothing and reads as the same kind of thing.
  */
 export function drawPaintMeter(x, y, width, height, fillRatio, flashAmount = 0) {
     const context = canvasContext;
@@ -170,6 +174,55 @@ export function drawRainbowWipe(amount, isClosing) {
         context.fillRect(isClosing ? 0 : CANVAS_WIDTH - width, index * bandHeight, width, bandHeight + 1);
     });
 }
+
+/**
+ * The two things the HUD counts, drawn rather than named.
+ *
+ * A Gloom sits beside the number still to purify, and when that number reaches
+ * zero the gate takes its place, lit. `GATE OPEN` was the game reading its own
+ * state out loud; a picture of the archway you are looking for says the same
+ * thing without a word, and it is the same archway that is standing in the
+ * level, so there is nothing to learn.
+ *
+ * Both badges use fixed colours rather than the palette, for the same reason the
+ * gate and the lava do: they have to read identically in a fully drained chamber
+ * and a fully restored one.
+ */
+export function drawGloomBadge(x, y) {
+    const context = canvasContext;
+
+    context.fillStyle = INK_BLACK;
+    context.strokeStyle = TEXT_DIM;
+    context.lineWidth = 2.5;
+    context.beginPath();
+    context.arc(x, y, 10, 0, TAU);
+    context.fill();
+    context.stroke();
+
+    context.fillStyle = RAINBOW_COLORS[0];
+    for (const side of [-1, 1]) {
+        context.beginPath();
+        context.arc(x + side * 3.6, y - 1, 2.4, 0, TAU);
+        context.fill();
+    }
+}
+
+/** Two posts, an arch and a rainbow through it, cycling: the gate, open. */
+export function drawGateBadge(x, y, time) {
+    const context = canvasContext;
+
+    context.beginPath();
+    context.moveTo(x - 14, y + 18);
+    context.arc(x, y, 14, PI, 0);
+    context.lineTo(x + 14, y + 18);
+
+    context.fillStyle = RAINBOW_COLORS[(time * 6 | 0) % RAINBOW_COLORS.length];
+    context.fill();
+    context.strokeStyle = HORN_COLOR;
+    context.lineWidth = 4;
+    context.stroke();
+}
+
 
 /**
  * Formats seconds as m:ss.hh, the usual speedrun clock.

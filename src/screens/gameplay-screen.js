@@ -10,11 +10,11 @@ import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { BACK_KEYS, VIEW_KEYS, wasKeyPressed } from '../core/input.js';
 import { clamp, damp } from '../core/math.js';
 import { saveData, persistSaveData } from '../core/storage.js';
-import { refreshPalette, setColorRestoration, RAINBOW_COLORS } from '../graphics/palette.js';
+import { refreshPalette, setColorRestoration } from '../graphics/palette.js';
 import { renderSky } from '../graphics/sky.js';
 import { drawText } from '../graphics/typography.js';
 import { drawWordmark } from '../graphics/wordmark.js';
-import { TEXT_BRIGHT, TEXT_DIM, drawPaintMeter, drawRainbowWipe, formatTime } from '../graphics/ui.js';
+import { TEXT_BRIGHT, TEXT_DIM, drawGateBadge, drawGloomBadge, drawPaintMeter, drawRainbowWipe, formatTime } from '../graphics/ui.js';
 import { buildLevelWorld } from '../levels/build-level.js';
 import { LEVELS } from '../levels/levels.js';
 import { startMusic } from '../audio/music.js';
@@ -175,13 +175,17 @@ export class GameplayScreen extends Screen {
 
 
     /**
-     * The HUD, which is every word the game says while you are playing.
+     * The HUD: four corners, and as few words as it can get away with.
      *
-     * The rule it follows: a number on its own is a fact, and a fact is not the
-     * same as knowing what to do. So the Gloom count carries the instruction
-     * underneath it, the timer carries the price of dying next to it, and the
-     * dash - the one piece of the unicorn's state that is invisible on the
-     * character itself - gets a word rather than an icon nobody can decode.
+     * Where you are and what the clock says are text, because they are text. The
+     * rest is not: how much paint is left is a bar, whether the dash is in hand
+     * is a shorter bar beside it, and what stands between you and the exit is a
+     * Gloom with a number beside it, which becomes the gate itself the moment
+     * that number runs out.
+     *
+     * There are no instruction lines under any of it any more. A HUD that tells
+     * you to POUR A RAINBOW THROUGH THEM is a game narrating itself, and the
+     * signposts in the meadow already do that job in the level where it matters.
      *
      * All of it is drawn on the canvas with the same typography as the rest of
      * the game. There is not one HTML element anywhere in PRISMHOOF: the page is
@@ -217,43 +221,24 @@ export class GameplayScreen extends Screen {
             });
         }
 
-        // Paint meter, bottom left, where a glance costs the least attention.
-        drawPaintMeter(26, CANVAS_HEIGHT - 42, 210, 15, this.unicorn.paintEnergy, this.meterFlash);
-        drawText('PAINT', 26, CANVAS_HEIGHT - 58, {
-            typeSize: 13,
-            typeWeight: 700,
-            typeSpacing: 2.5,
-            alignment: 'left',
-            inkColor: TEXT_DIM,
-        });
+        // Bottom left: paint left in the horn, and the dash held beside it.
+        drawPaintMeter(26, CANVAS_HEIGHT - 48, 210, 15, this.unicorn.paintEnergy, this.meterFlash);
+        drawPaintMeter(248, CANVAS_HEIGHT - 48, 32, 15, this.unicorn.hasDash);
 
-        const hasDash = this.unicorn.hasDash;
-        drawText(hasDash ? 'DASH READY' : 'DASH SPENT - ONCE PER JUMP', 26, CANVAS_HEIGHT - 20, {
-            typeSize: 13,
-            typeWeight: 700,
-            typeSpacing: 2.5,
-            alignment: 'left',
-            inkColor: hasDash ? TEXT_BRIGHT : TEXT_DIM,
-        });
-
+        // Bottom right: what is left to purify, and then the way out.
         const remaining = this.world.entitiesOfCategory('gloom').length;
 
-        drawText(remaining ? `${remaining} GLOOM LEFT` : 'GATE OPEN', CANVAS_WIDTH - 26, CANVAS_HEIGHT - 44, {
-            typeSize: 22,
-            typeWeight: 800,
-            typeSpacing: 2.5,
-            alignment: 'right',
-            inkColor: remaining ? TEXT_BRIGHT : RAINBOW_COLORS[(this.age * 6 | 0) % 7],
-        });
-
-        // The line that turns the count into an instruction.
-        drawText(remaining ? 'POUR A RAINBOW THROUGH THEM' : 'RUN THROUGH IT', CANVAS_WIDTH - 26, CANVAS_HEIGHT - 20, {
-            typeSize: 13,
-            typeWeight: 700,
-            typeSpacing: 2.5,
-            alignment: 'right',
-            inkColor: TEXT_DIM,
-        });
+        if (remaining) {
+            const width = drawText(`${remaining}`, CANVAS_WIDTH - 26, CANVAS_HEIGHT - 40, {
+                typeSize: 30,
+                typeWeight: 800,
+                alignment: 'right',
+                inkColor: TEXT_BRIGHT,
+            });
+            drawGloomBadge(CANVAS_WIDTH - 46 - width, CANVAS_HEIGHT - 40);
+        } else {
+            drawGateBadge(CANVAS_WIDTH - 42, CANVAS_HEIGHT - 50, this.age);
+        }
     }
 
     /**

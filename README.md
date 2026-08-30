@@ -166,13 +166,23 @@ There is not one HTML element anywhere in PRISMHOOF. The page is a `<canvas>` ta
 nothing else, so the whole interface letterboxes, scales and screenshots with the game and
 looks identical in every browser.
 
-The rule the HUD follows is that **a number is a fact, and a fact is not the same as
-knowing what to do**. So the Gloom count reads `8 GLOOM LEFT` rather than `GLOOM 8` and
-carries its instruction underneath it, the clock
-carries the price of dying beside it, and the air dash — the one piece of the unicorn's
-state that is invisible on the character itself — gets a word rather than an icon nobody
-can decode. Clearing a level reports what that level cost, because a single running clock
-is unreadable without splits: it is the only way to know which chamber is worth practising.
+The rule the HUD follows is **show the thing, do not name it**. Where you are and what the
+clock says are text, because they are text. Everything else is a picture: paint left is a
+bar; the air dash is a second, short bar beside it, full while you are holding it and empty
+once it is spent, because it is a charge the ground gives back and that is precisely what the
+paint meter already means; and what stands between you and the exit is a Gloom with a number
+next to it, which the moment that number runs out is replaced by **the gate itself, lit** —
+the same archway that is standing in the level, so there is nothing to learn.
+
+It used to read `8 GLOOM LEFT` with `POUR A RAINBOW THROUGH THEM` underneath it, and
+`GATE OPEN` with `RUN THROUGH IT`, and `DASH READY`, and the word `PAINT` over the meter.
+Every one of those is the game narrating its own state back at the player. The signposts in
+the meadow teach the verb in the level where each use first matters, which is a better place
+for it than a caption in the corner — and a HUD that has to explain its own icons has the
+wrong icons.
+
+Clearing a level reports what that level cost, because a single running clock is unreadable
+without splits: it is the only way to know which chamber is worth practising.
 
 **Dying says nothing at all.** The unicorn is thrown off its feet, bursts into the colour it
 was carrying, and the view kicks. Naming what killed you is a caption on a picture that was
@@ -305,7 +315,7 @@ are installed they still get a turn afterwards, but they find nothing Zopfli mis
 
 ## Squeezing it into 13kB
 
-The game is 13,239 of 13,312 bytes, so nearly every technique below was worth the trouble.
+The game is 13,246 of 13,312 bytes, so nearly every technique below was worth the trouble.
 The numbers are all measured on the real zip, one change at a time — none are estimates, and
 several ideas that sounded certain turned out to be worth nothing at all.
 
@@ -468,7 +478,7 @@ Roadroller's optimiser searches randomly, so identical source packs to results a
 apart. A 20-byte experiment is invisible against that. `--repeat=N` packs N times and keeps
 the smallest, which is both a real saving and the instrument that makes everything else
 measurable. Release builds run the thorough search (`--opt=2`) five times and take eight
-minutes: the margin is 73 bytes, and a single quick search swings by more than that on its
+minutes: the margin is 66 bytes, and a single quick search swings by more than that on its
 own. Even five thorough searches land a handful of bytes apart, so quote the build, not the
 best pack you ever saw. The
 last round is a fair warning about trusting one pack: the same source measured 13,321 bytes
@@ -537,7 +547,7 @@ Yes. I build this with [Claude Code](https://claude.com/claude-code). I make the
 direction and gameplay calls, and Claude Code writes and refactors the code against them.
 
 **Is it really under 13kB?**
-Yes — **13,239 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
+Yes — **13,246 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
 `make zip` on every build. No network requests, no external assets,
 nothing streamed in at runtime.
 
