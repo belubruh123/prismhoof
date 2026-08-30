@@ -177,7 +177,7 @@ export class Unicorn extends Entity {
         // every floor. Checked here rather than in the gameplay screen so
         // nothing can fall forever.
         if (!this.isDead && this.y + this.halfHeight > this.world.boundsBottom + LAVA_SURFACE_DEPTH) {
-            this.die('THE LAVA TOOK YOU');
+            this.die();
         }
 
         this.updateAnimation(elapsedSeconds);
@@ -542,10 +542,9 @@ export class Unicorn extends Entity {
      * as a real event rather than a freeze; the gameplay screen restarts once
      * the burst has had a moment to play.
      */
-    die(cause = 'THE GLOOM TOOK YOU') {
+    die() {
         if (this.isDead) return;
         this.isDead = true;
-        this.deathCause = cause;
 
         this.velocityAcross = -this.facing * 150;
         this.velocityDown = -420;

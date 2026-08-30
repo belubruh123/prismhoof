@@ -59,11 +59,6 @@ export function isKeyDown(keyCodes) {
     return keyCodes.some((code) => heldKeys.has(code));
 }
 
-/** True on any frame a key went down. The opening waits on this. */
-export function wasAnyKeyPressed() {
-    return pressedThisFrame.size > 0;
-}
-
 /** True only on the frame the key went down. */
 export function wasKeyPressed(keyCodes) {
     return keyCodes.some((code) => pressedThisFrame.has(code));

@@ -7,7 +7,6 @@
  */
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
-import { canvasContext } from '../core/canvas.js';
 import { BACK_KEYS, VIEW_KEYS, wasKeyPressed } from '../core/input.js';
 import { clamp, damp } from '../core/math.js';
 import { saveData, persistSaveData } from '../core/storage.js';
@@ -15,7 +14,7 @@ import { refreshPalette, setColorRestoration, RAINBOW_COLORS } from '../graphics
 import { renderSky } from '../graphics/sky.js';
 import { drawText } from '../graphics/typography.js';
 import { drawWordmark } from '../graphics/wordmark.js';
-import { TEXT_BRIGHT, TEXT_DIM, drawPaintMeter, formatTime } from '../graphics/ui.js';
+import { TEXT_BRIGHT, TEXT_DIM, drawPaintMeter, drawRainbowWipe, formatTime } from '../graphics/ui.js';
 import { buildLevelWorld } from '../levels/build-level.js';
 import { LEVELS } from '../levels/levels.js';
 import { startMusic } from '../audio/music.js';
@@ -171,29 +170,9 @@ export class GameplayScreen extends Screen {
         this.world.render();
         this.renderHud();
         this.renderBanners();
-        this.renderWipe();
+        if (this.wipe) drawRainbowWipe(this.wipe, this.clearedCountdown > 0);
     }
 
-    /**
-     * The transition between levels: seven rainbow bands sweeping the screen.
-     *
-     * They are staggered by a fraction of a band each so the sweep reads as one
-     * rainbow being drawn across the screen rather than seven bars moving in
-     * lockstep, and they always travel the same way, so closing one level and
-     * opening the next is a single continuous gesture.
-     */
-    renderWipe() {
-        if (!this.wipe) return;
-
-        const bandHeight = CANVAS_HEIGHT / RAINBOW_COLORS.length;
-        const closing = this.clearedCountdown > 0;
-
-        RAINBOW_COLORS.forEach((inkColor, index) => {
-            const width = CANVAS_WIDTH * clamp(this.wipe * 1.5 - index * 0.08, 0, 1);
-            canvasContext.fillStyle = inkColor;
-            canvasContext.fillRect(closing ? 0 : CANVAS_WIDTH - width, index * bandHeight, width, bandHeight + 1);
-        });
-    }
 
     /**
      * The HUD, which is every word the game says while you are playing.
@@ -278,11 +257,16 @@ export class GameplayScreen extends Screen {
     }
 
     /**
-     * The two things the game says between levels, and both of them are numbers
-     * the player can act on. Clearing tells you what that level cost, because a
-     * single running clock is unreadable without splits - it is the only way to
-     * know which chamber is the one to practise. Dying restates the rule that
-     * makes the whole game a run rather than a series of attempts.
+     * What the game says between levels, which is a number the player can act
+     * on: clearing reports what that level cost, because a single running clock
+     * is unreadable without splits and it is the only way to know which chamber
+     * is the one worth practising.
+     *
+     * Dying says nothing at all. The unicorn is thrown off its feet, bursts into
+     * the colour it was carrying and the view kicks - a line of text naming what
+     * killed you is a caption on a picture that was already clear, and the clock
+     * in the corner never stopped, which makes the point better than a sentence
+     * about it.
      */
     renderBanners() {
         if (this.clearedCountdown > 0) {
@@ -297,24 +281,5 @@ export class GameplayScreen extends Screen {
                 });
         }
 
-        if (this.restartCountdown > 0) {
-            const fadeIn = clamp((RESTART_DELAY_SECONDS - this.restartCountdown) * 3, 0, 1);
-
-            drawText(this.unicorn.deathCause, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20, {
-                typeSize: 40,
-                typeWeight: 900,
-                typeSpacing: 4,
-                inkColor: TEXT_BRIGHT,
-                inkAlpha: fadeIn,
-            });
-
-            drawText('THE CLOCK NEVER STOPS', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 26, {
-                typeSize: 18,
-                typeWeight: 700,
-                typeSpacing: 3,
-                inkColor: TEXT_DIM,
-                inkAlpha: fadeIn,
-            });
-        }
     }
 }

@@ -65,29 +65,26 @@ some labels.
 
 ## The opening
 
-The page loads to a black screen with a horn standing in it and one line: **PRESS ANY KEY**.
-That prompt is not decoration. A browser will not open an AudioContext until it has been
-handed a trusted gesture, so an opening that plays on load plays in silence — and an opening
-with chimes in it is worth the half second it costs to be allowed to make a sound.
+The page loads and a rainbow sweeps off the screen. Behind it is the title, the
+meadow and the unicorn. That is the whole thing, and it is over in a second.
 
-Press anything and a beam of white light runs in out of the dark, **breaks against the
-horn**, and comes out the other side as seven, which fan across the screen and wipe the
-meadow into view. The wordmark drops onto them. Two seconds, and a second key press skips
-whatever is left.
+It is not new machinery. **It is the same seven bands that close every level**,
+run once to open the game — so ending a level, beginning the next one and
+starting the game itself are one gesture, always travelling the same way. The
+first version of this was a two-second cinematic with a beam of light, a horn it
+broke against, a spectrum fanning out and a wordmark slamming down on top. It was
+better looking and worse: a thing to sit through before the game will let you in.
 
-It is one idea rather than a run of effects: the game is called PRISMHOOF, and **this is a
-prism**. White light in, spectrum out, and the spectrum is what reveals the world — which is
-the win condition of every level in the game, stated once before a word is said.
+There is no press-any-key gate in front of it. One would buy the opening a sound
+— a browser will not start an AudioContext until it has been handed a gesture, so
+anything that plays on load plays in silence — and a door you have to knock on is
+a worse first impression than a silent second of rainbow. The music comes up on
+whatever the player presses next.
 
-**None of it makes a new noise.** The impact is the landing thud, the seven beams are the
-gate chime, and the wordmark lands on the purify chord: the three sounds the game already
-makes at the three moments that already mean *arrival*, *opening* and *colour coming back*.
-The entire soundtrack of the opening cost the three lines that name them, which is the only
-reason it could have one.
-
-The frame is thrown about on both impacts, and punches in slightly as it shakes — a shake on
-its own drags the cleared edge of the canvas into shot. It honours the **screen shake**
-setting, and it plays once per page load, never again on the way back from a run.
+The premise still gets told, but after **Play** and only to a save file that has
+never finished a level: four lines over a drained sky, with the colour flooding
+back as the last one lands, so the screen states the premise and demonstrates the
+win condition in the same gesture. Skippable, and never seen twice.
 
 ## The camera
 
@@ -176,6 +173,11 @@ carries the price of dying beside it, and the air dash — the one piece of the 
 state that is invisible on the character itself — gets a word rather than an icon nobody
 can decode. Clearing a level reports what that level cost, because a single running clock
 is unreadable without splits: it is the only way to know which chamber is worth practising.
+
+**Dying says nothing at all.** The unicorn is thrown off its feet, bursts into the colour it
+was carrying, and the view kicks. Naming what killed you is a caption on a picture that was
+already clear, and the clock in the corner never stopped, which makes the point better than a
+sentence about it does.
 
 ## Controls
 
@@ -303,7 +305,7 @@ are installed they still get a turn afterwards, but they find nothing Zopfli mis
 
 ## Squeezing it into 13kB
 
-The game is 13,277 of 13,312 bytes, so nearly every technique below was worth the trouble.
+The game is 13,239 of 13,312 bytes, so nearly every technique below was worth the trouble.
 The numbers are all measured on the real zip, one change at a time — none are estimates, and
 several ideas that sounded certain turned out to be worth nothing at all.
 
@@ -417,25 +419,26 @@ rectangles, dictionaries, bit-packing — cannot help. The information has to ac
 
 ### What a feature costs, measured
 
-The wordmark and the opening came to **610 bytes** between them, and the entry had 87 spare.
-Nothing could be decided until everything else on this page had a price, and the only way to
-price a thing is to delete it and pack the result. Guessing is how you cut the wrong one.
+The first version of the opening and the wordmark came to **610 bytes** between them, and the
+entry had 87 spare. Nothing could be decided until everything else on this page had a price,
+and the only way to price a thing is to delete it and pack the result. Guessing is how you
+cut the wrong one.
 
 | Removed | Bytes |
 | --- | --- |
 | The whole HOW TO PLAY screen | 538 |
-| **Its explanation column — the CONTROLS list and tips stay** | **277** |
-| **The story screen** | **182** |
+| Its explanation column, the CONTROLS list staying | 277 |
+| The premise screen | 182 |
 | The drifting clouds | 140 |
 | The grass blades | 115 |
 | The end-of-run summary | 101 |
 | One level, of thirteen | 59 |
 | The SETTINGS volume sliders, mute toggles staying | 57 |
 | The rock frame around each chamber | 34 |
-| The twist on the opening's horn | 30 |
-| The opening's incoming beam | 24 |
-| PRESS ANY KEY, and waiting for it | 19 |
-| The opening's punch-in zoom | 17 |
+| The twist on the cinematic opening's horn | 30 |
+| Its incoming beam | 24 |
+| Its press-any-key gate | 19 |
+| Its punch-in zoom | 17 |
 
 Two things fall out of that list, and the second one is the useful one.
 
@@ -444,17 +447,20 @@ whether it is a screen, a decoration, a paragraph of English or a physics system
 fat anywhere in a payload at its entropy floor — there are only things, and each one costs
 what it is. This is the same rule as the table above it, seen from the other end.
 
-**So a finished feature cannot be trimmed, only kept or dropped.** The opening's most
-conspicuous parts price at 17 to 30 bytes each; removing every one of them recovers 90 of its
-530, and leaves something nobody would want. Where a feature is a hundred cheap pieces rather
-than one expensive one, "make it a bit smaller" is not an available move, and hunting for the
-one wasteful line is time spent not deciding.
+**So a finished feature cannot be trimmed, only kept or dropped.** The cinematic opening's
+most conspicuous parts priced at 17 to 30 bytes each; removing every one of them recovered 90
+of its 530 and left something nobody would want. Where a feature is a hundred cheap pieces
+rather than one expensive one, "make it a bit smaller" is not an available move, and hunting
+for the one wasteful line is time spent not deciding.
 
-What paid for it, in the end: the story screen, because the opening now *is* the opening and
-the premise it told already stands on the title screen; and HOW TO PLAY's left-hand column,
-because the four things a poured rainbow can do are taught by signposts in the level where
-each one first matters, which is a better place to learn them than a wall of text behind a
-menu.
+What actually happened is worth recording, because it is the more useful ending. Two screens
+were cut to pay for that opening — and then the opening was replaced with a one-second sweep
+built out of the level-transition wipe the game already had, which cost about forty bytes
+instead of five hundred and thirty, and both screens came back. **The cheapest version was
+also the better one**: nobody wants a cinematic between them and the menu, and reusing the
+wipe makes starting the game and starting a level the same gesture. The measuring was not
+wasted — it is what made it obvious that the elaborate version could not be afforded without
+taking something real out of the game, which is the question that produced the simple one.
 
 ### Making the measurements trustworthy
 
@@ -462,7 +468,7 @@ Roadroller's optimiser searches randomly, so identical source packs to results a
 apart. A 20-byte experiment is invisible against that. `--repeat=N` packs N times and keeps
 the smallest, which is both a real saving and the instrument that makes everything else
 measurable. Release builds run the thorough search (`--opt=2`) five times and take eight
-minutes: the margin is 35 bytes, and a single quick search swings by more than that on its
+minutes: the margin is 73 bytes, and a single quick search swings by more than that on its
 own. Even five thorough searches land a handful of bytes apart, so quote the build, not the
 best pack you ever saw. The
 last round is a fair warning about trusting one pack: the same source measured 13,321 bytes
@@ -508,7 +514,7 @@ src/
   engine/     entity, world, camera, particles                (no game knowledge)
   graphics/   palette, sky, hair, typography, wordmark, ui
   entities/   unicorn, unicorn art, rainbow ribbon, terrain, lava, gloom, gate, signs
-  screens/    title (and the opening), how to play, settings, gameplay, pause
+  screens/    title (and the opening), premise, how to play, settings, gameplay, pause
   levels/     level format, level builder, level data
   audio/      context, sound effects, music
   debug.js    headless-testing hooks, dropped from the release build
@@ -531,7 +537,7 @@ Yes. I build this with [Claude Code](https://claude.com/claude-code). I make the
 direction and gameplay calls, and Claude Code writes and refactors the code against them.
 
 **Is it really under 13kB?**
-Yes — **13,277 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
+Yes — **13,239 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
 `make zip` on every build. No network requests, no external assets,
 nothing streamed in at runtime.
 

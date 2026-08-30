@@ -6,6 +6,7 @@
  * the same everywhere.
  */
 
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { canvasContext } from '../core/canvas.js';
 import { clamp, sin } from '../core/math.js';
 import { drawFourPointStar } from '../engine/particles.js';
@@ -147,6 +148,27 @@ export function drawPaintMeter(x, y, width, height, fillRatio, flashAmount = 0) 
     context.stroke(trough);
 
     context.restore();
+}
+
+/**
+ * Seven rainbow bands sweeping the screen, staggered by a fraction of a band
+ * each so it reads as one rainbow being drawn across rather than seven bars
+ * moving in lockstep.
+ *
+ * `amount` is how much of the screen is covered, 1 to 0. Closing anchors the
+ * bands to the left edge and opening to the right, so a level ending, the next
+ * one beginning and the game itself opening are one continuous gesture that
+ * always travels the same way.
+ */
+export function drawRainbowWipe(amount, isClosing) {
+    const context = canvasContext;
+    const bandHeight = CANVAS_HEIGHT / RAINBOW_COLORS.length;
+
+    RAINBOW_COLORS.forEach((inkColor, index) => {
+        const width = CANVAS_WIDTH * clamp(amount * 1.5 - index * 0.08, 0, 1);
+        context.fillStyle = inkColor;
+        context.fillRect(isClosing ? 0 : CANVAS_WIDTH - width, index * bandHeight, width, bandHeight + 1);
+    });
 }
 
 /**
