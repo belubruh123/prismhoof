@@ -13,7 +13,8 @@ import { clamp, damp } from '../core/math.js';
 import { saveData, persistSaveData } from '../core/storage.js';
 import { refreshPalette, setColorRestoration, RAINBOW_COLORS } from '../graphics/palette.js';
 import { renderSky } from '../graphics/sky.js';
-import { drawText, drawRainbowText } from '../graphics/typography.js';
+import { drawText } from '../graphics/typography.js';
+import { drawWordmark } from '../graphics/wordmark.js';
 import { TEXT_BRIGHT, TEXT_DIM, drawPaintMeter, formatTime } from '../graphics/ui.js';
 import { buildLevelWorld } from '../levels/build-level.js';
 import { LEVELS } from '../levels/levels.js';
@@ -285,11 +286,7 @@ export class GameplayScreen extends Screen {
      */
     renderBanners() {
         if (this.clearedCountdown > 0) {
-            drawRainbowText('LEVEL CLEARED', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30, {
-                typeSize: 62,
-                typeWeight: 900,
-                typeSpacing: 5,
-            });
+            drawWordmark('LEVEL CLEARED', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30, 54);
 
             drawText(`${this.activeLevel.levelTitle}  ${formatTime(this.runSeconds - this.levelStartSeconds)}`,
                 CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 32, {
@@ -308,7 +305,7 @@ export class GameplayScreen extends Screen {
                 typeWeight: 900,
                 typeSpacing: 4,
                 inkColor: TEXT_BRIGHT,
-                alpha: fadeIn,
+                inkAlpha: fadeIn,
             });
 
             drawText('THE CLOCK NEVER STOPS', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 26, {
@@ -316,7 +313,7 @@ export class GameplayScreen extends Screen {
                 typeWeight: 700,
                 typeSpacing: 3,
                 inkColor: TEXT_DIM,
-                alpha: fadeIn,
+                inkAlpha: fadeIn,
             });
         }
     }

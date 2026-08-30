@@ -10,7 +10,8 @@
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
 import { clamp } from '../core/math.js';
 import { persistSaveData, saveData } from '../core/storage.js';
-import { drawRainbowText, drawText } from '../graphics/typography.js';
+import { drawText } from '../graphics/typography.js';
+import { drawWordmark } from '../graphics/wordmark.js';
 import { TEXT_DIM, drawMenu, drawPanel, drawScreenDim } from '../graphics/ui.js';
 import { applyVolumeSettings } from '../audio/audio.js';
 import { isMusicRunning, startMusic, stopMusic } from '../audio/music.js';
@@ -101,7 +102,7 @@ export class SettingsScreen extends MenuScreen {
         drawScreenDim(0.72);
         drawPanel(CANVAS_WIDTH / 2 - 330, 110, 660, 470);
 
-        drawRainbowText('SETTINGS', CANVAS_WIDTH / 2, 168, { typeSize: 40, typeWeight: 900, typeSpacing: 6 });
+        drawWordmark('SETTINGS', CANVAS_WIDTH / 2, 168, 38);
 
         const onOff = (value) => (value ? 'ON' : 'OFF');
         this.menuItems[0].subLabel = onOff(saveData.musicEnabled);
@@ -114,7 +115,7 @@ export class SettingsScreen extends MenuScreen {
             time: this.age,
             width: 560,
             typeSize: 22,
-            lineHeight: 46,
+            rowStep: 46,
         });
 
         drawText('LEFT / RIGHT to change', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 88, {

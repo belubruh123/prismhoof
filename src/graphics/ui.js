@@ -12,8 +12,11 @@ import { drawFourPointStar } from '../engine/particles.js';
 import { INK_BLACK, RAINBOW_COLORS, UNICORN_COAT } from './palette.js';
 import { drawText } from './typography.js';
 
-const PANEL_BACKGROUND = 'rgba(18,10,34,0.82)';
-export const TEXT_DIM = 'rgba(233,220,255,0.62)';
+// Eight-digit hex rather than rgba(): Closure inlines both of these at every
+// one of their two dozen call sites, so half the characters is half the
+// characters two dozen times over.
+const PANEL_BACKGROUND = '#120a22d1';
+export const TEXT_DIM = '#e9dcff9e';
 /** The same white the unicorn's coat is, so the interface and the character agree. */
 export const TEXT_BRIGHT = UNICORN_COAT;
 
@@ -49,13 +52,13 @@ export function drawScreenDim(alpha) {
  * right, which is how the settings screen shows each value.
  */
 export function drawMenu(menuItems, chosenIndex, centreX, startY, {
-    lineHeight = 52,
+    rowStep = 52,
     typeSize = 27,
     width = 520,
     time,
 } = {}) {
     menuItems.forEach((item, index) => {
-        const y = startY + index * lineHeight;
+        const y = startY + index * rowStep;
         const isSelected = index === chosenIndex;
 
         if (isSelected) drawSelectionMarker(centreX, y, width, time);
@@ -87,15 +90,16 @@ function drawSelectionMarker(centreX, y, width, time) {
 
     context.save();
 
-    context.globalAlpha = 0.1 * pulse;
+    // The star goes down first so the bar's alpha can be multiplied into
+    // whatever the caller already had, rather than resetting it afterwards.
+    context.fillStyle = RAINBOW_COLORS[(time * 6 | 0) % RAINBOW_COLORS.length];
+    drawFourPointStar(context, centreX - width / 2 - 6, y, 6 * pulse, time * 2);
+
+    context.globalAlpha *= 0.1 * pulse;
     context.fillStyle = TEXT_BRIGHT;
     context.beginPath();
     context.roundRect(centreX - width / 2, y - 21, width, 42, 21);
     context.fill();
-
-    context.globalAlpha = 1;
-    context.fillStyle = RAINBOW_COLORS[(time * 6 | 0) % RAINBOW_COLORS.length];
-    drawFourPointStar(context, centreX - width / 2 - 6, y, 6 * pulse, time * 2);
 
     context.restore();
 }

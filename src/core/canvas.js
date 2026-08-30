@@ -17,8 +17,14 @@ export let canvasContext;
 export let renderScale = 1;
 
 export function initialiseCanvas() {
-    canvas = document.getElementById('game');
+    canvas = document.querySelector('canvas');
     canvasContext = canvas.getContext('2d');
+
+    // `inset: 0` with `margin: auto` is the letterbox centring. It is set from
+    // here rather than from style.css because the stylesheet is inlined raw and
+    // only deflated, while this is packed: the same rule is worth a third as
+    // much on this side of the fence.
+    canvas.style.cssText = 'position:absolute;inset:0;margin:auto';
 
     addEventListener('resize', resizeCanvas);
     resizeCanvas();

@@ -60,7 +60,7 @@ export class ParticleField extends Entity {
         this.nextSlot = (this.nextSlot + 1) % POOL_CAPACITY;
 
         particle.age = 0;
-        particle.rotation = randomBetween(0, TAU);
+        particle.spinAngle = randomBetween(0, TAU);
 
         return particle;
     }
@@ -80,7 +80,7 @@ export class ParticleField extends Entity {
 
             particle.x += particle.velocityAcross * elapsedSeconds;
             particle.y += particle.velocityDown * elapsedSeconds;
-            particle.rotation += particle.spin * elapsedSeconds;
+            particle.spinAngle += particle.spin * elapsedSeconds;
         }
     }
 
@@ -98,7 +98,7 @@ export class ParticleField extends Entity {
             context.fillStyle = particle.inkColor;
 
             if (particle.particleShape === PARTICLE_STAR) {
-                drawFourPointStar(context, particle.x, particle.y, typeSize, particle.rotation);
+                drawFourPointStar(context, particle.x, particle.y, typeSize, particle.spinAngle);
                 continue;
             }
 
@@ -129,7 +129,7 @@ export class ParticleField extends Entity {
  * three copies of the same twenty lines.
  */
 export function burstRainbow(particles, x, y, count, {
-    speed = 240,
+    flingSpeed = 240,
     gravity = 260,
     maxSize = 7,
     lifetime = 0.8,
@@ -138,7 +138,7 @@ export function burstRainbow(particles, x, y, count, {
 
     for (let index = 0; index < count; index++) {
         const angle = randomBetween(0, TAU);
-        const magnitude = randomBetween(speed * 0.3, speed);
+        const magnitude = randomBetween(flingSpeed * 0.3, flingSpeed);
 
         particles.spawn({
             x,
@@ -157,12 +157,12 @@ export function burstRainbow(particles, x, y, count, {
 }
 
 /** A pinched four-point sparkle - the shape that reads as "magic" at any size. */
-export function drawFourPointStar(context, x, y, radius, rotation) {
+export function drawFourPointStar(context, x, y, radius, spinAngle) {
     const waist = radius * 0.22;
 
     context.save();
     context.translate(x, y);
-    context.rotate(rotation);
+    context.rotate(spinAngle);
     context.beginPath();
     context.moveTo(0, -radius);
     context.quadraticCurveTo(waist, -waist, radius, 0);

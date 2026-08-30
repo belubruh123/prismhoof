@@ -47,6 +47,48 @@ Each level is a **chamber cut out of the world** rather than a strip of ground u
 open sky — beyond its edges is solid rock, below it is the lava, and the sky you can see is
 the sky inside the chamber.
 
+## The wordmark
+
+PRISMHOOF used to be set in a bold sans with a rainbow gradient poured across it, which is
+what a placeholder looks like. It is built now: every letter placed on its own step of a
+shallow arc, tilted with the curve, extruded back into the dark behind it, and filled top to
+bottom with a white sheen over the seven colours — red on the outside of the arc, which is
+where a real rainbow keeps it. Nine separately rotated letters read as a logo; the same nine
+on a straight line read as a caption.
+
+Every proportion is a fraction of the cap height, so a single number scales the whole
+construction. That is what let the same lettering take over **PAUSED**, **SETTINGS**, **HOW
+TO PLAY** and **LEVEL CLEARED** as well, and delete the rainbow-gradient heading helper they
+used to share: one display face used six times packs better than two used three times each,
+and the game now has one voice for its own name and its own headings rather than a logo and
+some labels.
+
+## The opening
+
+The page loads to a black screen with a horn standing in it and one line: **PRESS ANY KEY**.
+That prompt is not decoration. A browser will not open an AudioContext until it has been
+handed a trusted gesture, so an opening that plays on load plays in silence — and an opening
+with chimes in it is worth the half second it costs to be allowed to make a sound.
+
+Press anything and a beam of white light runs in out of the dark, **breaks against the
+horn**, and comes out the other side as seven, which fan across the screen and wipe the
+meadow into view. The wordmark drops onto them. Two seconds, and a second key press skips
+whatever is left.
+
+It is one idea rather than a run of effects: the game is called PRISMHOOF, and **this is a
+prism**. White light in, spectrum out, and the spectrum is what reveals the world — which is
+the win condition of every level in the game, stated once before a word is said.
+
+**None of it makes a new noise.** The impact is the landing thud, the seven beams are the
+gate chime, and the wordmark lands on the purify chord: the three sounds the game already
+makes at the three moments that already mean *arrival*, *opening* and *colour coming back*.
+The entire soundtrack of the opening cost the three lines that name them, which is the only
+reason it could have one.
+
+The frame is thrown about on both impacts, and punches in slightly as it shakes — a shake on
+its own drags the cleared edge of the canvas into shot. It honours the **screen shake**
+setting, and it plays once per page load, never again on the way back from a run.
+
 ## The camera
 
 **Every level opens on the whole course.** The view holds the entire chamber in frame for a
@@ -83,11 +125,6 @@ whole-course framing rather than double it: enough for the gait, the blink and t
 read, while still showing nearly seventeen tiles ahead against a rainbow that reaches twelve.
 A closer view made the unicorn look better and the game play worse, which is the wrong trade
 in a game where pouring a bridge into ground you cannot see is the mistake that kills you.
-
-The story is told in a short opening rather than buried in a menu, and the colour floods
-back into the sky as the last line lands — the screen states the premise and demonstrates
-the win condition in the same gesture. It is skippable, and only shown to a save file that
-has never finished a level.
 
 > The stream fires *ahead* of the unicorn rather than trailing behind it, and that is a
 > mechanical necessity rather than a flourish. A ribbon emitted at the horn sits
@@ -266,7 +303,7 @@ are installed they still get a turn afterwards, but they find nothing Zopfli mis
 
 ## Squeezing it into 13kB
 
-The game is 13,217 of 13,312 bytes, so nearly every technique below was worth the trouble.
+The game is 13,277 of 13,312 bytes, so nearly every technique below was worth the trouble.
 The numbers are all measured on the real zip, one change at a time — none are estimates, and
 several ideas that sounded certain turned out to be worth nothing at all.
 
@@ -295,6 +332,7 @@ several ideas that sounded certain turned out to be worth nothing at all.
 | **Run-length encoding the level pictures** | **78** |
 | **Property names chosen to dodge the mangler's shield list** | **74 + 60** |
 | **Golfing the stylesheet, which Roadroller never sees** | **64** |
+| **Eight-digit hex instead of `rgba()`, for two colours Closure inlines two dozen times** | **19** |
 | Dropping the wrapper element, unquoted HTML attributes | 40 |
 | Dropping the text drop-shadow, and one darkest ink instead of three | ~55 |
 | **Deleting `drawRadialGlow` — a whole gradient built per frame for one caller** | **~95** |
@@ -348,6 +386,9 @@ Worth as much as the list above, because each of these looks like it should work
 | Packing the CSS as a second Roadroller input | impossible — this version takes exactly one |
 | Disabling terser's toplevel mangling | inside the noise |
 | Roadroller `numAbbreviations` sweep, 0 to 128 | nothing — the default 64 is already the floor |
+| Giving the level pictures their own Roadroller input, with their own model | impossible — this version takes exactly one input |
+| Nine terser configurations: six passes, every `unsafe_*`, `hoist_props`, `inline: 3`, `sequences` | all inside the noise |
+| A second `maxMemoryMB` sweep, 150 to 1000, on a payload 700 bytes larger than the first one | nothing outside the noise |
 | Sharing one path or one code branch between two draw calls | **0 bytes** for 201 minified bytes removed |
 
 The first line is the important one, and this round produced the cleanest demonstration of
@@ -374,13 +415,56 @@ encoding removed 4,302 characters, 61% of it, and bought 78 bytes, because the c
 already predicting those runs. Once a payload is at its entropy floor, re-encoding it — as
 rectangles, dictionaries, bit-packing — cannot help. The information has to actually go away.
 
+### What a feature costs, measured
+
+The wordmark and the opening came to **610 bytes** between them, and the entry had 87 spare.
+Nothing could be decided until everything else on this page had a price, and the only way to
+price a thing is to delete it and pack the result. Guessing is how you cut the wrong one.
+
+| Removed | Bytes |
+| --- | --- |
+| The whole HOW TO PLAY screen | 538 |
+| **Its explanation column — the CONTROLS list and tips stay** | **277** |
+| **The story screen** | **182** |
+| The drifting clouds | 140 |
+| The grass blades | 115 |
+| The end-of-run summary | 101 |
+| One level, of thirteen | 59 |
+| The SETTINGS volume sliders, mute toggles staying | 57 |
+| The rock frame around each chamber | 34 |
+| The twist on the opening's horn | 30 |
+| The opening's incoming beam | 24 |
+| PRESS ANY KEY, and waiting for it | 19 |
+| The opening's punch-in zoom | 17 |
+
+Two things fall out of that list, and the second one is the useful one.
+
+**Everything costs the same per line.** Around 0.28 zip bytes per minified byte, near enough,
+whether it is a screen, a decoration, a paragraph of English or a physics system. There is no
+fat anywhere in a payload at its entropy floor — there are only things, and each one costs
+what it is. This is the same rule as the table above it, seen from the other end.
+
+**So a finished feature cannot be trimmed, only kept or dropped.** The opening's most
+conspicuous parts price at 17 to 30 bytes each; removing every one of them recovers 90 of its
+530, and leaves something nobody would want. Where a feature is a hundred cheap pieces rather
+than one expensive one, "make it a bit smaller" is not an available move, and hunting for the
+one wasteful line is time spent not deciding.
+
+What paid for it, in the end: the story screen, because the opening now *is* the opening and
+the premise it told already stands on the title screen; and HOW TO PLAY's left-hand column,
+because the four things a poured rainbow can do are taught by signposts in the level where
+each one first matters, which is a better place to learn them than a wall of text behind a
+menu.
+
 ### Making the measurements trustworthy
 
 Roadroller's optimiser searches randomly, so identical source packs to results about 30 bytes
 apart. A 20-byte experiment is invisible against that. `--repeat=N` packs N times and keeps
 the smallest, which is both a real saving and the instrument that makes everything else
-measurable. Release builds run the thorough search (`--opt=2`) twice and take a few minutes:
-the margin is 95 bytes, and a single quick search swings by more than that on its own. The
+measurable. Release builds run the thorough search (`--opt=2`) five times and take eight
+minutes: the margin is 35 bytes, and a single quick search swings by more than that on its
+own. Even five thorough searches land a handful of bytes apart, so quote the build, not the
+best pack you ever saw. The
 last round is a fair warning about trusting one pack: the same source measured 13,321 bytes
 at `--opt=1 --repeat=1` and 13,311 at `--opt=2 --repeat=4`, and a change that genuinely
 removed distinct content measured four bytes *worse* on a single quick pack.
@@ -422,9 +506,9 @@ is a `Map`, and the settings screen names every field it writes.
 src/
   core/       canvas, loop, input, storage, maths, geometry   (no game knowledge)
   engine/     entity, world, camera, particles                (no game knowledge)
-  graphics/   palette, sky, hair, typography, ui
+  graphics/   palette, sky, hair, typography, wordmark, ui
   entities/   unicorn, unicorn art, rainbow ribbon, terrain, lava, gloom, gate, signs
-  screens/    opening, title, how to play, settings, gameplay, pause
+  screens/    title (and the opening), how to play, settings, gameplay, pause
   levels/     level format, level builder, level data
   audio/      context, sound effects, music
   debug.js    headless-testing hooks, dropped from the release build
@@ -447,7 +531,7 @@ Yes. I build this with [Claude Code](https://claude.com/claude-code). I make the
 direction and gameplay calls, and Claude Code writes and refactors the code against them.
 
 **Is it really under 13kB?**
-Yes — **13,217 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
+Yes — **13,277 of 13,312 bytes**. The whole game is one `index.html`, zipped, everything included, checked by
 `make zip` on every build. No network requests, no external assets,
 nothing streamed in at runtime.
 

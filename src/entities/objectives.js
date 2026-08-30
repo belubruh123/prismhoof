@@ -69,7 +69,7 @@ export class RainbowGate extends Entity {
         if (isOpen && !this.openness) {
             this.world.camera.shake(9, 0.45);
             burstRainbow(this.world.firstOfCategory('particles'), this.x, this.y, 24, {
-                speed: 300,
+                flingSpeed: 300,
                 // Upwards: the plume rises out of the arch instead of falling
                 // out of it, which is the same "go" the curtain is drawing.
                 gravity: -90,

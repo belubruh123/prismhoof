@@ -5,19 +5,13 @@
  * raw and only deflated - so a character here costs several times what a
  * character of JavaScript does, and it is written accordingly.
  *
- * The canvas keeps a fixed 16:9 aspect ratio and is letterboxed into the window.
- * `inset: 0` with `margin: auto` centres it on both axes, which is what the
- * older top/left/transform trio did in twice the characters. The resize code
- * sets its CSS size in display pixels; auto margins take the leftover space.
+ * The canvas keeps a fixed 16:9 aspect ratio and is letterboxed into the window,
+ * but the rule that does that lives in `core/canvas.js`, because a character of
+ * JavaScript goes through Roadroller and a character here does not. Only what
+ * has to be painted before the decoder finishes is left in this file.
  */
 body {
     margin: 0;
     overflow: hidden;
     background: #07060f;
-}
-
-#game {
-    position: absolute;
-    inset: 0;
-    margin: auto;
 }

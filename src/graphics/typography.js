@@ -9,7 +9,7 @@
  */
 
 import { canvasContext } from '../core/canvas.js';
-import { INK_BLACK, RAINBOW_COLORS } from './palette.js';
+import { INK_BLACK } from './palette.js';
 
 const FONT_STACK = `'Century Gothic',Futura,'Trebuchet MS',system-ui,sans-serif`;
 
@@ -18,19 +18,13 @@ const OUTLINE_RATIO = 0.17;
 const OUTLINE_COLOR = INK_BLACK;
 
 /** Applies a font to the context and returns the measured width of `text`. */
-function applyFont(text, typeSize, typeWeight, typeSpacing) {
+export function applyFont(text, typeSize, typeWeight, typeSpacing) {
     const context = canvasContext;
     context.font = `${typeWeight} ${typeSize}px ${FONT_STACK}`;
     context.letterSpacing = `${typeSpacing}px`;
     return context.measureText(text).width;
 }
 
-export function measureText(text, typeSize, typeWeight = 700, typeSpacing = 0) {
-    canvasContext.save();
-    const width = applyFont(text, typeSize, typeWeight, typeSpacing);
-    canvasContext.restore();
-    return width;
-}
 
 /**
  * Draws a line of text and returns its width.
@@ -42,7 +36,7 @@ export function drawText(text, x, y, {
     typeSpacing = 0,
     alignment = 'center',
     inkColor = '#fff',
-    alpha = 1,
+    inkAlpha = 1,
 } = {}) {
     const context = canvasContext;
     context.save();
@@ -50,7 +44,9 @@ export function drawText(text, x, y, {
     const width = applyFont(text, typeSize, typeWeight, typeSpacing);
     context.textAlign = alignment;
     context.textBaseline = 'middle';
-    context.globalAlpha = alpha;
+    // Multiplied rather than set, so a caller can fade a whole screenful of
+    // text at once by setting one ambient alpha around the lot.
+    context.globalAlpha *= inkAlpha;
 
     // A dark border around every string. It is what lets the signs stand in the
     // level itself rather than in a box at the top of the screen: the words hold
@@ -69,20 +65,3 @@ export function drawText(text, x, y, {
     return width;
 }
 
-/**
- * Text filled with the seven rainbow colours across its own width.
- * Used for headings, so the theme is present even in the menus.
- */
-export function drawRainbowText(text, x, y, options = {}) {
-    const { typeSize = 24, typeWeight = 900, typeSpacing = 0, alignment = 'center' } = options;
-
-    const width = measureText(text, typeSize, typeWeight, typeSpacing);
-    const left = alignment === 'center' ? x - width / 2 : alignment === 'right' ? x - width : x;
-
-    const gradient = canvasContext.createLinearGradient(left, 0, left + width, 0);
-    RAINBOW_COLORS.forEach((inkColor, index) => {
-        gradient.addColorStop(index / (RAINBOW_COLORS.length - 1), inkColor);
-    });
-
-    return drawText(text, x, y, { ...options, inkColor: gradient });
-}

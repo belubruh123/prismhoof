@@ -7,7 +7,8 @@
  */
 
 import { CANVAS_WIDTH } from '../config.js';
-import { drawRainbowText, drawText } from '../graphics/typography.js';
+import { drawText } from '../graphics/typography.js';
+import { drawWordmark } from '../graphics/wordmark.js';
 import { TEXT_DIM, drawMenu, drawPanel, drawScreenDim, formatTime } from '../graphics/ui.js';
 import { HowToPlayScreen } from './how-to-play-screen.js';
 import { SettingsScreen } from './settings-screen.js';
@@ -43,7 +44,7 @@ export class PauseScreen extends MenuScreen {
         drawScreenDim(0.62);
         drawPanel(CANVAS_WIDTH / 2 - 280, 128, 560, 424);
 
-        drawRainbowText('PAUSED', CANVAS_WIDTH / 2, 190, { typeSize: 44, typeWeight: 900, typeSpacing: 7 });
+        drawWordmark('PAUSED', CANVAS_WIDTH / 2, 190, 42);
 
         drawText(
             `${this.gameplayScreen.activeLevel.levelTitle}   -   ${formatTime(this.gameplayScreen.runSeconds)}`,
@@ -55,7 +56,7 @@ export class PauseScreen extends MenuScreen {
             time: this.age,
             width: 430,
             typeSize: 24,
-            lineHeight: 48,
+            rowStep: 48,
         });
     }
 }

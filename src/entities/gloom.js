@@ -111,7 +111,7 @@ class Gloom extends Entity {
 
         // Then the colour it was holding onto, thrown in every direction.
         burstRainbow(particles, this.x, this.y, 26, {
-            speed: 430,
+            flingSpeed: 430,
             gravity: 320,
             maxSize: 9,
             lifetime: 1,

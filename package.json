@@ -8,10 +8,10 @@
     "dev": "node tools/dev.mjs",
     "build:debug": "node tools/build.mjs --debug",
     "build:verify": "node tools/build.mjs --verify",
-    "build": "node tools/build.mjs --opt=2 --repeat=2",
+    "build": "node tools/build.mjs --opt=2 --repeat=5",
     "check": "node tools/check-editor.mjs && node tools/check-levels.mjs",
     "zip": "node tools/zip.mjs",
-    "release": "node tools/build.mjs --opt=2 --repeat=2 && node tools/zip.mjs",
+    "release": "node tools/build.mjs --opt=2 --repeat=5 && node tools/zip.mjs",
     "pages": "node tools/build.mjs --pages"
   },
   "devDependencies": {

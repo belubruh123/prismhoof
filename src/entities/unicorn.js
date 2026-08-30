@@ -554,7 +554,7 @@ export class Unicorn extends Entity {
         this.world.camera.shake(14, 0.5);
 
         burstRainbow(this.world.firstOfCategory('particles'), this.x, this.y, 26, {
-            speed: 420,
+            flingSpeed: 420,
             gravity: 500,
             maxSize: 8,
             lifetime: 1.2,
@@ -567,7 +567,7 @@ export class Unicorn extends Entity {
     /** A puff of rainbow sparkles off the unicorn's back, for jumps and wins. */
     emitManeSparkles(count) {
         burstRainbow(this.world.firstOfCategory('particles'), this.x, this.y - 14, count, {
-            speed: 110,
+            flingSpeed: 110,
             gravity: 180,
             maxSize: 6,
             lifetime: 0.9,
