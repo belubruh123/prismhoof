@@ -14,18 +14,22 @@ import { refreshPalette, setColorRestoration } from '../graphics/palette.js';
 import { renderSky } from '../graphics/sky.js';
 import { drawText } from '../graphics/typography.js';
 import { drawWordmark } from '../graphics/wordmark.js';
-import { TEXT_BRIGHT, TEXT_DIM, drawGateBadge, drawGloomBadge, drawPaintMeter, drawRainbowWipe, formatTime } from '../graphics/ui.js';
+import { TEXT_BRIGHT, TEXT_DIM, drawGateBadge, drawGloomBadge, drawPaintMeter, drawRainbowWipe, drawScreenDim, formatTime } from '../graphics/ui.js';
 import { buildLevelWorld } from '../levels/build-level.js';
 import { LEVELS } from '../levels/levels.js';
-import { startMusic } from '../audio/music.js';
+import { playFanfare, startMusic } from '../audio/music.js';
 import { PauseScreen } from './pause-screen.js';
 import { TitleScreen } from './title-screen.js';
 import { Screen, pushScreen, resetScreens } from './screen.js';
 
 /** How long the death burst plays before the level snaps back. */
 const RESTART_DELAY_SECONDS = 0.85;
-/** How long the level-cleared banner holds before the next level loads. */
-const CLEARED_DELAY_SECONDS = 1.1;
+/**
+ * How long the level-cleared banner holds before the next level loads. Long
+ * enough to read the course name and the split under it without hurrying - the
+ * rainbow only starts closing over it in the last `WIPE_SECONDS` of that.
+ */
+const CLEARED_DELAY_SECONDS = 2.4;
 
 /** Never let a level start pitch black, however much Gloom is left. */
 const MINIMUM_RESTORATION = 0.06;
@@ -83,6 +87,11 @@ export class GameplayScreen extends Screen {
         // A course is shown whole before the view moves in on it.
         if (isNewCourse) this.world.camera.establish();
 
+        // The full arrangement - bass, arpeggio and drums - for as long as a
+        // course is under way. Does nothing if the loop is already running,
+        // which is every retry.
+        startMusic(true);
+
         saveData.furthestLevelIndex = Math.max(saveData.furthestLevelIndex, this.levelIndex);
         persistSaveData();
     }
@@ -118,15 +127,18 @@ export class GameplayScreen extends Screen {
         this.runSeconds += elapsedSeconds;
         this.meterFlash = damp(this.meterFlash, 0, 8, elapsedSeconds);
 
-        // Closes over the level once it is cleared, and pulls back off the new
-        // one the moment it loads.
-        this.wipe = clamp(
-            this.wipe + (this.clearedCountdown > 0 ? 1 : -1) * elapsedSeconds / WIPE_SECONDS,
-            0, 1,
-        );
+        // Closes over the level at the very end of the cleared hold, and pulls
+        // back off the new one the moment it loads. Waiting means the banner is
+        // read against the course it is about, rather than being wiped away
+        // while the player is still looking at it.
+        const isClosing = this.clearedCountdown > 0 && this.clearedCountdown < WIPE_SECONDS;
+        this.wipe = clamp(this.wipe + (isClosing ? 1 : -1) * elapsedSeconds / WIPE_SECONDS, 0, 1);
 
         this.updateRestoration(elapsedSeconds);
-        this.world.updateStep(elapsedSeconds);
+        // Under the banner the level runs in slow motion: the plume out of the
+        // gate keeps rising, and a unicorn still holding a direction key has
+        // four times less room to gallop into the lava with.
+        this.world.updateStep(this.clearedCountdown > 0 ? elapsedSeconds / 4 : elapsedSeconds);
 
         if (this.clearedCountdown > 0) {
             this.clearedCountdown -= elapsedSeconds;
@@ -152,6 +164,10 @@ export class GameplayScreen extends Screen {
 
     advanceLevel() {
         if (this.levelIndex + 1 >= LEVELS.length) {
+            // Thirteen courses, and the big flourish has been saved for this one
+            // moment. Every course before it got the small one.
+            playFanfare();
+
             const isBest = !saveData.bestRunSeconds || this.runSeconds < saveData.bestRunSeconds;
             if (isBest) {
                 saveData.bestRunSeconds = this.runSeconds;
@@ -178,10 +194,13 @@ export class GameplayScreen extends Screen {
      * The HUD: four corners, and as few words as it can get away with.
      *
      * Where you are and what the clock says are text, because they are text. The
-     * rest is not: how much paint is left is a bar, whether the dash is in hand
-     * is a shorter bar beside it, and what stands between you and the exit is a
-     * Gloom with a number beside it, which becomes the gate itself the moment
-     * that number runs out.
+     * rest is not: how much paint is left is a bar, and what stands between you
+     * and the exit is a Gloom with a number beside it, which becomes the gate
+     * itself the moment that number runs out.
+     *
+     * The dash is not on it at all. It comes back the moment you touch ground,
+     * which is a rule the player learns in one jump, and a second little bar
+     * next to the first one only asked to be read.
      *
      * There are no instruction lines under any of it any more. A HUD that tells
      * you to POUR A RAINBOW THROUGH THEM is a game narrating itself, and the
@@ -221,9 +240,8 @@ export class GameplayScreen extends Screen {
             });
         }
 
-        // Bottom left: paint left in the horn, and the dash held beside it.
+        // Bottom left: how much paint is left in the horn, and nothing else.
         drawPaintMeter(26, CANVAS_HEIGHT - 48, 210, 15, this.unicorn.paintEnergy, this.meterFlash);
-        drawPaintMeter(248, CANVAS_HEIGHT - 48, 32, 15, this.unicorn.hasDash);
 
         // Bottom right: what is left to purify, and then the way out.
         const remaining = this.world.entitiesOfCategory('gloom').length;
@@ -255,6 +273,11 @@ export class GameplayScreen extends Screen {
      */
     renderBanners() {
         if (this.clearedCountdown > 0) {
+            // The level fades half the way to black under it. The banner has
+            // two seconds to be read now, and it has to hold up over a
+            // signpost, a rainbow or a wall of grass to use them.
+            drawScreenDim(clamp((CLEARED_DELAY_SECONDS - this.clearedCountdown) * 3, 0, 0.5));
+
             drawWordmark('LEVEL CLEARED', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30, 54);
 
             drawText(`${this.activeLevel.levelTitle}  ${formatTime(this.runSeconds - this.levelStartSeconds)}`,

@@ -57,8 +57,7 @@ const TITLE_SCENE = {
 
 /**
  * How far left of, and above, the unicorn the camera sits. Left pushes it out
- * to the right of the menu; up keeps the lava under the meadow out of shot,
- * where the copyright line goes.
+ * to the right of the menu, and up keeps the lava under the meadow out of shot.
  */
 const TITLE_CAMERA_OFFSET = 230;
 const TITLE_CAMERA_LIFT = 175;
@@ -85,6 +84,10 @@ export class TitleScreen extends MenuScreen {
             this.scene.unicorn.x - TITLE_CAMERA_OFFSET,
             this.scene.unicorn.y - TITLE_CAMERA_LIFT,
         );
+
+        // Reached from a finished run, the fanfare has left the music stopped
+        // and nothing resumes this screen, so it starts the loop itself.
+        startMusic(false);
 
         this.menuItems = [
             {
@@ -150,15 +153,6 @@ export class TitleScreen extends MenuScreen {
                 inkColor: TEXT_DIM,
             });
         }
-
-        // One string, not two draws: the licence line rides along on the line that
-        // was already here, so it costs characters rather than a call site.
-        drawText('js13kGames 2026 - UNICORNS AND RAINBOWS - CC0 PUBLIC DOMAIN', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30, {
-            typeSize: 14,
-            typeWeight: 600,
-            typeSpacing: 2,
-            inkColor: TEXT_DIM,
-        });
 
         // Last, over the lot: the rainbow leaving.
         if (this.introAge < INTRO_SECONDS) drawRainbowWipe(1 - this.introAge / INTRO_SECONDS);

@@ -108,10 +108,6 @@ function drawSelectionMarker(centreX, y, width, time) {
 /**
  * The paint meter: a rounded trough filled with the rainbow, left to right.
  * The fill is clipped rather than scaled so the colours stay put as it drains.
- *
- * The air dash uses a short one of these beside it, full or empty. The dash is a
- * charge the ground gives back, which is the rule the paint meter already draws,
- * so saying it the same way costs nothing and reads as the same kind of thing.
  */
 export function drawPaintMeter(x, y, width, height, fillRatio, flashAmount = 0) {
     const context = canvasContext;

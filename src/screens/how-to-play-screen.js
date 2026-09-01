@@ -1,67 +1,46 @@
 /**
- * How to play - the game explaining itself.
+ * How to play: the controls, and the one line that is the whole objective.
  *
- * A judge may never read a line of this repository, so everything needed to play
- * PRISMHOOF well is here: the one verb and its four uses, the goal, the controls
- * and the tips that are hardest to discover by accident. The premise is not -
- * that is what the opening is for. Reachable from the title and the pause menu.
+ * Everything else this screen used to say - what a poured rainbow does on flat
+ * ground, at the edge of a drop, on the way up - is taught by the signs standing
+ * in the first four courses, at the moment the player is holding the key that
+ * does it. A wall of prose in a menu is a manual for a game with one verb, and
+ * nobody reads a manual with the meadow already on screen behind it.
  *
- * The left column is a list of (text, style, gap) rows rather than twenty
- * separate draw calls, which keeps the copy easy to edit and the layout in one
- * place.
- *
- * Several lines here are word-for-word what the signs in the first levels say.
- * That is deliberate twice over: the phrasing a player is taught in the meadow
- * is the phrasing they find again here, and a string the build has already seen
- * costs the packed payload almost nothing to repeat.
+ * So the keys are drawn as keys. A cap with a letter in it is read at a glance
+ * and needs no colon, no dash and no sentence explaining the convention. Aliases
+ * are left off on purpose: the arrows, W and J all work, but a list that shows
+ * every way to do a thing is longer and says less than one that shows one.
  */
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../config.js';
+import { canvasContext } from '../core/canvas.js';
 import { BACK_KEYS, CONFIRM_KEYS, wasKeyPressed } from '../core/input.js';
-import { drawText } from '../graphics/typography.js';
+import { applyFont, drawText } from '../graphics/typography.js';
 import { drawWordmark } from '../graphics/wordmark.js';
-import { TEXT_BRIGHT, TEXT_DIM, drawPanel, drawScreenDim } from '../graphics/ui.js';
+import { TEXT_BRIGHT, TEXT_DIM, drawGateBadge, drawGloomBadge, drawPanel, drawScreenDim } from '../graphics/ui.js';
 import { Screen, popScreen } from './screen.js';
 
-const HEADING = { typeSize: 19, typeWeight: 900, typeSpacing: 1.5, alignment: 'left', inkColor: TEXT_BRIGHT };
-const STRONG = { typeSize: 17, typeWeight: 700, alignment: 'left', inkColor: TEXT_BRIGHT };
-const BODY = { typeSize: 15, typeWeight: 500, alignment: 'left', inkColor: TEXT_DIM };
-const TERM = { typeSize: 15, typeWeight: 800, typeSpacing: 1.5, alignment: 'left', inkColor: TEXT_BRIGHT };
-
-/** [text, style, pixels of space before this line] */
-const STORY = [
-    ['HOLD SHIFT TO POUR A RAINBOW', HEADING, 0],
-    ['It flies out ahead of you, falls, and hardens where it lands.', BODY, 26],
-    ['ON FLAT GROUND', TERM, 34],
-    ['the stream sweeps down and purifies the Gloom', BODY, 21],
-    ['AT THE EDGE OF A DROP IT ARCS ACROSS', TERM, 26],
-    ['the gap below becomes a bridge', BODY, 21],
-    ['POUR AS YOU RISE AND IT CLIMBS TOO', TERM, 26],
-    ['the jump becomes a ramp', BODY, 21],
-    ['IN MID-AIR', TERM, 26],
-    ['the stream holds you up, and you climb', BODY, 21],
-    ['Purify every Gloom to open the Rainbow Gate, then run through it.', STRONG, 44],
-    ['The colour returns to the meadow as you clear it.', BODY, 24],
-];
-
+/** [the keys, what they do]. Four rows a column, two columns. */
 const CONTROLS = [
-    ['A  D  or  ARROWS', 'GALLOP'],
-    ['SPACE  or  W', 'JUMP  (hold for height)'],
+    ['A D', 'GALLOP'],
+    ['SPACE', 'JUMP'],
     ['S', 'DIVE'],
-    ['K  or  X', 'AIR DASH  (once per jump)'],
-    ['SHIFT', 'POUR RAINBOW  (hold)'],
-    ['C', 'WHOLE COURSE VIEW'],
-    ['R', 'RETRY LEVEL'],
+    ['K', 'AIR DASH'],
+    ['SHIFT', 'POUR RAINBOW'],
+    ['C', 'COURSE VIEW'],
+    ['R', 'RETRY'],
     ['ESC', 'PAUSE'],
 ];
 
-const TIPS = [
-    ['YOUR RAINBOWS FADE - KEEP MOVING', TEXT_BRIGHT, 800],
-    ['Wisps drink any rainbow they reach.', TEXT_DIM, 500],
-    // The one rule the game never states while you are playing, because dying
-    // says it better by happening and the clock in the corner never stopping.
-    ['ONE HIT IS FATAL - THE CLOCK NEVER STOPS', TEXT_DIM, 500],
-];
+const KEY_SIZE = 16;
+const COLUMN_X = [244, 700];
+const FIRST_ROW_Y = 212;
+const ROW_STEP = 60;
+/** Where the label starts, so every label in a column lines up whatever its keys. */
+const LABEL_OFFSET = 168;
+
+const GOAL_Y = 484;
 
 export class HowToPlayScreen extends Screen {
     updateStep(elapsedSeconds) {
@@ -71,38 +50,60 @@ export class HowToPlayScreen extends Screen {
 
     render() {
         drawScreenDim(0.72);
-        drawPanel(70, 44, CANVAS_WIDTH - 140, CANVAS_HEIGHT - 118);
-        drawWordmark('HOW TO PLAY', CANVAS_WIDTH / 2, 96, 34);
+        drawPanel(150, 60, CANVAS_WIDTH - 300, CANVAS_HEIGHT - 220);
+        drawWordmark('HOW TO PLAY', CANVAS_WIDTH / 2, 128, 36);
 
-        let y = 152;
-        for (const [text, style, gap] of STORY) {
-            y += gap;
-            drawText(text, style === BODY ? 134 : 122, y, style);
-        }
+        CONTROLS.forEach(([keys, doesWhat], index) => {
+            const x = COLUMN_X[index > 3 ? 1 : 0];
+            const y = FIRST_ROW_Y + (index % 4) * ROW_STEP;
 
-        this.renderControls();
+            let capX = x;
+            for (const key of keys.split(' ')) capX += drawKeyCap(key, capX, y);
 
-        drawText('ESC or ENTER to go back', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 42, {
-            typeSize: 15, typeWeight: 600, typeSpacing: 2, inkColor: TEXT_DIM,
+            drawText(doesWhat, x + LABEL_OFFSET, y, {
+                typeSize: 19,
+                typeWeight: 700,
+                typeSpacing: 1.5,
+                alignment: 'left',
+                inkColor: TEXT_DIM,
+            });
         });
+
+        // The goal, said once, standing between the two things it is about - and
+        // they are the same two badges the HUD counts with, so the corner of the
+        // screen is already explained by the time the player is looking at it.
+        drawGloomBadge(334, GOAL_Y);
+        drawText('PURIFY EVERY GLOOM TO OPEN THE GATE', CANVAS_WIDTH / 2, GOAL_Y, {
+            typeSize: 20,
+            typeWeight: 800,
+            typeSpacing: 2,
+            inkColor: TEXT_BRIGHT,
+        });
+        drawGateBadge(946, GOAL_Y - 4, this.age);
     }
+}
 
-    renderControls() {
-        const columnX = CANVAS_WIDTH - 340;
-        let y = 150;
+/**
+ * One key cap, drawn at `x` and returning how far along to start the next one.
+ * The width comes from measuring the letter rather than guessing at it, so SPACE
+ * and S both get a cap that fits them.
+ */
+function drawKeyCap(key, x, y) {
+    const context = canvasContext;
+    const width = applyFont(key, KEY_SIZE, 800, 1) + 26;
 
-        drawText('CONTROLS', columnX, y, { typeSize: 19, typeWeight: 900, typeSpacing: 3, inkColor: TEXT_BRIGHT });
+    context.strokeStyle = TEXT_DIM;
+    context.lineWidth = 2;
+    context.beginPath();
+    context.roundRect(x, y - 18, width, 36, 9);
+    context.stroke();
 
-        for (const [keys, menuLabel] of CONTROLS) {
-            y += 50;
-            drawText(keys, columnX, y, { typeSize: 17, typeWeight: 900, typeSpacing: 3, inkColor: TEXT_BRIGHT });
-            drawText(menuLabel, columnX, y + 22, { typeSize: 14, typeWeight: 600, typeSpacing: 1, inkColor: TEXT_DIM });
-        }
+    drawText(key, x + width / 2, y, {
+        typeSize: KEY_SIZE,
+        typeWeight: 800,
+        typeSpacing: 1,
+        inkColor: TEXT_BRIGHT,
+    });
 
-        y += 54;
-        for (const [text, inkColor, typeWeight] of TIPS) {
-            drawText(text, columnX, y, { typeSize: 14, typeWeight, typeSpacing: typeWeight > 700 ? 1 : 0, inkColor });
-            y += 24;
-        }
-    }
+    return width + 9;
 }
