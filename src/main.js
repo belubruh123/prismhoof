@@ -5,7 +5,7 @@
  */
 
 import { initialiseAudio, resumeAudio } from './audio/audio.js';
-import { startMusic } from './audio/music.js';
+import { resumeMusic } from './audio/music.js';
 import { initialiseCanvas } from './core/canvas.js';
 import { initialiseInput, onKeyGesture } from './core/input.js';
 import { startGameLoop } from './core/loop.js';
@@ -22,7 +22,7 @@ initialiseInput();
 onKeyGesture(() => {
     initialiseAudio();
     resumeAudio();
-    if (saveData.musicEnabled) startMusic(false);
+    if (saveData.musicEnabled) resumeMusic();
 });
 
 resetScreens(new TitleScreen());

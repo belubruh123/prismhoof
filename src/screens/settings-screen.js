@@ -14,7 +14,7 @@ import { drawText } from '../graphics/typography.js';
 import { drawWordmark } from '../graphics/wordmark.js';
 import { TEXT_DIM, drawMenu, drawPanel, drawScreenDim } from '../graphics/ui.js';
 import { applyVolumeSettings } from '../audio/audio.js';
-import { isMusicRunning, startMusic, stopMusic } from '../audio/music.js';
+import { isMusicRunning, resumeMusic, stopMusic } from '../audio/music.js';
 import { MenuScreen, popScreen } from './screen.js';
 
 const VOLUME_STEP = 0.1;
@@ -84,7 +84,9 @@ export class SettingsScreen extends MenuScreen {
         saveData.musicEnabled = !saveData.musicEnabled;
         this.saveAndApply();
 
-        if (saveData.musicEnabled) startMusic(false);
+        // Back in whatever the screen underneath asked for, so switching the
+        // music on from a pause menu brings the drums back with it.
+        if (saveData.musicEnabled) resumeMusic();
         else if (isMusicRunning()) stopMusic();
     }
 

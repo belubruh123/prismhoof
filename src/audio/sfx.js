@@ -88,7 +88,5 @@ export function playDeathSound() {
     playNoise(0.4, 0.2, 900, 120);
 }
 
-export const playGateSound = () => playArpeggio([523, 659, 784, 1047], 0.5, 0.2, 'triangle', 0.09);
-
 export const playMenuMoveSound = () => playTone(620, 780, 0.07, 0.16, 'square');
 export const playMenuSelectSound = () => playArpeggio([780, 1170], 0.14, 0.2, 'square', 0.05);

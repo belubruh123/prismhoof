@@ -3,7 +3,7 @@
  * that stand along the way.
  */
 
-import { playGateSound } from '../audio/sfx.js';
+import { playCourseCleared } from '../audio/music.js';
 import { LAYER_PICKUP } from '../config.js';
 import { canvasContext, wrap } from '../core/canvas.js';
 import { clamp, sin, TAU } from '../core/math.js';
@@ -84,7 +84,7 @@ export class RainbowGate extends Entity {
         const unicorn = this.world.firstOfCategory('unicorn');
         if (unicorn && !unicorn.isDead && boxesOverlap(this, unicorn)) {
             this.isEntered = true;
-            playGateSound();
+            playCourseCleared();
             unicorn.onGateEntered?.();
         }
     }
