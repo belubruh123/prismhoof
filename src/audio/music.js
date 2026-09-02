@@ -12,10 +12,10 @@
  *
  * Three things keep a loop this short from wearing through. The tune is four
  * bars against eight of harmony, so each phrase is heard twice over different
- * chords and never lands the same way. Every note is echoed an octave up three
- * sixteenths later, which is one extra oscillator standing in for a second
- * player. And the offbeats are late - a sixth of a step - so the hats swing
- * instead of marching.
+ * chords and never lands the same way. Notes with room after them are echoed an
+ * octave up an eighth later, which is one extra oscillator standing in for a
+ * second player. And the offbeats are late - a sixth of a step - so the hats
+ * swing instead of marching.
  *
  * Clearing a course hands the whole thing over to `playCourseCleared` for a
  * second and a half, and finishing the run to `playFanfare`: the loop keeps
@@ -189,14 +189,23 @@ function scheduleStep(step, startTime) {
 
     const melodyNote = MELODY[step % MELODY.length];
     if (melodyNote) {
-        playVoice(melodyNote, startTime, SECONDS_PER_STEP * melodyNoteLength(step) * 0.95,
-            'triangle', 0.14, 0.02, 2600);
+        const ringSteps = melodyNoteLength(step);
+        playVoice(melodyNote, startTime, SECONDS_PER_STEP * ringSteps * 0.95, 'triangle', 0.14, 0.02, 2600);
 
-        // And the same note again, quietly, an octave up and three sixteenths
-        // behind: one oscillator doing the work of a second player. Short, so
-        // that the tap has died away before the next note of the tune arrives -
-        // an echo still ringing under the note after it is just a wrong note.
-        playVoice(melodyNote + 12, startTime + SECONDS_PER_STEP * 3, 0.18, 'triangle', 0.04, 0.02, 5000);
+        // And the same note again, quietly, an octave up and an eighth behind:
+        // one oscillator doing the work of a second player.
+        //
+        // Two sixteenths rather than three, and only where the tune has left
+        // four clear ones after the note. Both of those are the difference
+        // between an echo and a mistake. An odd delay lands every tap on the
+        // opposite side of the swing from the note that cast it - twenty
+        // milliseconds out, in the wrong direction, twenty times a phrase - and
+        // a tap arriving on top of the next note of the tune, or a sixteenth
+        // before it, is heard as sloppy doubling rather than as a delay. This
+        // leaves seven of them in a four-bar phrase, all in the gaps.
+        if (ringSteps > 3) {
+            playVoice(melodyNote + 12, startTime + SECONDS_PER_STEP * 2, 0.18, 'triangle', 0.04, 0.02, 5000);
+        }
     }
 
     if (!arrangement) return;
