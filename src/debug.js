@@ -9,6 +9,7 @@
  * which is how the animation and the level geometry get checked:
  *
  *   #screen=howto            jump straight to a screen
+ *   #screen=story|ending     the opening, or the ending with a finished run
  *   #level=3                 start a run at a given level
  *   #level=edit              play the course held by tools/editor.html
  *   #hold=ArrowRight,KeyJ    hold keys down from the start
@@ -24,6 +25,8 @@ import { recentFrameDurations } from './core/loop.js';
 import { LEVELS } from './levels/levels.js';
 import { GameplayScreen } from './screens/gameplay-screen.js';
 import { HowToPlayScreen } from './screens/how-to-play-screen.js';
+import { StoryScreen } from './screens/story-screen.js';
+import { playEndingSong } from './audio/music.js';
 import { pushScreen, resetScreens, topScreen, updateScreens } from './screens/screen.js';
 import { SettingsScreen } from './screens/settings-screen.js';
 
@@ -33,6 +36,14 @@ const SCREEN_SHORTCUTS = new Map([
     ['howto', () => pushScreen(new HowToPlayScreen())],
     ['settings', () => pushScreen(new SettingsScreen())],
     ['play', () => resetScreens(new GameplayScreen(parseInt(options.get('level')) || 0))],
+    ['story', () => resetScreens(new StoryScreen())],
+    ['ending', () => {
+        resetScreens(new StoryScreen({ seconds: 154.28, deaths: 7, isBest: true }));
+        // The gameplay screen plays this on the way here, but a browser will not
+        // start an AudioContext without a trusted gesture, so the shortcut arms
+        // it against the first key press instead of playing into a dead context.
+        addEventListener('keydown', () => setTimeout(playEndingSong, 80), { once: true });
+    }],
 ]);
 
 /**

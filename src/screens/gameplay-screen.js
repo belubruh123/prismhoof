@@ -17,9 +17,9 @@ import { drawWordmark } from '../graphics/wordmark.js';
 import { TEXT_BRIGHT, TEXT_DIM, drawGateBadge, drawGloomBadge, drawPaintMeter, drawRainbowWipe, drawScreenDim, formatTime } from '../graphics/ui.js';
 import { buildLevelWorld } from '../levels/build-level.js';
 import { LEVELS } from '../levels/levels.js';
-import { playFanfare, startMusic } from '../audio/music.js';
+import { playEndingSong, startMusic } from '../audio/music.js';
 import { PauseScreen } from './pause-screen.js';
-import { TitleScreen } from './title-screen.js';
+import { StoryScreen } from './story-screen.js';
 import { Screen, pushScreen, resetScreens } from './screen.js';
 
 /** How long the death burst plays before the level snaps back. */
@@ -164,16 +164,19 @@ export class GameplayScreen extends Screen {
 
     advanceLevel() {
         if (this.levelIndex + 1 >= LEVELS.length) {
-            // Thirteen courses, and the big flourish has been saved for this one
-            // moment. Every course before it got the small one.
-            playFanfare();
+            // Thirteen courses, and the fanfare and the song behind it have been
+            // saved for this one moment. Every course before it got eight bars
+            // of the loop and three notes.
+            playEndingSong();
 
             const isBest = !saveData.bestRunSeconds || this.runSeconds < saveData.bestRunSeconds;
             if (isBest) {
                 saveData.bestRunSeconds = this.runSeconds;
                 persistSaveData();
             }
-            resetScreens(new TitleScreen({ seconds: this.runSeconds, deaths: this.deaths, isBest }));
+            // The story screen, told the run's numbers, is the ending; it hands
+            // them on to the title when it is done.
+            resetScreens(new StoryScreen({ seconds: this.runSeconds, deaths: this.deaths, isBest }));
             return;
         }
 

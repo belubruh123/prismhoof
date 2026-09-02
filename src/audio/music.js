@@ -18,9 +18,9 @@
  * swing instead of marching.
  *
  * Clearing a course hands the whole thing over to `playCourseCleared` for a
- * second and a half, and finishing the run to `playFanfare`: the loop keeps
- * counting underneath but plays nothing, because two pieces of music over one
- * another is neither of them.
+ * second and a half, and finishing the run to `playEndingSong` for fifteen: the
+ * loop keeps counting underneath but plays nothing, because two pieces of music
+ * over one another is neither of them.
  */
 
 import { audioTime, getAudioContext, getMusicBus, getNoiseBuffer, isAudioReady, noteToFrequency } from './audio.js';
@@ -33,23 +33,25 @@ const STEPS_PER_BAR = STEPS_PER_BEAT * 4;
 const LOOP_STEPS = STEPS_PER_BAR * 8;
 
 /**
- * Eight bars in D major: I - V - vi - IV, then vi - iii - IV - V, so the loop
- * has somewhere to go and does not wear through in thirty seconds. The second
- * half used to reach for an A minor, which is a borrowed chord in this key -
- * its C natural sat a semitone under the tune's C# four times a loop, and the
- * arpeggio spelled the clash out. F# minor does the same darkening job with
- * every note inside the key.
+ * D major, as a bitmask of the pitch classes in it: C# D E F# G A B.
+ *
+ * It is here so that a chord can be written as nothing but its root. Stack a
+ * third and a fifth on any note of a scale and whether the result is major or
+ * minor is not a choice, it is arithmetic - the third is four semitones up if
+ * that note is in the key and three if it is not. So `triadOf` derives what
+ * used to be spelled out beside all sixteen of the chords below, and both songs
+ * read from the same rule rather than from two tables that could disagree.
  */
-const CHORDS = [
-    { chordRoot: 50, intervals: [0, 4, 7] },  // D
-    { chordRoot: 45, intervals: [0, 4, 7] },  // A
-    { chordRoot: 47, intervals: [0, 3, 7] },  // B minor
-    { chordRoot: 43, intervals: [0, 4, 7] },  // G
-    { chordRoot: 47, intervals: [0, 3, 7] },  // B minor
-    { chordRoot: 42, intervals: [0, 3, 7] },  // F# minor
-    { chordRoot: 43, intervals: [0, 4, 7] },  // G
-    { chordRoot: 45, intervals: [0, 4, 7] },  // A
-];
+const IN_KEY = 0b101011010110;
+
+const triadOf = (chordRoot) => [0, IN_KEY >> (chordRoot + 4) % 12 & 1 ? 4 : 3, 7];
+
+/**
+ * Eight bars: I - V - vi - IV, then vi - iii - IV - V, so the loop has somewhere
+ * to go and does not wear through in thirty seconds. It never resolves, because
+ * a loop must not; the ending is where that finally happens.
+ */
+const CHORDS = [50, 45, 47, 43, 47, 42, 43, 45];  // D A Bm G Bm F#m G A
 
 /**
  * The tune, one entry per sixteenth. A note number starts a note, and zero
@@ -173,17 +175,17 @@ function melodyNoteLength(step) {
 }
 
 function scheduleStep(step, startTime) {
-    const bar = (step / STEPS_PER_BAR) | 0;
     const stepInBar = step % STEPS_PER_BAR;
-    const chord = CHORDS[bar];
+    const chordRoot = CHORDS[(step / STEPS_PER_BAR) | 0];
+    const intervals = triadOf(chordRoot);
 
     // Everything on an offbeat sixteenth is played late, drums included.
     if (stepInBar % 2) startTime += SWING_SECONDS;
 
     // Pad: the whole chord, once a bar, breathing underneath everything.
     if (stepInBar === 0) {
-        for (const interval of chord.intervals) {
-            playVoice(chord.chordRoot + 12 + interval, startTime, SECONDS_PER_STEP * 15, 'triangle', 0.075, 0.4, 900);
+        for (const interval of intervals) {
+            playVoice(chordRoot + 12 + interval, startTime, SECONDS_PER_STEP * 15, 'triangle', 0.075, 0.4, 900);
         }
     }
 
@@ -220,15 +222,14 @@ function scheduleStep(step, startTime) {
     // next chord's arrives. Two roots a semitone apart overlapping down here is
     // a growl, not a chord change.
     if (BASS_STEPS.includes(stepInBar)) {
-        playVoice(chord.chordRoot - 12, startTime, SECONDS_PER_STEP * 2, 'sawtooth', 0.1, 0.01, 420);
+        playVoice(chordRoot - 12, startTime, SECONDS_PER_STEP * 2, 'sawtooth', 0.1, 0.01, 420);
     }
 
     // Arpeggio: chord tones climbing through two octaves on every other step.
     if (stepInBar % 2 === 0) {
-        const toneIndex = (step / 2) % (chord.intervals.length * 2);
-        const octave = toneIndex >= chord.intervals.length ? 12 : 0;
-        const interval = chord.intervals[toneIndex % chord.intervals.length];
-        playVoice(chord.chordRoot + 24 + octave + interval, startTime, SECONDS_PER_STEP * 1.6, 'square', 0.032, 0.005, 3200);
+        const toneIndex = (step / 2) % 6;
+        const octave = toneIndex > 2 ? 12 : 0;
+        playVoice(chordRoot + 24 + octave + intervals[toneIndex % 3], startTime, SECONDS_PER_STEP * 1.6, 'square', 0.032, 0.005, 3200);
     }
 }
 
@@ -291,37 +292,72 @@ export function playCourseCleared() {
 }
 
 /**
- * The end of the whole run, and the only place this plays: a rising D major
- * arpeggio doubled two octaves down, landing on the chord with a kick under it.
- * Thirteen courses have been waiting for it.
+ * The end of the whole run: a fanfare, and then the theme itself, slowed to half
+ * speed over a progression that finally goes home.
+ *
+ * The tune is not a new one and that is the entire idea. It is `MELODY`, the
+ * thing the player has had under every course, in augmentation - each sixteenth
+ * held for two - which is what turns a jaunty loop into a processional without
+ * storing a second note anywhere. Under it the harmony stops wandering: the
+ * loop's progression never resolves, because a loop must not, and this one is
+ * D - A - G - A - Bm - G - A - D, which does nothing else.
+ *
+ * The bass is doubled an octave down, the melody has an octave above it played
+ * as one voice rather than as an echo, and there are no drums. Fifteen seconds,
+ * and the last chord is left ringing.
  */
-const FANFARE = [74, 78, 81, 86];
-/** How long the loop holds off for. The chord is still ringing at the end of it. */
-const FANFARE_SECONDS = 2.3;
+const ENDING_CHORDS = [50, 43, 54, 45, 50, 52, 45, 50];  // D G F#m A D Em A D
 
-export function playFanfare() {
+/** Where the theme stops and the cadence takes over: the last of the eight bars. */
+const ENDING_CADENCE_STEP = 56;
+const ENDING_SECONDS = 17;
+
+export function playEndingSong() {
     if (!isAudioReady()) return;
 
-    const startTime = audioTime() + 0.04;
+    const startTime = audioTime() + 0.1;
 
     // The loop steps on in silence underneath rather than stopping: there is
     // nothing to restart afterwards, and no key press can bring it back in over
-    // the top of the flourish.
-    quietUntil = startTime + FANFARE_SECONDS;
+    // the top of it.
+    quietUntil = startTime + ENDING_SECONDS;
 
-    FANFARE.forEach((midiNote, index) => {
+    // The fanfare first, over the top of the opening chord: four notes up the
+    // tonic triad, doubled two octaves down, with a kick and a cymbal.
+    [74, 78, 81, 86].forEach((midiNote, index) => {
         playVoice(midiNote, startTime + index * 0.13, 0.4, 'triangle', 0.2, 0.01, 5000);
         playVoice(midiNote - 24, startTime + index * 0.13, 0.4, 'sawtooth', 0.07, 0.01, 500);
     });
-
-    // The landing: the chord spread across two octaves under the note the run
-    // ended on, a kick beneath it and a cymbal over the top, held long enough
-    // to still be ringing when the banner goes.
-    for (const interval of [0, 4, 7, 12, 16]) {
-        playVoice(62 + interval, startTime + 0.52, 1.9, 'triangle', 0.08, 0.03, 3000);
-    }
     playKick(startTime + 0.52);
     playNoiseHit(startTime + 0.52, 0.12, 6000, 0.6);
+
+    // Then the theme, at half speed, one chord to every eight of its sixteenths.
+    const beat = SECONDS_PER_STEP * 2;
+
+    MELODY.forEach((midiNote, step) => {
+        const at = startTime + step * beat;
+        const isCadence = step >= ENDING_CADENCE_STEP;
+
+        if (step % 8 === 0) {
+            const chordRoot = ENDING_CHORDS[step / 8];
+            // The last chord is given twice the length of any before it and is
+            // simply left to ring, which is the sound of a thing being over.
+            for (const interval of triadOf(chordRoot)) {
+                playVoice(chordRoot + 12 + interval, at, beat * (isCadence ? 16 : 8), 'triangle', 0.07, 0.5, 1200);
+            }
+            playVoice(chordRoot - 12, at, beat * (isCadence ? 14 : 7), 'sawtooth', 0.09, 0.02, 380);
+        }
+
+        // The theme's own last bar climbs away to an E and hangs there, which is
+        // right for a loop and wrong for an ending, so the cadence is played
+        // instead of it: the tune walks onto the tonic and stops.
+        const note = isCadence ? (step === ENDING_CADENCE_STEP ? 74 : 0) : midiNote;
+        if (!note) return;
+
+        const ring = beat * (isCadence ? 16 : melodyNoteLength(step) * 0.95);
+        playVoice(note, at, ring, 'triangle', 0.15, 0.03, 2600);
+        playVoice(note + 12, at, ring, 'triangle', 0.05, 0.35, 5000);
+    });
 }
 
 export function stopMusic() {
