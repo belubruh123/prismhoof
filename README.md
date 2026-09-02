@@ -2,7 +2,7 @@
 
 **PRISMHOOF** is my entry for [js13kGames 2026](https://js13kgames.com/), whose theme was
 **Unicorns and Rainbows**. It is a 2D precision platformer: desktop, keyboard only, one
-canvas, **13,154 of the 13,312 bytes allowed** — everything zipped, nothing streamed in.
+canvas, **13,270 of the 13,312 bytes allowed** — everything zipped, nothing streamed in.
 There is no DOM UI anywhere in it and no image, audio or font assets. Every pixel and every
 sound is generated at runtime.
 
@@ -23,7 +23,9 @@ something. Where you fire from is what decides what you get:
 | Mid-air | Lift, because the stream pushes back |
 
 Purify every Gloom to open the Rainbow Gate, then run through it. Thirteen courses, one
-clock that never stops, and a fall into the lava costs you time rather than lives.
+clock that never stops, and a fall into the lava costs you time rather than lives. Finish all
+thirteen and the meadow you were shown at the start comes back, in colour, with your time
+under it.
 
 ### Controls
 
@@ -86,6 +88,7 @@ zipped by hand, the deflate stream compressed with **Zopfli**.
 | Golfing the stylesheet, which Roadroller never sees | 64 |
 | Dropping the wrapper element, unquoted HTML attributes | 40 |
 | Roadroller `allowFreeVars` (its `--dirty` mode) | ~35 |
+| Writing the title/ending meadow in the level format's run-length form | 18 |
 | Best-of-N packing | ~16 |
 | Eight-digit hex instead of `rgba()`, for two colours Closure inlines 24× each | 19 |
 | Roadroller `--opt=2` | 10 |
@@ -95,6 +98,8 @@ And what was measured and thrown away, which is worth as much:
 | Idea | Result |
 | --- | --- |
 | Deduplicating similar code into shared helpers | **6 bytes** for 112 minified bytes removed |
+| Building that same meadow with `'#'.repeat(44)` instead | **5 bytes worse** — the loop compresses the repetition better than the code costs |
+| Shortening a colour literal that appears 21 times | ~4 bytes — repeated strings are already nearly free |
 | Sharing one path or one branch between two draw calls | **0 bytes** for 201 minified bytes removed |
 | Splitting entities out of the terrain grid | **168 bytes worse** |
 | A shared dictionary of repeated level rows | 7 bytes — less than its own decoder |
@@ -163,7 +168,7 @@ Yes. I build this with [Claude Code](https://claude.com/claude-code). I make the
 direction and gameplay calls; Claude Code writes and refactors the code against them.
 
 **Is it really under 13kB?**
-Yes — 13,154 of 13,312 bytes, checked by `make zip` on every build. No network requests, no
+Yes — 13,270 of 13,312 bytes, checked by `make zip` on every build. No network requests, no
 external assets, nothing streamed in at runtime.
 
 **Why no game library?**
