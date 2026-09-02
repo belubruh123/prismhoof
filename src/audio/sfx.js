@@ -10,13 +10,14 @@ import { audioTime, getAudioContext, getNoiseBuffer, getSoundBus, isAudioReady }
 
 /**
  * A tone that sweeps from one pitch to another with a percussive envelope.
- * `endFrequency` of 0 holds the starting pitch.
+ * `endFrequency` of 0 holds the starting pitch, and `delay` puts the note into
+ * the future on the audio clock rather than on the event loop.
  */
-export function playTone(startFrequency, endFrequency, duration, volume = 0.4, waveType = 'square') {
+export function playTone(startFrequency, endFrequency, duration, volume = 0.4, waveType = 'square', delay = 0) {
     if (!isAudioReady()) return;
 
     const context = getAudioContext();
-    const startTime = audioTime();
+    const startTime = audioTime() + delay;
 
     const oscillator = context.createOscillator();
     const envelope = context.createGain();
@@ -60,12 +61,16 @@ export function playNoise(duration, volume, filterStart, filterEnd) {
     source.stop(startTime + duration + 0.02);
 }
 
-/** A short run of notes, used for chimes. `gap` is seconds between each. */
-function playArpeggio(frequencies, duration, volume, waveType, gap) {
-    frequencies.forEach((frequency, index) => {
-        setTimeout(() => playTone(frequency, 0, duration, volume, waveType), index * gap * 1000);
-    });
-}
+/**
+ * A short run of notes, used for chimes. `gap` is seconds between each.
+ *
+ * Scheduled on the audio clock, not with setTimeout. A timer fires when the
+ * event loop gets to it, which in a frame that is doing anything at all is late
+ * by a variable few milliseconds - so a four-note chime arrived with its notes
+ * unevenly spaced, differently every time.
+ */
+const playArpeggio = (frequencies, duration, volume, waveType, gap) =>
+    frequencies.forEach((frequency, index) => playTone(frequency, 0, duration, volume, waveType, index * gap));
 
 // --- the sound design ------------------------------------------------------
 
