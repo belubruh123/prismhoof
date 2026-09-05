@@ -15,14 +15,13 @@
  * the FPS counter and the level-skip keys. None of that reaches the release
  * build, because esbuild eliminates the `if (DEBUG)` branches when it is false.
  *
- * It also serves the course editor at /editor.html. The editor has to come from
- * the same origin as the game, because the two of them pass a level to each
- * other through localStorage.
+ * The course editor is inside the game now, at #screen=editor, so there is
+ * nothing to serve alongside it.
  */
 
 import { context } from 'esbuild';
 import { createReadStream } from 'node:fs';
-import { copyFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { resolve, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -66,35 +65,12 @@ const writeDebugPagePlugin = {
             await mkdir(resolve(projectRoot, 'build'), { recursive: true });
             await writeFile(resolve(projectRoot, 'build/debug.html'), html);
 
-            // Picks up edits to the level file and to the editor itself, so the
-            // course list stays in step with the game without a restart.
-            await copyEditorFiles();
-
             for (const client of liveReloadClients) client.write('data: rebuild\n\n');
 
             console.log(`  rebuilt  ${script.length} bytes  ${new Date().toLocaleTimeString()}`);
         });
     },
 };
-
-/**
- * Puts the editor and the files it reads where the server can reach them: the
- * page itself, the format helpers it imports, and a copy of the level file so it
- * can offer every course in the game as a starting point.
- */
-async function copyEditorFiles() {
-    await mkdir(resolve(projectRoot, 'build'), { recursive: true });
-
-    for (const [from, to] of [
-        ['tools/editor.html', 'build/editor.html'],
-        ['tools/level-text.mjs', 'build/level-text.mjs'],
-        ['src/levels/levels.js', 'build/levels.js'],
-    ]) {
-        await copyFile(resolve(projectRoot, from), resolve(projectRoot, to));
-    }
-}
-
-await copyEditorFiles();
 
 const buildContext = await context({
     entryPoints: [resolve(projectRoot, 'src/main.js')],
@@ -152,5 +128,5 @@ createServer(async (request, response) => {
 console.log(
     `\n  PRISMHOOF dev server, on every interface and any host name`
     + `\n  game    http://localhost:${PORT}/debug.html`
-    + `\n  editor  http://localhost:${PORT}/editor.html\n`,
+    + `\n  editor  http://localhost:${PORT}/debug.html#screen=editor\n`,
 );

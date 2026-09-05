@@ -5,12 +5,12 @@ all: build zip
 install:
 	npm install
 
-# Watch + serve the unminified debug build on http://localhost:8013,
-# with the course editor alongside it at /editor.html
+# Watch + serve the unminified debug build on http://localhost:8013.
+# The course editor is in it, at /debug.html#screen=editor
 dev:
 	npm run dev
 
-# Prove the course editor still round-trips every level in the game unchanged
+# Prove the editor's level format still round-trips every level unchanged
 check:
 	npm run check
 

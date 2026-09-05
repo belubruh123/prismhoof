@@ -10,8 +10,8 @@
  *
  *   #screen=howto            jump straight to a screen
  *   #screen=story|ending     the opening, or the ending with a finished run
+ *   #screen=editor           the course editor
  *   #level=3                 start a run at a given level
- *   #level=edit              play the course held by tools/editor.html
  *   #hold=ArrowRight,KeyJ    hold keys down from the start
  *   #seq=Space:60,-KeyJ:90   press and release keys at given warm-up steps
  *   #warm=180                step the simulation before the first frame
@@ -22,10 +22,10 @@ import { CANVAS_HEIGHT } from './config.js';
 import { canvasContext } from './core/canvas.js';
 import { clearFrameInput } from './core/input.js';
 import { recentFrameDurations } from './core/loop.js';
-import { LEVELS } from './levels/levels.js';
 import { GameplayScreen } from './screens/gameplay-screen.js';
 import { HowToPlayScreen } from './screens/how-to-play-screen.js';
 import { StoryScreen } from './screens/story-screen.js';
+import { EditorScreen } from './editor-screen.js';
 import { playEndingSong } from './audio/music.js';
 import { pushScreen, resetScreens, topScreen, updateScreens } from './screens/screen.js';
 import { SettingsScreen } from './screens/settings-screen.js';
@@ -37,6 +37,7 @@ const SCREEN_SHORTCUTS = new Map([
     ['settings', () => pushScreen(new SettingsScreen())],
     ['play', () => resetScreens(new GameplayScreen(parseInt(options.get('level')) || 0))],
     ['story', () => resetScreens(new StoryScreen())],
+    ['editor', () => resetScreens(new EditorScreen())],
     ['ending', () => {
         resetScreens(new StoryScreen({ seconds: 154.28, deaths: 7, isBest: true }));
         // The gameplay screen plays this on the way here, but a browser will not
@@ -54,21 +55,6 @@ const SCREEN_SHORTCUTS = new Map([
  */
 export function runDebugWarmUp() {
     SCREEN_SHORTCUTS.get(options.get('screen'))?.();
-
-    // The course editor leaves a level here for the game to pick up. Appending it
-    // to LEVELS rather than special-casing the gameplay screen means an edited
-    // course goes through exactly the same path as a shipped one, including the
-    // retry and level-cleared handling.
-    if (options.get('level') === 'edit') {
-        const edited = localStorage.getItem('prismhoof.editorLevel');
-        if (edited) {
-            // The editor writes the authored shape (name/rows); the game reads
-            // the build's shape, so convert at the boundary.
-            const authored = JSON.parse(edited);
-            LEVELS.push({ levelTitle: authored.name, signs: authored.signs, tileRows: authored.rows });
-            resetScreens(new GameplayScreen(LEVELS.length - 1));
-        }
-    }
 
     const levelIndex = parseInt(options.get('level'));
     if (levelIndex >= 0 && !options.get('screen')) resetScreens(new GameplayScreen(levelIndex));
