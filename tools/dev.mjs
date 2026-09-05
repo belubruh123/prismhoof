@@ -15,8 +15,8 @@
  * the FPS counter and the level-skip keys. None of that reaches the release
  * build, because esbuild eliminates the `if (DEBUG)` branches when it is false.
  *
- * The course editor is inside the game now, at #screen=editor, so there is
- * nothing to serve alongside it.
+ * The course editor is inside the game now - press E - so there is nothing to
+ * serve alongside it.
  */
 
 import { context } from 'esbuild';
@@ -128,5 +128,5 @@ createServer(async (request, response) => {
 console.log(
     `\n  PRISMHOOF dev server, on every interface and any host name`
     + `\n  game    http://localhost:${PORT}/debug.html`
-    + `\n  editor  http://localhost:${PORT}/debug.html#screen=editor\n`,
+    + `\n  editor  press E in the game, and E again to come back from a test run\n`,
 );

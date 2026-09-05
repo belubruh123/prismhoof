@@ -6,7 +6,7 @@ install:
 	npm install
 
 # Watch + serve the unminified debug build on http://localhost:8013.
-# The course editor is in it, at /debug.html#screen=editor
+# The course editor is in it: press E, and E again to come back from a test run
 dev:
 	npm run dev
 

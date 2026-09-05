@@ -10,7 +10,7 @@
  *
  *   #screen=howto            jump straight to a screen
  *   #screen=story|ending     the opening, or the ending with a finished run
- *   #screen=editor           the course editor
+ *   #screen=editor           the course editor, which E also opens from anywhere
  *   #level=3                 start a run at a given level
  *   #hold=ArrowRight,KeyJ    hold keys down from the start
  *   #seq=Space:60,-KeyJ:90   press and release keys at given warm-up steps
@@ -32,12 +32,27 @@ import { SettingsScreen } from './screens/settings-screen.js';
 
 const options = new URLSearchParams(location.hash.slice(1));
 
+/**
+ * E opens the course editor, from anywhere, and comes back to it from anywhere.
+ *
+ * One editor for the whole page load, so a course survives being played, dying
+ * in, finishing, and coming back to be fixed. It replaces the whole screen
+ * stack rather than pushing onto it, which is what makes the key work the same
+ * from the title, from the middle of a playtest, from a pause menu and from the
+ * ending screen - there is no arrangement of screens it can get lost behind.
+ */
+let editorScreen = null;
+
+function openEditor() {
+    resetScreens(editorScreen ??= new EditorScreen());
+}
+
 const SCREEN_SHORTCUTS = new Map([
     ['howto', () => pushScreen(new HowToPlayScreen())],
     ['settings', () => pushScreen(new SettingsScreen())],
     ['play', () => resetScreens(new GameplayScreen(parseInt(options.get('level')) || 0))],
     ['story', () => resetScreens(new StoryScreen())],
-    ['editor', () => resetScreens(new EditorScreen())],
+    ['editor', openEditor],
     ['ending', () => {
         resetScreens(new StoryScreen({ seconds: 154.28, deaths: 7, isBest: true }));
         // The gameplay screen plays this on the way here, but a browser will not
@@ -54,6 +69,17 @@ const SCREEN_SHORTCUTS = new Map([
  * which a headless screenshot has almost no control over.
  */
 export function runDebugWarmUp() {
+    // Registered here rather than at the top of this module, and that is not a
+    // matter of taste. A bare `addEventListener` at module scope is a side
+    // effect, so esbuild may not drop the module that holds it - and this module
+    // is the only thing keeping the whole editor out of the release build. It
+    // went 2,024 bytes over the limit the one time this line sat at the top of
+    // the file. Everything in here is reached from `if (DEBUG)` and nothing in
+    // here may run on its own.
+    addEventListener('keydown', (event) => {
+        if (event.code === 'KeyE' && !(topScreen() instanceof EditorScreen)) openEditor();
+    });
+
     SCREEN_SHORTCUTS.get(options.get('screen'))?.();
 
     const levelIndex = parseInt(options.get('level'));

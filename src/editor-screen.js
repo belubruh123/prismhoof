@@ -18,6 +18,12 @@
  *
  * Text entry uses `prompt`. A canvas has no text fields, writing one is a lot of
  * code for a dev tool, and names and sign lines are typed about twice a course.
+ *
+ * E opens this and E comes back to it - from the title, from the middle of the
+ * test run, from a pause menu, from the ending. ENTER starts the test run. Those
+ * two keys are the whole loop, and neither of them can leave you stuck in the
+ * other place. The key itself lives in `debug.js` rather than here, because it
+ * has to work before there is an editor to press it in.
  */
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from './config.js';
@@ -81,7 +87,7 @@ const ACTIONS = new Map([
     ['KeyS', (editor) => editor.editSigns()],
     ['KeyL', (editor) => editor.loadFromGame()],
     ['KeyI', (editor) => editor.importPasted()],
-    ['KeyE', (editor) => editor.exportToClipboard()],
+    ['KeyC', (editor) => editor.exportToClipboard()],
     ['KeyG', (editor) => { editor.showGuides = !editor.showGuides; }],
     ['KeyX', (editor) => editor.clear()],
     ['Enter', (editor) => editor.playCourse()],
@@ -115,8 +121,9 @@ export class EditorScreen extends Screen {
         this.grid = rowsToGrid(saved.rows, this.gridWidth);
 
         // Straight onto the window rather than through the game's input module,
-        // because the editor has to answer the pointer, and because Backquote
-        // has to work from inside a playtest as well as from here.
+        // because the editor has to answer the pointer. The way back into the
+        // editor is not here: E is handled in debug.js, which is what lets it
+        // work before an editor has ever been opened.
         addEventListener('pointerdown', (event) => this.onPointerDown(event));
         addEventListener('pointermove', (event) => this.onPointerMove(event));
         addEventListener('pointerup', () => { this.painting = null; });
@@ -182,13 +189,6 @@ export class EditorScreen extends Screen {
     }
 
     onKeyDown(event) {
-        // The way back, from anywhere: a playtest, a pause menu, even the ending
-        // screen after finishing the course you just drew.
-        if (event.code === 'Backquote') {
-            if (!this.isOnTop()) resetScreens(this);
-            return;
-        }
-
         if (!this.isOnTop()) return;
 
         const digit = Number(event.key);
@@ -422,7 +422,7 @@ export class EditorScreen extends Screen {
         });
 
         const hints = 'DRAG paint   RIGHT-DRAG erase   1-8 tile   [ ] width   N name   S signs'
-            + '\nL load a course   I import   E export   X clear   G guides   ENTER play   ` back here';
+            + '\nL load a course   I import   C copy   X clear   G guides   ENTER test run   E back here';
 
         hints.split('\n').forEach((line, index) => {
             drawText(line, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 64 + index * 24, {

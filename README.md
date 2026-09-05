@@ -2,7 +2,7 @@
 
 **PRISMHOOF** is my entry for [js13kGames 2026](https://js13kgames.com/), whose theme was
 **Unicorns and Rainbows**. It is a 2D precision platformer: desktop, keyboard only, one
-canvas, **13,267 of the 13,312 bytes allowed** — everything zipped, nothing streamed in.
+canvas, **13,279 of the 13,312 bytes allowed** — everything zipped, nothing streamed in.
 There is no DOM UI anywhere in it and no image, audio or font assets. Every pixel and every
 sound is generated at runtime.
 
@@ -57,11 +57,13 @@ make check       # prove the level format round-trips every course unchanged
 make pages       # the same game with the limit lifted -> docs/index.html
 ```
 
-The course editor is **inside the game**, at `/debug.html#screen=editor`: a grid you paint
-with the mouse, the three jump-and-pour distances drawn from whatever tile you are pointing
-at, and `Enter` to play what you drew through the real game loop — backquote brings you back
-from anywhere, including the ending. It reaches the game only through `if (DEBUG)` branches,
-so esbuild drops the whole thing from the release build and it costs the entry nothing.
+The course editor is **inside the game**: press `E` from anywhere in the debug build. Paint
+the grid with the mouse, with the three jump-and-pour distances drawn from whatever tile you
+are pointing at; `Enter` test-runs the course through the real game loop, and `E` brings you
+back to keep editing — from the run, from a pause menu, from the ending screen. Those two
+keys are the whole loop. It reaches the game only through `if (DEBUG)` branches, so esbuild
+drops the editor and everything it imports from the release build, which was checked by
+diffing the packed payload against a build without it: byte for byte identical.
 
 `make verify` is the one that matters before shipping: it applies the full release squeeze
 but leaves the debug hooks in, so a mangled build can actually be driven. A plain debug build
@@ -171,7 +173,7 @@ Yes. I build this with [Claude Code](https://claude.com/claude-code). I make the
 direction and gameplay calls; Claude Code writes and refactors the code against them.
 
 **Is it really under 13kB?**
-Yes — 13,267 of 13,312 bytes, checked by `make zip` on every build. No network requests, no
+Yes — 13,279 of 13,312 bytes, checked by `make zip` on every build. No network requests, no
 external assets, nothing streamed in at runtime.
 
 **Why no game library?**
