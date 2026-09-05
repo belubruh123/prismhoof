@@ -26,9 +26,14 @@
  * has to work before there is an editor to press it in.
  */
 
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from './config.js';
+import { CANVAS_HEIGHT, CANVAS_WIDTH, TILE_SIZE } from './config.js';
 import { canvas, canvasContext } from './core/canvas.js';
+import { sin } from './core/math.js';
+import { drawFourPointStar } from './engine/particles.js';
+import { refreshPalette, setColorRestoration } from './graphics/palette.js';
+import { renderSky } from './graphics/sky.js';
 import { drawText } from './graphics/typography.js';
+import { buildLevelWorld } from './levels/build-level.js';
 import { LEVEL_ROW_COUNT } from './levels/level-format.js';
 import { LEVELS } from './levels/levels.js';
 import { GameplayScreen } from './screens/gameplay-screen.js';
@@ -67,6 +72,7 @@ const GUIDES = [
     { across: 10, up: 5, guideColor: '#ff5fa2', label: 'pour + jump' },
 ];
 
+
 /**
  * What each key does, as a Map rather than an object literal.
  *
@@ -94,7 +100,10 @@ const ACTIONS = new Map([
     ['Escape', () => resetScreens(new TitleScreen())],
 ]);
 
-const GRID_TOP = 96;
+/** The band of screen the course is framed into, between the two rows of chrome. */
+const VIEW_TOP = 88;
+const VIEW_BOTTOM = 640;
+
 const MIN_WIDTH = 8;
 const MAX_WIDTH = 120;
 /** What a fresh course starts at: about the width the shipped ones settled on. */
@@ -105,6 +114,8 @@ const DIM = '#e9dcffaa';
 
 export class EditorScreen extends Screen {
     selectedTile = 1;
+    /** Set by every edit; the preview is rebuilt once a frame, not once a stroke. */
+    isDirty = true;
     /** The character being dragged in, or null when the pointer is up. */
     painting = null;
     hover = null;
@@ -135,25 +146,54 @@ export class EditorScreen extends Screen {
         return topScreen() === this;
     }
 
-    /** Pixels per tile, and where the grid starts, for the current width. */
-    get cellSize() {
-        return Math.floor(Math.min(1240 / this.gridWidth, (CANVAS_HEIGHT - GRID_TOP - 120) / LEVEL_ROW_COUNT));
+    /**
+     * The zoom that fits the whole course into the band between the two rows of
+     * chrome. It is the same number the game's own whole-course view works out,
+     * for the same reason: a course is a thing you should be able to see all of.
+     */
+    get viewZoom() {
+        return Math.min(
+            CANVAS_WIDTH / (this.gridWidth * TILE_SIZE),
+            (VIEW_BOTTOM - VIEW_TOP) / (LEVEL_ROW_COUNT * TILE_SIZE),
+        );
     }
 
-    get gridLeft() {
-        return Math.round((CANVAS_WIDTH - this.gridWidth * this.cellSize) / 2);
+    /**
+     * Where the camera sits so that the course lands centred in that band.
+     *
+     * `applyTransform` anchors on the middle of the canvas, and the middle of
+     * the band is a few pixels above it, so the difference is added back in
+     * world units - which is what `/ zoom` is doing.
+     */
+    get viewCentre() {
+        const zoom = this.viewZoom;
+        return {
+            x: this.gridWidth * TILE_SIZE / 2,
+            y: LEVEL_ROW_COUNT * TILE_SIZE / 2 + (CANVAS_HEIGHT / 2 - (VIEW_TOP + VIEW_BOTTOM) / 2) / zoom,
+        };
     }
 
     // --- input ------------------------------------------------------------
 
-    /** Where in the grid a pointer event landed, or null if it missed. */
+    /**
+     * Where in the grid a pointer event landed, or null if it missed.
+     *
+     * The inverse of `Camera.applyTransform`: undo the canvas letterboxing to
+     * get canvas pixels, undo the camera to get world units, and divide by the
+     * tile size. Doing it this way rather than against a grid of the editor's
+     * own means the tile under the pointer is the tile under the pointer in the
+     * picture, whatever the zoom works out to.
+     */
     cellAt(event) {
         const bounds = canvas.getBoundingClientRect();
-        const x = (event.clientX - bounds.left) / bounds.width * CANVAS_WIDTH - this.gridLeft;
-        const y = (event.clientY - bounds.top) / bounds.height * CANVAS_HEIGHT - GRID_TOP;
+        const zoom = this.viewZoom;
+        const centre = this.viewCentre;
 
-        const column = Math.floor(x / this.cellSize);
-        const row = Math.floor(y / this.cellSize);
+        const canvasX = (event.clientX - bounds.left) / bounds.width * CANVAS_WIDTH;
+        const canvasY = (event.clientY - bounds.top) / bounds.height * CANVAS_HEIGHT;
+
+        const column = Math.floor(((canvasX - CANVAS_WIDTH / 2) / zoom + centre.x) / TILE_SIZE);
+        const row = Math.floor(((canvasY - CANVAS_HEIGHT / 2) / zoom + centre.y) / TILE_SIZE);
 
         const isInside = row >= 0 && column >= 0 && row < LEVEL_ROW_COUNT && column < this.gridWidth;
         return isInside ? { row, column } : null;
@@ -203,8 +243,19 @@ export class EditorScreen extends Screen {
         return { name: this.courseName, signs: this.signs, rows: gridToRows(this.grid) };
     }
 
+    /**
+     * Keeps the draft as `[name, signs, rows]` rather than as an object.
+     *
+     * A property name is something the mangler renames and a position is not,
+     * so an object draft written by the debug build reads back with half its
+     * fields missing in the mangled one - `signs` came back as `yt`. Three
+     * values in a known order mean nothing about the build is baked into what
+     * is on disk.
+     */
     save() {
-        localStorage.setItem(SAVE_KEY, JSON.stringify(this.definition()));
+        this.isDirty = true;
+        const { name, signs, rows } = this.definition();
+        localStorage.setItem(SAVE_KEY, JSON.stringify([name, signs, rows]));
     }
 
     resize(direction) {
@@ -296,98 +347,174 @@ export class EditorScreen extends Screen {
 
     // --- drawing ----------------------------------------------------------
 
+    /**
+     * Rebuilds the preview world, which is what makes this look like the game
+     * rather than like a spreadsheet.
+     *
+     * It goes through `buildLevelWorld`, the same function a shipped course goes
+     * through, so the terrain, the lava, the Gloom, the gate, the signs and the
+     * unicorn on its start tile are all the real ones drawn by the real code. It
+     * is never updated, only rendered: a frozen world is exactly what a level
+     * drawing wants to be, and it means nothing falls, patrols or dies while you
+     * are looking at it.
+     *
+     * Built from the untrimmed grid rather than the authored rows, so that the
+     * course's bounds always match the grid the pointer is being mapped onto -
+     * trimming a course's empty right-hand columns is right for the file and
+     * wrong for the thing you are painting on.
+     */
+    rebuildPreview() {
+        this.isDirty = false;
+
+        const rows = this.grid.map((cells) => cells.join(''));
+        // A course with no start tile cannot be built - the camera has nothing
+        // to snap to - so the last good picture is kept and the notice says why.
+        if (!rows.join('').includes('P')) return;
+
+        const signMarks = this.grid.flat().filter((character) => character === '!').length;
+        const signs = Array.from({ length: signMarks }, (_, index) => this.signs[index] ?? '...');
+
+        this.preview = buildLevelWorld({ levelTitle: this.courseName, signs, tileRows: rows });
+    }
+
+    updateStep(elapsedSeconds) {
+        super.updateStep(elapsedSeconds);
+        if (this.isDirty) this.rebuildPreview();
+    }
+
     render() {
         const context = canvasContext;
-        const cell = this.cellSize;
-        const left = this.gridLeft;
 
-        context.fillStyle = '#16112a';
-        context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        // The meadow as it will be played: fully restored, because a course is
+        // drawn in the colour it is meant to end in.
+        setColorRestoration(1);
+        refreshPalette();
 
-        for (let row = 0; row < LEVEL_ROW_COUNT; row++) {
-            for (let column = 0; column < this.gridWidth; column++) {
-                this.drawCell(row, column, left + column * cell, GRID_TOP + row * cell, cell);
-            }
+        const zoom = this.viewZoom;
+        const centre = this.viewCentre;
+
+        if (this.preview) {
+            const { camera } = this.preview.world;
+            camera.viewZoom = zoom;
+            camera.x = camera.shownX = centre.x;
+            camera.y = camera.shownY = centre.y;
+
+            renderSky(camera, this.age);
+            this.preview.world.render();
+        } else {
+            context.fillStyle = '#16112a';
+            context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         }
 
-        this.drawGridLines(left, cell);
-        if (this.showGuides && this.hover) this.drawGuides(left, cell);
-
+        this.drawOverlay(zoom, centre);
         this.drawChrome();
     }
 
-    drawCell(row, column, x, y, cell) {
+    /**
+     * The grid and the cursor, drawn in world space over the picture.
+     *
+     * Everything here is inside the camera transform, so a tile outline is a
+     * tile whatever the zoom, and the line widths are divided by the zoom to
+     * come out the same weight on screen at any course width.
+     */
+    drawOverlay(zoom, centre) {
         const context = canvasContext;
-        const character = this.grid[row][column];
-        const tile = TILES.find((candidate) => candidate.character === character) ?? TILES[0];
-
-        // The bottom row is shaded, because it is the one row a course always
-        // has and the thing everything else is measured up from.
-        context.fillStyle = character === '.' ? (row === LEVEL_ROW_COUNT - 1 ? '#241c38' : '#2b2140') : tile.tileColor;
-
-        if (character === '=') {
-            context.fillRect(x, y, cell, cell);
-            return;
-        }
-
-        if ('PGMW!'.includes(character)) {
-            context.fillStyle = '#2b2140';
-            context.fillRect(x, y, cell, cell);
-            context.fillStyle = tile.tileColor;
-            context.beginPath();
-            context.arc(x + cell / 2, y + cell / 2, cell * 0.32, 0, Math.PI * 2);
-            context.fill();
-            return;
-        }
-
-        context.fillRect(x, y, cell, cell);
-
-        // Solid ground gets the lit top edge the game draws, so a ledge reads as
-        // a ledge at a glance rather than as a block of colour.
-        if (character === '#' && (row === 0 || this.grid[row - 1][column] !== '#')) {
-            context.fillStyle = '#5ad6c8';
-            context.fillRect(x, y, cell, 2);
-        }
-    }
-
-    drawGridLines(left, cell) {
-        const context = canvasContext;
-        const bottom = GRID_TOP + LEVEL_ROW_COUNT * cell;
-        const right = left + this.gridWidth * cell;
-
-        context.strokeStyle = '#ffffff14';
-        context.lineWidth = 1;
-        context.beginPath();
-        for (let column = 0; column <= this.gridWidth; column++) {
-            context.moveTo(left + column * cell + 0.5, GRID_TOP);
-            context.lineTo(left + column * cell + 0.5, bottom);
-        }
-        for (let row = 0; row <= LEVEL_ROW_COUNT; row++) {
-            context.moveTo(left, GRID_TOP + row * cell + 0.5);
-            context.lineTo(right, GRID_TOP + row * cell + 0.5);
-        }
-        context.stroke();
-    }
-
-    drawGuides(left, cell) {
-        const context = canvasContext;
-        const x = left + (this.hover.column + 0.5) * cell;
-        const y = GRID_TOP + (this.hover.row + 0.5) * cell;
+        const right = this.gridWidth * TILE_SIZE;
+        const bottom = LEVEL_ROW_COUNT * TILE_SIZE;
 
         context.save();
-        context.lineWidth = 2;
+        context.translate(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+        context.scale(zoom, zoom);
+        context.translate(-centre.x, -centre.y);
 
-        for (const { across, up, guideColor, label } of GUIDES) {
+        context.lineWidth = 1 / zoom;
+        context.strokeStyle = '#ffffff1c';
+        context.beginPath();
+        for (let column = 0; column <= this.gridWidth; column++) {
+            context.moveTo(column * TILE_SIZE, 0);
+            context.lineTo(column * TILE_SIZE, bottom);
+        }
+        for (let row = 0; row <= LEVEL_ROW_COUNT; row++) {
+            context.moveTo(0, row * TILE_SIZE);
+            context.lineTo(right, row * TILE_SIZE);
+        }
+        context.stroke();
+
+        if (this.hover) {
+            if (this.showGuides) this.drawGuides(zoom);
+            this.drawCursor(zoom);
+        }
+
+        context.restore();
+
+        // The bands the chrome sits in, painted over the picture rather than
+        // beside it. The course is framed between them, and the lava that spills
+        // out under the bottom row of tiles is covered rather than fought with.
+        context.fillStyle = '#16112aec';
+        context.fillRect(0, 0, CANVAS_WIDTH, VIEW_TOP);
+        context.fillRect(0, VIEW_BOTTOM, CANVAS_WIDTH, CANVAS_HEIGHT - VIEW_BOTTOM);
+
+        // The guide labels, in screen space so they stay readable however far
+        // the course is zoomed out. Their ends are projected out of world space
+        // with the same transform the picture was drawn with.
+        if (this.hover && this.showGuides) {
+            for (const { across, up, guideColor, label } of GUIDES) {
+                const worldX = (this.hover.column + 0.5 + across) * TILE_SIZE;
+                const worldY = (this.hover.row + 0.5 - up) * TILE_SIZE;
+
+                drawText(label, CANVAS_WIDTH / 2 + (worldX - centre.x) * zoom + 8,
+                    CANVAS_HEIGHT / 2 + (worldY - centre.y) * zoom, {
+                        typeSize: 13, typeWeight: 800, alignment: 'left', inkColor: guideColor,
+                    });
+            }
+        }
+    }
+
+    /**
+     * The character you play as in here: a star hovering over the tile it is
+     * about to paint, in the colour of whatever is loaded into it.
+     *
+     * The unicorn is in the picture too, standing on its start tile where the
+     * player will begin - it is part of the course, not part of you.
+     */
+    drawCursor(zoom) {
+        const context = canvasContext;
+        const tile = TILES[this.selectedTile];
+        const x = (this.hover.column + 0.5) * TILE_SIZE;
+        const y = (this.hover.row + 0.5) * TILE_SIZE;
+
+        context.strokeStyle = tile.tileColor;
+        context.lineWidth = 2 / zoom;
+        context.strokeRect(x - TILE_SIZE / 2, y - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+
+        context.globalAlpha = 0.85;
+        context.fillStyle = tile.tileColor;
+        drawFourPointStar(context, x, y - TILE_SIZE * 0.9 - sin(this.age * 3) * 3,
+            TILE_SIZE * 0.3, this.age * 2);
+        context.globalAlpha = 1;
+    }
+
+    /**
+     * The three distances every course in this game is built out of, drawn from
+     * the tile under the cursor. Sketching a gap and then checking it against
+     * these is the whole job of laying a course out - and now they are drawn
+     * over the course itself, at the scale the course is really in.
+     */
+    drawGuides(zoom) {
+        const context = canvasContext;
+        const x = (this.hover.column + 0.5) * TILE_SIZE;
+        const y = (this.hover.row + 0.5) * TILE_SIZE;
+
+        context.save();
+        context.lineWidth = 2 / zoom;
+        context.setLineDash([6 / zoom, 5 / zoom]);
+
+        for (const { across, up, guideColor } of GUIDES) {
             context.strokeStyle = guideColor;
-            context.setLineDash([5, 4]);
             context.beginPath();
             context.moveTo(x, y);
-            context.lineTo(x + across * cell, y - up * cell);
+            context.lineTo(x + across * TILE_SIZE, y - up * TILE_SIZE);
             context.stroke();
-
-            drawText(label, x + across * cell + 8, y - up * cell, {
-                typeSize: 13, typeWeight: 700, alignment: 'left', inkColor: guideColor,
-            });
         }
 
         context.restore();
@@ -421,6 +548,12 @@ export class EditorScreen extends Screen {
             });
         });
 
+        if (!this.preview) {
+            drawText('place a start tile - press 4 and click', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, {
+                typeSize: 20, typeWeight: 800, typeSpacing: 2, inkColor: '#ffd93d',
+            });
+        }
+
         const hints = 'DRAG paint   RIGHT-DRAG erase   1-8 tile   [ ] width   N name   S signs'
             + '\nL load a course   I import   C copy   X clear   G guides   ENTER test run   E back here';
 
@@ -446,10 +579,11 @@ function widthOf(rows) {
 /** Whatever was being drawn when the page last closed, or an empty course. */
 function load() {
     try {
-        const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
-        if (saved?.rows) return { name: saved.name || 'UNTITLED', signs: saved.signs || [], rows: saved.rows };
+        const [name, signs, rows] = JSON.parse(localStorage.getItem(SAVE_KEY));
+        if (rows) return { name: name || 'UNTITLED', signs: signs || [], rows };
     } catch {
-        // A corrupt draft is not worth a crash on the way into the editor.
+        // A corrupt draft, or one in the old shape, is not worth a crash on the
+        // way into the editor. An empty course is a fine thing to fall back to.
     }
     return { name: 'UNTITLED', signs: [], rows: [] };
 }
